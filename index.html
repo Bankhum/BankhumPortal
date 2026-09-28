@@ -316,6 +316,50 @@
     <a href="#dashboard" class="mobile-nav-item"><i data-lucide="chart-no-axes-combined"></i><span>สถิติ</span></a>
   </nav>
 
+
+  <!-- สายด่วนโรงเรียน -->
+  <button id="hotlineToggle" class="hotline-fab" type="button" aria-label="เปิดแชทสายด่วน" aria-expanded="false">
+    <i data-lucide="message-circle-more"></i>
+    <span>สายด่วน</span>
+    <b class="hotline-dot" aria-hidden="true"></b>
+  </button>
+
+  <aside id="hotlinePanel" class="hotline-panel" aria-label="แชทสายด่วนโรงเรียน" hidden>
+    <div class="hotline-head">
+      <div class="hotline-head-brand">
+        <img src="logo-bankhum.png" alt="โลโก้โรงเรียนบ้านคุ้ม">
+        <div>
+          <strong>สายด่วนโรงเรียนบ้านคุ้ม</strong>
+          <span><b></b> ช่องทางติดต่อออนไลน์</span>
+        </div>
+      </div>
+      <button id="hotlineClose" class="hotline-close" type="button" aria-label="ปิดแชท"><i data-lucide="x"></i></button>
+    </div>
+
+    <div class="hotline-body">
+      <div class="hotline-bubble bot">
+        สวัสดีครับ 👋 ต้องการติดต่อโรงเรียนเรื่องใด เลือกหัวข้อหรือพิมพ์ข้อความได้เลย
+      </div>
+
+      <div class="hotline-topics" aria-label="หัวข้อสายด่วน">
+        <button type="button" data-hotline-topic="ติดต่อสอบถามข้อมูลโรงเรียน">สอบถามข้อมูล</button>
+        <button type="button" data-hotline-topic="แจ้งปัญหาการใช้งานระบบออนไลน์">แจ้งปัญหาระบบ</button>
+        <button type="button" data-hotline-topic="แจ้งเรื่องเร่งด่วนถึงโรงเรียน">เรื่องเร่งด่วน</button>
+      </div>
+
+      <label class="hotline-label" for="hotlineMessage">ข้อความถึงโรงเรียน</label>
+      <textarea id="hotlineMessage" rows="4" maxlength="500" placeholder="พิมพ์รายละเอียดที่ต้องการติดต่อ..."></textarea>
+      <div class="hotline-counter"><span id="hotlineCount">0</span>/500</div>
+
+      <button id="hotlineSend" class="hotline-send" type="button">
+        <img src="facebook-logo.jpg" alt="Facebook">
+        <span>ส่งต่อผ่าน Facebook Messenger</span>
+        <i data-lucide="arrow-up-right"></i>
+      </button>
+      <p class="hotline-note">ระบบจะคัดลอกข้อความของคุณ แล้วเปิดช่องทาง Facebook ของโรงเรียนเพื่อส่งข้อความต่อ</p>
+    </div>
+  </aside>
+
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>

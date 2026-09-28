@@ -119,3 +119,25 @@ a{color:inherit}.app-shell{width:min(1200px,92%);margin:0 auto;padding:20px 0 70
     flex-basis:20px;
   }
 }
+
+
+/* ===== V7 Hotline chat ===== */
+.hotline-fab{
+  position:fixed;right:22px;bottom:22px;z-index:95;height:52px;display:inline-flex;align-items:center;gap:8px;
+  padding:0 16px;border:0;border-radius:18px;background:linear-gradient(135deg,var(--green),#20a373);color:#fff;
+  font:600 13px "Kanit",sans-serif;cursor:pointer;box-shadow:0 14px 34px rgba(15,122,90,.28);transition:.2s
+}
+.hotline-fab:hover{transform:translateY(-2px);box-shadow:0 18px 38px rgba(15,122,90,.34)}
+.hotline-fab svg{width:20px;height:20px}.hotline-dot{width:8px;height:8px;border-radius:50%;background:#7dffbc;box-shadow:0 0 0 4px rgba(125,255,188,.16)}
+.hotline-panel{position:fixed;right:22px;bottom:86px;z-index:96;width:min(390px,calc(100vw - 28px));overflow:hidden;border:1px solid #d8e9e0;border-radius:24px;background:#fff;box-shadow:0 24px 65px rgba(24,60,43,.22);animation:hotlineIn .2s ease both}
+.hotline-panel[hidden]{display:none!important}@keyframes hotlineIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+.hotline-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 15px;background:linear-gradient(135deg,#0f7a5a,#24956f);color:#fff}
+.hotline-head-brand{display:flex;align-items:center;gap:10px;min-width:0}.hotline-head-brand img{width:42px;height:42px;object-fit:contain;padding:2px;border-radius:50%;background:#fff;border:2px solid rgba(255,255,255,.6)}
+.hotline-head-brand strong{display:block;font-size:13px;line-height:1.2}.hotline-head-brand span{display:flex;align-items:center;gap:5px;margin-top:3px;font-size:9px;opacity:.88}.hotline-head-brand span b{width:7px;height:7px;border-radius:50%;background:#7dffbc}
+.hotline-close{width:34px;height:34px;display:grid;place-items:center;flex:0 0 auto;border:0;border-radius:11px;background:rgba(255,255,255,.14);color:#fff;cursor:pointer}.hotline-close svg{width:17px;height:17px}
+.hotline-body{padding:15px;background:linear-gradient(180deg,#f9fcfa,#f3f8f5)}
+.hotline-bubble{max-width:92%;padding:11px 12px;border-radius:15px;font-size:11px;line-height:1.55}.hotline-bubble.bot{background:#fff;border:1px solid #e1ece6;color:#40564a;border-top-left-radius:6px;box-shadow:0 5px 14px rgba(24,60,43,.05)}
+.hotline-topics{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}.hotline-topics button{padding:7px 10px;border:1px solid #cee5d8;border-radius:999px;background:#fff;color:var(--green-dark);font:500 10px "Kanit",sans-serif;cursor:pointer;transition:.18s}.hotline-topics button:hover{background:var(--green);color:#fff;border-color:var(--green)}
+.hotline-label{display:block;margin:4px 0 6px;font-size:10px;font-weight:600;color:#52695d}.hotline-body textarea{width:100%;resize:none;border:1px solid #dce9e2;border-radius:14px;background:#fff;padding:11px 12px;outline:none;font:400 11px "Kanit",sans-serif;color:var(--text);line-height:1.55;box-shadow:inset 0 1px 2px rgba(24,60,43,.03)}.hotline-body textarea:focus{border-color:#a9d3be;box-shadow:0 0 0 4px rgba(15,122,90,.07)}
+.hotline-counter{text-align:right;margin-top:3px;color:#94a29b;font-size:9px}.hotline-send{width:100%;height:44px;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:14px;background:linear-gradient(135deg,var(--green),#24956f);color:#fff;font:600 11px "Kanit",sans-serif;cursor:pointer;box-shadow:0 9px 20px rgba(15,122,90,.18)}.hotline-send img{width:20px;height:20px;object-fit:contain;border-radius:5px}.hotline-send svg{width:16px;height:16px}.hotline-note{margin-top:7px;text-align:center;color:#82938a;font-size:8px;line-height:1.45}
+@media(max-width:700px){.hotline-fab{right:14px;bottom:calc(86px + var(--safe-bottom));height:46px;padding:0 13px;border-radius:16px;font-size:11px}.hotline-fab svg{width:18px;height:18px}.hotline-panel{right:10px;bottom:calc(142px + var(--safe-bottom));width:calc(100vw - 20px);max-height:calc(100vh - 170px);overflow:auto;border-radius:21px}.hotline-head{position:sticky;top:0;z-index:2}.hotline-body{padding:13px}.hotline-topics{gap:6px}}

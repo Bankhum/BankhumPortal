@@ -231,3 +231,72 @@ if ('serviceWorker' in navigator) {
 refreshIcons();
 applyFilters();
 renderDashboard();
+
+
+// ===== V7 Hotline chat =====
+const hotlineToggle = document.getElementById('hotlineToggle');
+const hotlinePanel = document.getElementById('hotlinePanel');
+const hotlineClose = document.getElementById('hotlineClose');
+const hotlineMessage = document.getElementById('hotlineMessage');
+const hotlineCount = document.getElementById('hotlineCount');
+const hotlineSend = document.getElementById('hotlineSend');
+const hotlineTopics = [...document.querySelectorAll('[data-hotline-topic]')];
+
+function setHotline(open) {
+  if (!hotlinePanel || !hotlineToggle) return;
+  hotlinePanel.hidden = !open;
+  hotlineToggle.setAttribute('aria-expanded', String(open));
+  if (open) setTimeout(() => hotlineMessage?.focus(), 80);
+}
+
+hotlineToggle?.addEventListener('click', () => setHotline(hotlinePanel.hidden));
+hotlineClose?.addEventListener('click', () => setHotline(false));
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && hotlinePanel && !hotlinePanel.hidden) setHotline(false);
+});
+
+hotlineMessage?.addEventListener('input', () => {
+  hotlineCount.textContent = String(hotlineMessage.value.length);
+});
+
+hotlineTopics.forEach(button => {
+  button.addEventListener('click', () => {
+    const topic = button.dataset.hotlineTopic || '';
+    hotlineMessage.value = topic + (hotlineMessage.value.trim() ? `\n${hotlineMessage.value.trim()}` : '\n');
+    hotlineCount.textContent = String(hotlineMessage.value.length);
+    hotlineMessage.focus();
+  });
+});
+
+hotlineSend?.addEventListener('click', async () => {
+  const message = hotlineMessage?.value.trim() || '';
+  if (!message) {
+    showToast('กรุณาพิมพ์ข้อความก่อนส่ง');
+    hotlineMessage?.focus();
+    return;
+  }
+
+  const fullMessage = `สายด่วนโรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)\n${message}`;
+  let copied = false;
+  try {
+    await navigator.clipboard.writeText(fullMessage);
+    copied = true;
+  } catch (_) {
+    try {
+      const temp = document.createElement('textarea');
+      temp.value = fullMessage;
+      temp.style.position = 'fixed';
+      temp.style.opacity = '0';
+      document.body.appendChild(temp);
+      temp.select();
+      copied = document.execCommand('copy');
+      temp.remove();
+    } catch (_) {}
+  }
+
+  showToast(copied ? 'คัดลอกข้อความแล้ว กำลังเปิด Facebook...' : 'กำลังเปิด Facebook ของโรงเรียน...');
+  window.open('https://m.me/bkspage', '_blank', 'noopener,noreferrer');
+});
+
+refreshIcons();
