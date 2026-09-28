@@ -63,3 +63,59 @@ a{color:inherit}.app-shell{width:min(1200px,92%);margin:0 auto;padding:20px 0 70
 .developer-credit>svg{width:20px;height:20px;color:var(--green);flex:0 0 auto}.developer-credit span{display:block;font-size:9px;color:#83958c}.developer-credit strong{display:block;color:var(--green-dark);font-size:13px}.developer-credit small{display:block;margin-top:1px;font-size:9px;color:#71847a}
 .footer-bottom{text-align:center;padding-top:13px}.footer-bottom small{font-size:9px;color:#96a49d}
 @media(max-width:700px){.footer{margin-top:38px;padding-top:21px}.footer-main{flex-direction:column;align-items:flex-start;gap:14px}.footer-social{width:100%;justify-content:flex-start}.footer-social a{flex:1;min-width:88px}.developer-credit{align-items:flex-start;text-align:left}.developer-credit strong{font-size:12px}.developer-credit small{font-size:8px}}
+
+
+/* ===== V6 social logo sizing fix ===== */
+.footer-social{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  align-items:center;
+  gap:10px;
+}
+.footer-social a{
+  height:42px;
+  min-width:112px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:8px;
+  padding:0 12px;
+  overflow:hidden;
+}
+.footer-social a img{
+  width:22px !important;
+  height:22px !important;
+  max-width:22px !important;
+  max-height:22px !important;
+  min-width:22px !important;
+  min-height:22px !important;
+  object-fit:contain !important;
+  object-position:center;
+  display:block;
+  flex:0 0 22px;
+  border-radius:5px;
+  background:transparent;
+}
+.footer-social a span{
+  line-height:1;
+  white-space:nowrap;
+}
+@media(max-width:700px){
+  .footer-social{gap:8px}
+  .footer-social a{
+    min-width:0;
+    height:40px;
+    justify-content:center;
+    padding:0 10px;
+  }
+  .footer-social a img{
+    width:20px !important;
+    height:20px !important;
+    max-width:20px !important;
+    max-height:20px !important;
+    min-width:20px !important;
+    min-height:20px !important;
+    flex-basis:20px;
+  }
+}
