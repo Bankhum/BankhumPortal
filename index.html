@@ -19,7 +19,7 @@
   <div class="app-shell">
     <header class="topbar">
       <a class="brand" href="#home" aria-label="Bankhum School Portal">
-        <img src="logo-bankhum.jpg" alt="โลโก้โรงเรียนบ้านคุ้ม">
+        <img src="logo-bankhum.png" alt="โลโก้โรงเรียนบ้านคุ้ม">
         <div>
           <strong>Bankhum School Portal</strong>
           <span>โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)</span>
@@ -28,10 +28,10 @@
 
       <nav class="desktop-nav" aria-label="เมนูหลัก">
         <a href="#home">หน้าหลัก</a>
-        <a href="#dashboard">สถิติการใช้งาน</a>
         <a href="#management">บริหารงาน</a>
         <a href="#academic">วิชาการ</a>
         <a href="#student">นักเรียน</a>
+        <a href="#dashboard">สถิติการใช้งาน</a>
       </nav>
 
       <div class="top-actions">
@@ -49,7 +49,7 @@
 
         <div class="hero-main">
           <div class="hero-logo-wrap">
-            <img src="logo-bankhum.jpg" alt="ตราสัญลักษณ์โรงเรียนบ้านคุ้ม" class="hero-logo">
+            <img src="logo-bankhum.png" alt="ตราสัญลักษณ์โรงเรียนบ้านคุ้ม" class="hero-logo">
             <span class="status-dot" title="ระบบออนไลน์"></span>
           </div>
 
@@ -80,47 +80,6 @@
             <div class="metric-icon amber"><i data-lucide="mouse-pointer-click"></i></div>
             <div><strong>1 Click</strong><span>เข้าถึงระบบ</span></div>
           </div>
-        </div>
-      </section>
-
-      <section class="analytics-section" id="dashboard">
-        <div class="analytics-heading">
-          <div>
-            <span class="section-kicker">USAGE DASHBOARD</span>
-            <h2><i data-lucide="chart-no-axes-combined"></i> สถิติการใช้งานระบบ</h2>
-            <p>สรุปจำนวนครั้งที่เปิดแต่ละระบบจากอุปกรณ์และเบราว์เซอร์นี้</p>
-          </div>
-          <button id="resetStats" class="stats-reset" type="button"><i data-lucide="rotate-ccw"></i> ล้างสถิติ</button>
-        </div>
-
-        <div class="analytics-metrics">
-          <div class="analytics-metric">
-            <div class="analytics-icon green"><i data-lucide="mouse-pointer-click"></i></div>
-            <div><span>การเปิดทั้งหมด</span><strong id="totalClicks">0</strong><small>ครั้ง</small></div>
-          </div>
-          <div class="analytics-metric">
-            <div class="analytics-icon blue"><i data-lucide="calendar-days"></i></div>
-            <div><span>การเปิดวันนี้</span><strong id="todayClicks">0</strong><small>ครั้ง</small></div>
-          </div>
-          <div class="analytics-metric">
-            <div class="analytics-icon amber"><i data-lucide="trophy"></i></div>
-            <div><span>ระบบที่ใช้บ่อยสุด</span><strong id="topSystem">-</strong><small id="topSystemCount">ยังไม่มีข้อมูล</small></div>
-          </div>
-          <div class="analytics-metric">
-            <div class="analytics-icon violet"><i data-lucide="clock"></i></div>
-            <div><span>ใช้งานล่าสุด</span><strong id="lastUsed">-</strong><small id="lastUsedTime">ยังไม่มีข้อมูล</small></div>
-          </div>
-        </div>
-
-        <div class="analytics-panel">
-          <div class="analytics-panel-head">
-            <div>
-              <h3>การใช้งานแต่ละระบบ</h3>
-              <p>แถบยาวแสดงสัดส่วนเมื่อเทียบกับระบบที่ถูกเปิดมากที่สุด</p>
-            </div>
-            <span class="local-badge"><i data-lucide="hard-drive"></i> Local Stats</span>
-          </div>
-          <div id="usageChart" class="usage-chart" aria-live="polite"></div>
         </div>
       </section>
 
@@ -267,12 +226,54 @@
         <p>ลองเปลี่ยนคำค้น หรือเลือกหมวดหมู่อื่น</p>
         <button id="resetFilter" type="button">แสดงระบบทั้งหมด</button>
       </section>
+
+      <section class="analytics-section" id="dashboard">
+        <div class="analytics-heading">
+          <div>
+            <span class="section-kicker">USAGE DASHBOARD</span>
+            <h2><i data-lucide="chart-no-axes-combined"></i> สถิติการใช้งานระบบ</h2>
+            <p>สรุปจำนวนครั้งที่เปิดแต่ละระบบจากอุปกรณ์และเบราว์เซอร์นี้</p>
+          </div>
+          <button id="resetStats" class="stats-reset" type="button"><i data-lucide="rotate-ccw"></i> ล้างสถิติ</button>
+        </div>
+
+        <div class="analytics-metrics">
+          <div class="analytics-metric">
+            <div class="analytics-icon green"><i data-lucide="mouse-pointer-click"></i></div>
+            <div><span>การเปิดทั้งหมด</span><strong id="totalClicks">0</strong><small>ครั้ง</small></div>
+          </div>
+          <div class="analytics-metric">
+            <div class="analytics-icon blue"><i data-lucide="calendar-days"></i></div>
+            <div><span>การเปิดวันนี้</span><strong id="todayClicks">0</strong><small>ครั้ง</small></div>
+          </div>
+          <div class="analytics-metric">
+            <div class="analytics-icon amber"><i data-lucide="trophy"></i></div>
+            <div><span>ระบบที่ใช้บ่อยสุด</span><strong id="topSystem">-</strong><small id="topSystemCount">ยังไม่มีข้อมูล</small></div>
+          </div>
+          <div class="analytics-metric">
+            <div class="analytics-icon violet"><i data-lucide="clock"></i></div>
+            <div><span>ใช้งานล่าสุด</span><strong id="lastUsed">-</strong><small id="lastUsedTime">ยังไม่มีข้อมูล</small></div>
+          </div>
+        </div>
+
+        <div class="analytics-panel">
+          <div class="analytics-panel-head">
+            <div>
+              <h3>การใช้งานแต่ละระบบ</h3>
+              <p>แถบยาวแสดงสัดส่วนเมื่อเทียบกับระบบที่ถูกเปิดมากที่สุด</p>
+            </div>
+            <span class="local-badge"><i data-lucide="hard-drive"></i> Local Stats</span>
+          </div>
+          <div id="usageChart" class="usage-chart" aria-live="polite"></div>
+        </div>
+      </section>
+
     </main>
 
     <footer class="footer">
       <div class="footer-main">
         <div class="footer-brand">
-          <img src="logo-bankhum.jpg" alt="โลโก้โรงเรียนบ้านคุ้ม">
+          <img src="logo-bankhum.png" alt="โลโก้โรงเรียนบ้านคุ้ม">
           <div>
             <strong>โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)</strong>
             <span>Bankhum School Portal · ศูนย์รวมระบบและบริการออนไลน์ของโรงเรียน</span>
@@ -281,13 +282,13 @@
 
         <div class="footer-social" aria-label="ช่องทางโซเชียลมีเดียของโรงเรียน">
           <a href="https://www.facebook.com/bkspage" target="_blank" rel="noopener noreferrer" aria-label="Facebook โรงเรียนบ้านคุ้ม">
-            <i data-lucide="facebook"></i><span>Facebook</span>
+            <img src="facebook-logo.jpg" alt="Facebook logo"><span>Facebook</span>
           </a>
           <a href="https://www.youtube.com/@bankhumstudiochannel5338" target="_blank" rel="noopener noreferrer" aria-label="YouTube Bankhum Studio">
-            <i data-lucide="youtube"></i><span>YouTube</span>
+            <img src="youtube-logo.jpg" alt="YouTube logo"><span>YouTube</span>
           </a>
           <a href="https://www.tiktok.com/@bankhumschool?is_from_webapp=1&sender_device=pc" target="_blank" rel="noopener noreferrer" aria-label="TikTok โรงเรียนบ้านคุ้ม">
-            <i data-lucide="music-2"></i><span>TikTok</span>
+            <img src="tiktok-logo.png" alt="TikTok logo"><span>TikTok</span>
           </a>
         </div>
       </div>
@@ -309,10 +310,10 @@
 
   <nav class="mobile-nav" aria-label="เมนูมือถือ">
     <a href="#home" class="mobile-nav-item active"><i data-lucide="home"></i><span>หน้าหลัก</span></a>
-    <a href="#dashboard" class="mobile-nav-item"><i data-lucide="chart-no-axes-combined"></i><span>สถิติ</span></a>
     <a href="#management" class="mobile-nav-item"><i data-lucide="building-2"></i><span>บริหาร</span></a>
     <a href="#academic" class="mobile-nav-item"><i data-lucide="book-open"></i><span>วิชาการ</span></a>
     <a href="#student" class="mobile-nav-item"><i data-lucide="graduation-cap"></i><span>นักเรียน</span></a>
+    <a href="#dashboard" class="mobile-nav-item"><i data-lucide="chart-no-axes-combined"></i><span>สถิติ</span></a>
   </nav>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
