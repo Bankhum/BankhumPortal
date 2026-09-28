@@ -1,5 +1,5 @@
-const CACHE = 'bankhum-portal-v2';
-const ASSETS = ['./','./index.html','./style.css','./app.js','./logo-bankhum.jpg','./icon-192.png','./icon-512.png','./manifest.webmanifest'];
+const CACHE = 'bankhum-portal-v4';
+const ASSETS = ['./','./index.html','./style.css','./app.js','./logo-bankhum.jpg','./icon-192.png','./icon-512.png','./favicon-32.png','./favicon.ico','./manifest.webmanifest'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
   self.skipWaiting();
