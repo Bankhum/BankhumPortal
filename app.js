@@ -150,28 +150,43 @@ function renderDashboard() {
     chart.innerHTML = '<div class="usage-empty">ยังไม่มีสถิติ — ลองกดเปิดระบบด้านล่าง แล้วข้อมูลจะปรากฏที่นี่อัตโนมัติ</div>';
     return;
   }
-  const max = Math.max(...sorted.map(r => r.count), 1);
-  chart.innerHTML = sorted.map((row, index) => {
-    const width = row.count ? Math.max((row.count / max) * 100, 3) : 0;
-    return `<div class="usage-row">
-      <div class="usage-name"><b class="usage-rank">${index + 1}</b><span title="${escapeHtml(row.name)}">${escapeHtml(row.name)}</span></div>
-      <div class="usage-track"><div class="usage-fill" style="width:${width}%"></div></div>
-      <div class="usage-value">${row.count.toLocaleString('th-TH')} ครั้ง</div>
+
+  const activeRows = sorted.filter(row => row.count > 0);
+  const palette = ['#0f7a5a','#2f80ed','#f2994a','#9b51e0','#eb5757','#27ae60','#56ccf2','#f2c94c','#6fcf97','#bb6bd9','#f299c1','#2d9cdb','#b08968','#8e9aaf','#e76f51','#00b894'];
+  let cumulative = 0;
+  const segments = activeRows.map((row, idx) => {
+    const percent = (row.count / total) * 100;
+    const start = cumulative;
+    cumulative += percent;
+    return { ...row, percent, color: palette[idx % palette.length], start, end: cumulative };
+  });
+
+  const gradient = segments.map(seg => `${seg.color} ${seg.start.toFixed(2)}% ${seg.end.toFixed(2)}%`).join(', ');
+  const legend = sorted.map((row, idx) => {
+    const seg = segments.find(s => s.id === row.id);
+    const color = seg ? seg.color : '#d9e5de';
+    const percent = total ? ((row.count / total) * 100).toFixed(1) : '0.0';
+    return `<div class="pie-legend-item ${row.count ? '' : 'is-zero'}">
+      <span class="pie-legend-color" style="background:${color}"></span>
+      <div class="pie-legend-text">
+        <strong title="${escapeHtml(row.name)}">${escapeHtml(row.name)}</strong>
+        <small>${row.count.toLocaleString('th-TH')} ครั้ง · ${percent}%</small>
+      </div>
     </div>`;
   }).join('');
+
+  chart.innerHTML = `<div class="pie-dashboard">
+    <div class="pie-chart-wrap">
+      <div class="pie-chart" style="background:conic-gradient(${gradient})" role="img" aria-label="แผนภูมิวงกลมแสดงการใช้งานระบบทั้งหมด ${total} ครั้ง"></div>
+      <div class="pie-chart-total"><span>ทั้งหมด</span><strong>${total.toLocaleString('th-TH')}</strong><small>ครั้ง</small></div>
+    </div>
+    <div class="pie-legend">${legend}</div>
+  </div>`;
 }
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
 }
-
-const resetStats = document.getElementById('resetStats');
-resetStats?.addEventListener('click', () => {
-  if (!confirm('ต้องการล้างสถิติการใช้งานที่บันทึกในอุปกรณ์นี้หรือไม่?')) return;
-  localStorage.removeItem(STATS_KEY);
-  renderDashboard();
-  showToast('ล้างสถิติในอุปกรณ์นี้แล้ว');
-});
 
 // Mobile navigation highlight
 const mobileLinks = [...document.querySelectorAll('.mobile-nav-item')];

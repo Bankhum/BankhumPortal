@@ -1,4 +1,4 @@
-const CACHE = 'bankhum-portal-v8';
+const CACHE = 'bankhum-portal-v10';
 const ASSETS = [
   './',
   './index.html',
