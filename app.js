@@ -240,7 +240,12 @@ installBtn.addEventListener('click', async () => {
 window.addEventListener('appinstalled', () => showToast('ติดตั้ง Bankhum School Portal สำเร็จ'));
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('./sw.js?v=11', { updateViaCache: 'none' });
+      await reg.update();
+    } catch (_) {}
+  });
 }
 
 refreshIcons();
