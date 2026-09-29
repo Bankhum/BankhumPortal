@@ -1,18 +1,18 @@
-const CACHE = 'bankhum-portal-v11';
+const CACHE = 'bankhum-portal-v12';
 const ASSETS = [
-  './?v=11',
-  './index.html?v=11',
-  './style.css?v=11',
-  './app.js?v=11',
+  './?v=12',
+  './index.html?v=12',
+  './style.css?v=12',
+  './app.js?v=12',
   './logo-bankhum.png',
   './facebook-logo.jpg',
   './youtube-logo.jpg',
   './tiktok-logo.png',
   './line-logo.png',
-  './icon-192.png?v=11',
-  './icon-512.png?v=11',
-  './favicon-32.png?v=11',
-  './manifest.webmanifest?v=11'
+  './icon-192.png?v=12',
+  './icon-512.png?v=12',
+  './favicon-32.png?v=12',
+  './manifest.webmanifest?v=12'
 ];
 
 self.addEventListener('install', event => {
@@ -41,6 +41,6 @@ self.addEventListener('fetch', event => {
         }
         return response;
       })
-      .catch(() => caches.match(event.request).then(r => r || caches.match('./?v=11')))
+      .catch(() => caches.match(event.request).then(r => r || caches.match('./?v=12')))
   );
 });

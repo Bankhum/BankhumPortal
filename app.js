@@ -146,42 +146,81 @@ function renderDashboard() {
   document.getElementById('lastUsedTime').textContent = stats.lastUsed ? formatShortDate(stats.lastUsed) : 'ยังไม่มีข้อมูล';
 
   const chart = document.getElementById('usageChart');
-  if (!total) {
-    chart.innerHTML = '<div class="usage-empty">ยังไม่มีสถิติ — ลองกดเปิดระบบด้านล่าง แล้วข้อมูลจะปรากฏที่นี่อัตโนมัติ</div>';
+  if (!rows.length) {
+    chart.innerHTML = '<div class="usage-empty">ยังไม่มีข้อมูลระบบให้แสดง</div>';
     return;
   }
 
-  const activeRows = sorted.filter(row => row.count > 0);
-  const palette = ['#0f7a5a','#2f80ed','#f2994a','#9b51e0','#eb5757','#27ae60','#56ccf2','#f2c94c','#6fcf97','#bb6bd9','#f299c1','#2d9cdb','#b08968','#8e9aaf','#e76f51','#00b894'];
-  let cumulative = 0;
-  const segments = activeRows.map((row, idx) => {
-    const percent = (row.count / total) * 100;
-    const start = cumulative;
-    cumulative += percent;
-    return { ...row, percent, color: palette[idx % palette.length], start, end: cumulative };
-  });
-
-  const gradient = segments.map(seg => `${seg.color} ${seg.start.toFixed(2)}% ${seg.end.toFixed(2)}%`).join(', ');
-  const legend = sorted.map((row, idx) => {
-    const seg = segments.find(s => s.id === row.id);
-    const color = seg ? seg.color : '#d9e5de';
-    const percent = total ? ((row.count / total) * 100).toFixed(1) : '0.0';
-    return `<div class="pie-legend-item ${row.count ? '' : 'is-zero'}">
-      <span class="pie-legend-color" style="background:${color}"></span>
-      <div class="pie-legend-text">
-        <strong title="${escapeHtml(row.name)}">${escapeHtml(row.name)}</strong>
-        <small>${row.count.toLocaleString('th-TH')} ครั้ง · ${percent}%</small>
-      </div>
-    </div>`;
+  const activeRows = rows;
+  const maxValue = Math.max(1, ...activeRows.map(row => row.count));
+  const roundedMax = maxValue <= 5 ? 5 : Math.ceil(maxValue / 5) * 5;
+  const width = 920;
+  const height = 340;
+  const padding = { top: 18, right: 26, bottom: 98, left: 48 };
+  const innerWidth = width - padding.left - padding.right;
+  const innerHeight = height - padding.top - padding.bottom;
+  const pointGap = activeRows.length > 1 ? innerWidth / (activeRows.length - 1) : 0;
+  const x = i => activeRows.length === 1 ? padding.left + innerWidth / 2 : padding.left + i * pointGap;
+  const y = value => padding.top + innerHeight - ((value / roundedMax) * innerHeight);
+  const linePoints = activeRows.map((row, i) => `${x(i)},${y(row.count)}`).join(' ');
+  const areaPoints = `${padding.left},${padding.top + innerHeight} ${linePoints} ${padding.left + innerWidth},${padding.top + innerHeight}`;
+  const ticks = 5;
+  const yLabels = Array.from({length: ticks + 1}, (_, i) => {
+    const value = Math.round((roundedMax / ticks) * (ticks - i));
+    const posY = y(value);
+    return `<g><line x1="${padding.left}" y1="${posY}" x2="${padding.left + innerWidth}" y2="${posY}" class="chart-grid"></line><text x="${padding.left - 10}" y="${posY + 4}" text-anchor="end" class="chart-y-label">${value}</text></g>`;
   }).join('');
-
-  chart.innerHTML = `<div class="pie-dashboard">
-    <div class="pie-chart-wrap">
-      <div class="pie-chart" style="background:conic-gradient(${gradient})" role="img" aria-label="แผนภูมิวงกลมแสดงการใช้งานระบบทั้งหมด ${total} ครั้ง"></div>
-      <div class="pie-chart-total"><span>ทั้งหมด</span><strong>${total.toLocaleString('th-TH')}</strong><small>ครั้ง</small></div>
+  const xLabels = activeRows.map((row, i) => {
+    const label = escapeHtml(row.name.length > 18 ? row.name.slice(0, 18) + '…' : row.name);
+    const px = x(i);
+    return `<g><text x="${px}" y="${padding.top + innerHeight + 22}" text-anchor="end" transform="rotate(-35 ${px} ${padding.top + innerHeight + 22})" class="chart-x-label">${label}</text></g>`;
+  }).join('');
+  const points = activeRows.map((row, i) => {
+    const cx = x(i);
+    const cy = y(row.count);
+    const label = escapeHtml(row.name);
+    return `<g>
+      <circle cx="${cx}" cy="${cy}" r="4.5" class="chart-point"></circle>
+      <circle cx="${cx}" cy="${cy}" r="13" class="chart-point-hit">
+        <title>${label}: ${row.count.toLocaleString('th-TH')} ครั้ง</title>
+      </circle>
+      <text x="${cx}" y="${cy - 12}" text-anchor="middle" class="chart-point-label">${row.count}</text>
+    </g>`;
+  }).join('');
+  const detailCards = sorted.map((row, index) => `
+    <div class="line-detail-card ${row.count ? '' : 'is-zero'}">
+      <div class="line-detail-rank">${index + 1}</div>
+      <div class="line-detail-copy">
+        <strong title="${escapeHtml(row.name)}">${escapeHtml(row.name)}</strong>
+        <small>วันนี้ ${row.today.toLocaleString('th-TH')} ครั้ง</small>
+      </div>
+      <div class="line-detail-value">${row.count.toLocaleString('th-TH')} ครั้ง</div>
     </div>
-    <div class="pie-legend">${legend}</div>
-  </div>`;
+  `).join('');
+
+  chart.innerHTML = `
+    <div class="line-dashboard">
+      <div class="line-chart-wrap">
+        <svg viewBox="0 0 ${width} ${height}" class="line-chart" role="img" aria-label="กราฟเส้นแสดงจำนวนครั้งการใช้งานของแต่ละระบบ รวม ${total} ครั้ง">
+          <defs>
+            <linearGradient id="usageAreaFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="rgba(15,122,90,0.30)"></stop>
+              <stop offset="100%" stop-color="rgba(15,122,90,0.03)"></stop>
+            </linearGradient>
+            <linearGradient id="usageStroke" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#0f7a5a"></stop>
+              <stop offset="100%" stop-color="#39a57f"></stop>
+            </linearGradient>
+          </defs>
+          ${yLabels}
+          <polyline points="${areaPoints}" class="chart-area"></polyline>
+          <polyline points="${linePoints}" class="chart-line"></polyline>
+          ${points}
+          ${xLabels}
+        </svg>
+      </div>
+      <div class="line-details">${detailCards}</div>
+    </div>`;
 }
 
 function escapeHtml(value) {
@@ -242,7 +281,7 @@ window.addEventListener('appinstalled', () => showToast('ติดตั้ง B
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('./sw.js?v=11', { updateViaCache: 'none' });
+      const reg = await navigator.serviceWorker.register('./sw.js?v=12', { updateViaCache: 'none' });
       await reg.update();
     } catch (_) {}
   });
