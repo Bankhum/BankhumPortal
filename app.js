@@ -175,7 +175,7 @@ resetStats?.addEventListener('click', () => {
 
 // Mobile navigation highlight
 const mobileLinks = [...document.querySelectorAll('.mobile-nav-item')];
-const targets = ['home','management','academic','student','dashboard']
+const targets = ['home','management','academic','student','assessment','dashboard']
   .map(id => document.getElementById(id))
   .filter(Boolean);
 

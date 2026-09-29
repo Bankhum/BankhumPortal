@@ -1,4 +1,4 @@
-const CACHE = 'bankhum-portal-v7';
+const CACHE = 'bankhum-portal-v8';
 const ASSETS = [
   './',
   './index.html',
@@ -7,7 +7,7 @@ const ASSETS = [
   './logo-bankhum.png',
   './facebook-logo.jpg',
   './youtube-logo.jpg',
-  './tiktok-logo.png',
+  './tiktok-logo.png','./line-logo.png',
   './icon-192.png',
   './icon-512.png',
   './favicon-32.png',

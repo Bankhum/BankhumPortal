@@ -31,6 +31,7 @@
         <a href="#management">บริหารงาน</a>
         <a href="#academic">วิชาการ</a>
         <a href="#student">นักเรียน</a>
+        <a href="#assessment">งานประเมินต่างๆ</a>
         <a href="#dashboard">สถิติการใช้งาน</a>
       </nav>
 
@@ -70,7 +71,7 @@
         <div class="hero-metrics">
           <div class="metric">
             <div class="metric-icon green"><i data-lucide="layout-grid"></i></div>
-            <div><strong id="systemCount">9</strong><span>ระบบพร้อมใช้งาน</span></div>
+            <div><strong id="systemCount">13</strong><span>ระบบพร้อมใช้งาน</span></div>
           </div>
           <div class="metric">
             <div class="metric-icon blue"><i data-lucide="smartphone"></i></div>
@@ -86,7 +87,7 @@
       <section class="tools-panel" aria-label="ค้นหาและกรองระบบ">
         <div class="search-box">
           <i data-lucide="search"></i>
-          <input id="searchInput" type="search" placeholder="ค้นหา เช่น เงินเดือน, สารบรรณ, แผนการสอน..." autocomplete="off">
+          <input id="searchInput" type="search" placeholder="ค้นหา เช่น เงินเดือน, พัสดุ, วัดผล, สมศ., แผนการสอน..." autocomplete="off">
           <button id="clearSearch" class="clear-search" type="button" aria-label="ล้างคำค้น" hidden><i data-lucide="x"></i></button>
         </div>
 
@@ -96,6 +97,7 @@
           <button class="chip" data-filter="management" type="button"><i data-lucide="building-2"></i>บริหารงาน</button>
           <button class="chip" data-filter="academic" type="button"><i data-lucide="book-open"></i>วิชาการ</button>
           <button class="chip" data-filter="student" type="button"><i data-lucide="graduation-cap"></i>นักเรียน</button>
+          <button class="chip" data-filter="assessment" type="button"><i data-lucide="clipboard-check"></i>งานประเมิน</button>
         </div>
       </section>
 
@@ -168,6 +170,12 @@
               <div class="card-body"><h3>ระบบลงเวลาครู</h3><p>ระบบลงเวลาเข้า–ออกสำหรับครูและบุคลากรของโรงเรียน</p></div>
               <a class="card-link" href="https://zlink.minervaiot.com/login" target="_blank" rel="noopener noreferrer"><span>เข้าสู่ระบบลงเวลา</span><i data-lucide="arrow-up-right"></i></a>
             </article>
+
+            <article class="system-card" data-system-id="finance" data-category="management" data-search="การเงิน พัสดุ งบประมาณ จัดซื้อ procurement finance budget">
+              <div class="card-head"><div class="icon-tile green"><i data-lucide="package-check"></i></div><span class="tag">การเงินและพัสดุ</span></div>
+              <div class="card-body"><h3>ระบบบริหารการเงินและพัสดุโรงเรียน</h3><p>ระบบสำหรับบริหารงานการเงิน งบประมาณ และงานพัสดุของโรงเรียน</p></div>
+              <a class="card-link" href="https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbwUz9mm1SC5LS2wpQPMDblnGBcJ2s4Y4-A073e42ZGrT_bIGuBLIc1nBylaj56LS_HiRw/exec" target="_blank" rel="noopener noreferrer"><span>เปิดระบบการเงินและพัสดุ</span><i data-lucide="arrow-up-right"></i></a>
+            </article>
           </div>
         </section>
 
@@ -192,6 +200,12 @@
               <div class="card-body"><h3>สร้างแผนการสอนออนไลน์</h3><p>เครื่องมือสำหรับจัดทำแผนการจัดการเรียนรู้ออนไลน์อย่างสะดวกและเป็นระบบ</p></div>
               <a class="card-link" href="https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbyUZPqvNrehG-h_xLrX1_pNpSMbyxu-ZWPfb46n5l370yDaEzWINLqbGOAk7r38Xrv-/exec" target="_blank" rel="noopener noreferrer"><span>สร้างแผนการสอน</span><i data-lucide="arrow-up-right"></i></a>
             </article>
+
+            <article class="system-card" data-system-id="assessment-system" data-category="academic" data-search="วัดผล ประเมินผล คะแนน ผลการเรียน academic assessment grade">
+              <div class="card-head"><div class="icon-tile violet"><i data-lucide="clipboard-list"></i></div><span class="tag">วัดผล</span></div>
+              <div class="card-body"><h3>ระบบวัดผลและประเมินผลโรงเรียน</h3><p>ระบบสำหรับงานวัดผล ประเมินผล และจัดการข้อมูลผลการเรียนของโรงเรียน</p></div>
+              <a class="card-link" href="https://bankhum.krusarawut.com/login.php" target="_blank" rel="noopener noreferrer"><span>เข้าสู่ระบบวัดผล</span><i data-lucide="arrow-up-right"></i></a>
+            </article>
           </div>
         </section>
 
@@ -215,6 +229,30 @@
               <div class="card-head"><div class="icon-tile green"><i data-lucide="medal"></i></div><span class="tag">Good Student</span></div>
               <div class="card-body"><h3>ระบบสะสมความดีนักเรียน</h3><p>บันทึกกิจกรรมและคะแนนความดี เพื่อส่งเสริมพฤติกรรมเชิงบวกของนักเรียน</p></div>
               <a class="card-link" href="https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbzgHjgJodLd6Cd-3xsqg2_vKnZYNS-p7EVS-MYQWcsKqPolVuSfl862zKsJqllfLf1QFg/exec" target="_blank" rel="noopener noreferrer"><span>เปิดระบบสะสมความดี</span><i data-lucide="arrow-up-right"></i></a>
+            </article>
+          </div>
+        </section>
+
+        <section class="system-section" id="assessment" data-section="assessment">
+          <div class="section-heading">
+            <div>
+              <span class="section-kicker">QUALITY & EVALUATION</span>
+              <h2><i data-lucide="clipboard-check"></i> งานประเมินต่างๆ</h2>
+              <p>รวมเว็บไซต์และระบบสำหรับการประเมินคุณภาพของสถานศึกษา</p>
+            </div>
+          </div>
+
+          <div class="card-grid">
+            <article class="system-card" data-system-id="quality-school" data-category="assessment" data-search="โรงเรียนคุณภาพ คุณภาพสถานศึกษา quality school onesqa">
+              <div class="card-head"><div class="icon-tile green"><i data-lucide="school"></i></div><span class="tag">Quality School</span></div>
+              <div class="card-body"><h3>โรงเรียนคุณภาพ</h3><p>ข้อมูลและเอกสารที่เกี่ยวข้องกับการดำเนินงานโรงเรียนคุณภาพ</p></div>
+              <a class="card-link" href="https://sites.google.com/bankhum.ac.th/onesqa5/ONESQA" target="_blank" rel="noopener noreferrer"><span>เปิดเว็บไซต์โรงเรียนคุณภาพ</span><i data-lucide="arrow-up-right"></i></a>
+            </article>
+
+            <article class="system-card" data-system-id="onesqa5" data-category="assessment" data-search="สมศ รอบ 5 ประเมิน สมศ. ONESQA การประกันคุณภาพภายนอก">
+              <div class="card-head"><div class="icon-tile amber"><i data-lucide="badge-check"></i></div><span class="tag">สมศ. รอบ 5</span></div>
+              <div class="card-body"><h3>ประเมิน สมศ. รอบ 5</h3><p>ข้อมูล เอกสาร และหลักฐานประกอบการประเมินคุณภาพภายนอก สมศ. รอบ 5</p></div>
+              <a class="card-link" href="https://sites.google.com/bankhum.ac.th/oneqa2568/ONESQA" target="_blank" rel="noopener noreferrer"><span>เปิดเว็บไซต์ประเมิน สมศ.</span><i data-lucide="arrow-up-right"></i></a>
             </article>
           </div>
         </section>
@@ -290,6 +328,9 @@
           <a href="https://www.tiktok.com/@bankhumschool?is_from_webapp=1&sender_device=pc" target="_blank" rel="noopener noreferrer" aria-label="TikTok โรงเรียนบ้านคุ้ม">
             <img src="tiktok-logo.png" alt="TikTok logo"><span>TikTok</span>
           </a>
+          <a href="https://lin.ee/tZ3RJrx" target="_blank" rel="noopener noreferrer" aria-label="LINE Official โรงเรียนบ้านคุ้ม">
+            <img src="line-logo.png" alt="LINE Official logo"><span>LINE Official</span>
+          </a>
         </div>
       </div>
 
@@ -313,6 +354,7 @@
     <a href="#management" class="mobile-nav-item"><i data-lucide="building-2"></i><span>บริหาร</span></a>
     <a href="#academic" class="mobile-nav-item"><i data-lucide="book-open"></i><span>วิชาการ</span></a>
     <a href="#student" class="mobile-nav-item"><i data-lucide="graduation-cap"></i><span>นักเรียน</span></a>
+    <a href="#assessment" class="mobile-nav-item"><i data-lucide="clipboard-check"></i><span>ประเมิน</span></a>
     <a href="#dashboard" class="mobile-nav-item"><i data-lucide="chart-no-axes-combined"></i><span>สถิติ</span></a>
   </nav>
 
