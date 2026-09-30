@@ -251,7 +251,7 @@ window.addEventListener('appinstalled', () => showToast('ติดตั้ง B
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('./sw.js?v=16', { updateViaCache: 'none' });
+      const reg = await navigator.serviceWorker.register('./sw.js?v=17', { updateViaCache: 'none' });
       await reg.update();
     } catch (_) {}
   });
@@ -329,3 +329,74 @@ hotlineSend?.addEventListener('click', async () => {
 });
 
 refreshIcons();
+
+
+// ===== V17 Thai / English language switch =====
+const LANGUAGE_KEY = 'bankhumPortalLanguageV1';
+const languageToggle = document.getElementById('languageToggle');
+const thToEn = new Map([
+  ['หน้าหลัก','Home'],['บริหารงาน','Management'],['วิชาการ','Academic'],['นักเรียน','Students'],['งานประเมินต่างๆ','Evaluation'],['สถิติการใช้งาน','Usage stats'],
+  ['ติดตั้งแอป','Install app'],['ศูนย์รวมระบบออนไลน์','Online Systems Hub'],['โรงเรียนบ้านคุ้ม','Bankhum School'],
+  ['เข้าถึงระบบงานสำคัญของโรงเรียนได้จากหน้าเดียว ใช้งานง่าย สบายตา และรองรับทั้งคอมพิวเตอร์ แท็บเล็ต และโทรศัพท์มือถือ','Access the school’s key online systems from one place. Easy to use and optimized for computers, tablets, and phones.'],
+  ['ดูระบบทั้งหมด','View all systems'],['ระบบพร้อมใช้งาน','systems available'],['รองรับมือถือ','mobile ready'],['เข้าถึงระบบ','open systems'],
+  ['ทั้งหมด','All'],['ระบบหลัก','Main'],['บริหารงาน','Management'],['งานประเมิน','Evaluation'],
+  ['เว็บไซต์และระบบหลัก','Main websites and systems'],['ระบบที่ใช้งานบ่อยและควรเข้าถึงได้อย่างรวดเร็ว','Frequently used systems for quick access.'],
+  ['เว็บไซต์โรงเรียน','School website'],['เว็บไซต์หลักสำหรับข่าวสาร ประกาศ กิจกรรม และข้อมูลของโรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)','Official website for school news, announcements, activities, and information.'],['เข้าเว็บไซต์โรงเรียน','Open school website'],
+  ['ระบบแจ้งผลการเลื่อนขั้นเงินเดือน','Salary increment results'],['ตรวจสอบผลการเลื่อนขั้นเงินเดือนสำหรับครูและบุคลากรของโรงเรียน','Check salary increment results for teachers and school staff.'],['เปิดระบบ','Open system'],
+  ['ระบบบริหารงานโรงเรียน','School management systems'],['งานสารบรรณ สารสนเทศ และการบริหารบุคลากร','Document, information, finance, and personnel management.'],
+  ['ระบบงานสารบรรณ','Document management'],['จัดการหนังสือราชการ เอกสารรับ–ส่ง และงานสารบรรณของโรงเรียน','Manage official correspondence and school documents.'],['เข้าระบบสารบรรณ','Open documents'],
+  ['ระบบสารสนเทศโรงเรียน','School information system'],['บริหารและรวบรวมข้อมูลสารสนเทศเพื่อสนับสนุนการดำเนินงานของโรงเรียน','Manage school information and operational data.'],['เข้าระบบสารสนเทศ','Open information system'],
+  ['ระบบลงเวลาครู','Teacher attendance'],['ระบบลงเวลาเข้า–ออกสำหรับครูและบุคลากรของโรงเรียน','Clock-in/out system for teachers and staff.'],['เข้าสู่ระบบลงเวลา','Open attendance'],
+  ['ระบบบริหารการเงินและพัสดุโรงเรียน','Finance and procurement'],['ระบบสำหรับบริหารงานการเงิน งบประมาณ และงานพัสดุของโรงเรียน','Manage school finance, budget, and procurement.'],['เปิดระบบการเงินและพัสดุ','Open finance system'],
+  ['ระบบงานวิชาการ','Academic systems'],['สนับสนุนการจัดการเรียนรู้ การนิเทศ และการจัดทำแผนการสอน','Support instruction, supervision, lesson planning, and assessment.'],
+  ['ระบบนิเทศการจัดกิจกรรมการเรียนการสอน','Teaching supervision'],['บันทึกและติดตามการนิเทศการจัดกิจกรรมการเรียนรู้ภายในโรงเรียน','Record and track classroom supervision.'],['เปิดระบบนิเทศ','Open supervision'],
+  ['สร้างแผนการสอนออนไลน์','Online lesson planning'],['เครื่องมือสำหรับจัดทำแผนการจัดการเรียนรู้ออนไลน์อย่างสะดวกและเป็นระบบ','Create and manage online lesson plans.'],['สร้างแผนการสอน','Create lesson plan'],
+  ['ระบบวัดผลและประเมินผลโรงเรียน','Assessment system'],['ระบบสำหรับงานวัดผล ประเมินผล และจัดการข้อมูลผลการเรียนของโรงเรียน','Manage assessment and student achievement data.'],['เข้าสู่ระบบวัดผล','Open assessment'],
+  ['ระบบสำหรับนักเรียน','Student systems'],['ระบบส่งเสริมการออม คุณลักษณะที่ดี และการมีส่วนร่วมของนักเรียน','Student savings, positive behavior, email, and related services.'],
+  ['อีเมล์ นักเรียน/ครู','Student/Teacher Email'],['ค้นหาและเข้าใช้งานอีเมล์โรงเรียนสำหรับนักเรียนและครู โรงเรียนบ้านคุ้ม','Find and access school email accounts for students and teachers.'],['เปิดระบบอีเมล์','Open email'],
+  ['ระบบออมทรัพย์โรงเรียน','School savings'],['บันทึกและจัดการข้อมูลการออมทรัพย์ของนักเรียนอย่างเป็นระบบ','Record and manage student savings.'],['เปิดระบบออมทรัพย์','Open savings'],
+  ['ระบบสะสมความดีนักเรียน','Good behavior points'],['บันทึกกิจกรรมและคะแนนความดี เพื่อส่งเสริมพฤติกรรมเชิงบวกของนักเรียน','Record activities and positive behavior points.'],['เปิดระบบสะสมความดี','Open behavior system'],
+  ['ช่องทางเข้าระบบวัดผลและประเมินผล สำหรับนักเรียนและผู้เกี่ยวข้อง','Assessment access for students and related users.'],
+  ['รวมเว็บไซต์และระบบสำหรับการประเมินคุณภาพของสถานศึกษา','Quality assurance and school evaluation resources.'],
+  ['โรงเรียนคุณภาพ','Quality School'],['ข้อมูลและเอกสารที่เกี่ยวข้องกับการดำเนินงานโรงเรียนคุณภาพ','Quality School information and supporting documents.'],['เปิดเว็บไซต์โรงเรียนคุณภาพ','Open Quality School'],
+  ['ประเมิน สมศ. รอบ 5','ONESQA Round 5'],['ข้อมูล เอกสาร และหลักฐานประกอบการประเมินคุณภาพภายนอก สมศ. รอบ 5','Documents and evidence for ONESQA external quality assessment Round 5.'],['เปิดเว็บไซต์ประเมิน สมศ.','Open ONESQA'],
+  ['ไม่พบระบบที่ค้นหา','No systems found'],['ลองเปลี่ยนคำค้น หรือเลือกหมวดหมู่อื่น','Try another search term or category.'],['แสดงระบบทั้งหมด','Show all systems'],
+  ['การใช้งานแต่ละระบบ','Usage by system'],['กราฟเส้นแสดงจำนวนครั้งการใช้งานของแต่ละระบบ','Line chart showing total usage for each system.'],['สถิติรวมทุกผู้ใช้','All-user statistics'],
+  ['พัฒนาโดย','Developed by'],['นายดีลาภ ปราบสงบ','Mr. Deelarp Prabsangob'],['ครูชำนาญการพิเศษ · โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)','Senior Professional Level Teacher · Bankhum School'],
+  ['บริหาร','Manage'],['ประเมิน','Evaluate'],['สถิติ','Stats'],['สายด่วน','Hotline'],['สายด่วนโรงเรียนบ้านคุ้ม','Bankhum School Hotline'],['ช่องทางติดต่อออนไลน์','Online contact'],
+  ['สวัสดีครับ 👋 ต้องการติดต่อโรงเรียนเรื่องใด เลือกหัวข้อหรือพิมพ์ข้อความได้เลย','Hello 👋 Choose a topic or type your message to contact the school.'],
+  ['สอบถามข้อมูล','General inquiry'],['แจ้งปัญหาระบบ','System issue'],['เรื่องเร่งด่วน','Urgent'],['ข้อความถึงโรงเรียน','Message to school'],['ส่งต่อผ่าน Facebook Messenger','Send via Facebook Messenger'],
+  ['ระบบจะคัดลอกข้อความของคุณ แล้วเปิดช่องทาง Facebook ของโรงเรียนเพื่อส่งข้อความต่อ','Your message will be copied, then the school Facebook Messenger will open.']
+]);
+const enToTh = new Map([...thToEn.entries()].map(([th,en]) => [en,th]));
+
+function translateTextNodes(root, map) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(node => {
+    const raw = node.nodeValue;
+    const trimmed = raw.trim();
+    if (!trimmed || !map.has(trimmed)) return;
+    node.nodeValue = raw.replace(trimmed, map.get(trimmed));
+  });
+}
+
+function setLanguage(lang) {
+  const current = document.documentElement.lang === 'en' ? 'en' : 'th';
+  if (current !== lang) translateTextNodes(document.body, lang === 'en' ? thToEn : enToTh);
+  document.documentElement.lang = lang;
+  localStorage.setItem(LANGUAGE_KEY, lang);
+  document.querySelector('.lang-th')?.classList.toggle('active', lang === 'th');
+  document.querySelector('.lang-en')?.classList.toggle('active', lang === 'en');
+  if (searchInput) searchInput.placeholder = lang === 'en' ? 'Search salary, procurement, assessment, lesson plans…' : 'ค้นหา เช่น เงินเดือน, พัสดุ, วัดผล, สมศ., แผนการสอน...';
+  if (hotlineMessage) hotlineMessage.placeholder = lang === 'en' ? 'Type your message…' : 'พิมพ์รายละเอียดที่ต้องการติดต่อ...';
+  languageToggle?.setAttribute('aria-label', lang === 'en' ? 'Switch to Thai' : 'Switch to English');
+  refreshIcons();
+}
+
+languageToggle?.addEventListener('click', () => {
+  setLanguage(document.documentElement.lang === 'en' ? 'th' : 'en');
+});
+
+setLanguage(localStorage.getItem(LANGUAGE_KEY) === 'en' ? 'en' : 'th');

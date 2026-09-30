@@ -198,3 +198,15 @@ a{color:inherit}.app-shell{width:min(1200px,92%);margin:0 auto;padding:20px 0 70
 .chart-point-color{stroke:#fff;stroke-width:3;filter:drop-shadow(0 3px 5px rgba(0,0,0,.18))}
 .chart-point-label-color{font-size:12px;font-family:Kanit,sans-serif;font-weight:700;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}
 @media(max-width:700px){.analytics-section{padding:18px 12px;border-radius:22px}.analytics-heading h2{font-size:20px}.analytics-panel{padding:12px}.analytics-panel-head{gap:8px}.local-badge{font-size:8px}}
+
+
+/* ===== V17 language toggle + pink hotline ===== */
+.language-toggle{height:42px;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:0 12px;border:1px solid #cfe5d9;border-radius:13px;background:#fff;color:#6b7f75;font:600 11px "Kanit",sans-serif;cursor:pointer;box-shadow:0 5px 14px rgba(25,68,49,.05);transition:.2s}
+.language-toggle:hover{border-color:#9ed6bc;transform:translateY(-1px)}
+.language-toggle .lang-label{opacity:.5;transition:.2s}.language-toggle .lang-label.active{opacity:1;color:var(--green-dark)}
+.language-toggle .lang-divider{opacity:.35}
+.hotline-fab{background:linear-gradient(135deg,#ff4f9a,#e91e63)!important;box-shadow:0 14px 34px rgba(233,30,99,.30)!important}
+.hotline-fab:hover{box-shadow:0 18px 38px rgba(233,30,99,.38)!important}
+.hotline-dot{background:#ffd0e2!important;box-shadow:0 0 0 4px rgba(255,208,226,.18)!important}
+@media(max-width:700px){.language-toggle{height:40px;padding:0 9px;font-size:10px;border-radius:12px}.top-actions{display:flex;align-items:center}}
+@media(max-width:470px){.language-toggle{padding:0 8px}.language-toggle .lang-divider{display:none}.language-toggle .lang-label:not(.active){display:none}}
