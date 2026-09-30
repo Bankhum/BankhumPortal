@@ -6,14 +6,14 @@
   <meta name="theme-color" content="#0f7a5a">
   <meta name="description" content="ศูนย์รวมระบบและบริการออนไลน์ โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)">
   <title>Bankhum School Portal</title>
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=12">
-  <link rel="shortcut icon" href="favicon.ico?v=12">
-  <link rel="apple-touch-icon" href="icon-192.png?v=12">
-  <link rel="manifest" href="manifest.webmanifest?v=12">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=13">
+  <link rel="shortcut icon" href="favicon.ico?v=13">
+  <link rel="apple-touch-icon" href="icon-192.png?v=13">
+  <link rel="manifest" href="manifest.webmanifest?v=13">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=12">
+  <link rel="stylesheet" href="style.css?v=13">
 </head>
 <body>
   <div class="app-shell">
@@ -136,7 +136,7 @@
                 <h3>ระบบแจ้งผลการเลื่อนขั้นเงินเดือน</h3>
                 <p>ตรวจสอบผลการเลื่อนขั้นเงินเดือนสำหรับครูและบุคลากรของโรงเรียน</p>
               </div>
-              <a class="card-link" href="https://bankhum.github.io/bkmoney/" target="_blank" rel="noopener noreferrer">
+              <a class="card-link" href="https://bkmoney.pages.dev/" target="_blank" rel="noopener noreferrer">
                 <span>เปิดระบบ</span><i data-lucide="arrow-up-right"></i>
               </a>
             </article>
@@ -231,7 +231,7 @@
               <a class="card-link" href="https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbzgHjgJodLd6Cd-3xsqg2_vKnZYNS-p7EVS-MYQWcsKqPolVuSfl862zKsJqllfLf1QFg/exec" target="_blank" rel="noopener noreferrer"><span>เปิดระบบสะสมความดี</span><i data-lucide="arrow-up-right"></i></a>
             </article>
 
-            <article class="system-card" data-system-id="assessment-system-student" data-category="student" data-search="วัดผล ประเมินผล นักเรียน ผลการเรียน คะแนน เกรด school assessment student">
+            <article class="system-card" data-system-id="assessment-system" data-category="student" data-search="วัดผล ประเมินผล นักเรียน ผลการเรียน คะแนน เกรด school assessment student">
               <div class="card-head"><div class="icon-tile violet"><i data-lucide="clipboard-list"></i></div><span class="tag">วัดผล</span></div>
               <div class="card-body"><h3>ระบบวัดผลและประเมินผลโรงเรียน</h3><p>ช่องทางเข้าระบบวัดผลและประเมินผล สำหรับนักเรียนและผู้เกี่ยวข้อง</p></div>
               <a class="card-link" href="https://bankhum.krusarawut.com/login.php" target="_blank" rel="noopener noreferrer"><span>เข้าสู่ระบบวัดผล</span><i data-lucide="arrow-up-right"></i></a>
@@ -276,28 +276,9 @@
           <div>
             <span class="section-kicker">USAGE DASHBOARD</span>
             <h2><i data-lucide="chart-no-axes-combined"></i> สถิติการใช้งานระบบ</h2>
-            <p>สรุปจำนวนครั้งที่เปิดแต่ละระบบจากอุปกรณ์และเบราว์เซอร์นี้</p>
+            <p>สรุปจำนวนครั้งที่เปิดแต่ละระบบจากผู้ใช้งานทุกคน</p>
           </div>
           
-        </div>
-
-        <div class="analytics-metrics">
-          <div class="analytics-metric">
-            <div class="analytics-icon green"><i data-lucide="mouse-pointer-click"></i></div>
-            <div><span>การเปิดทั้งหมด</span><strong id="totalClicks">0</strong><small>ครั้ง</small></div>
-          </div>
-          <div class="analytics-metric">
-            <div class="analytics-icon blue"><i data-lucide="calendar-days"></i></div>
-            <div><span>การเปิดวันนี้</span><strong id="todayClicks">0</strong><small>ครั้ง</small></div>
-          </div>
-          <div class="analytics-metric">
-            <div class="analytics-icon amber"><i data-lucide="trophy"></i></div>
-            <div><span>ระบบที่ใช้บ่อยสุด</span><strong id="topSystem">-</strong><small id="topSystemCount">ยังไม่มีข้อมูล</small></div>
-          </div>
-          <div class="analytics-metric">
-            <div class="analytics-icon violet"><i data-lucide="clock"></i></div>
-            <div><span>ใช้งานล่าสุด</span><strong id="lastUsed">-</strong><small id="lastUsedTime">ยังไม่มีข้อมูล</small></div>
-          </div>
         </div>
 
         <div class="analytics-panel">
@@ -306,7 +287,7 @@
               <h3>การใช้งานแต่ละระบบ</h3>
               <p>กราฟเส้นแสดงจำนวนครั้งการใช้งานของแต่ละระบบ</p>
             </div>
-            <span class="local-badge"><i data-lucide="hard-drive"></i> Local Stats</span>
+            <span class="local-badge" id="statsSourceBadge"><i data-lucide="cloud"></i> สถิติรวม</span>
           </div>
           <div id="usageChart" class="usage-chart" aria-live="polite"></div>
         </div>
@@ -411,6 +392,7 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
-  <script src="app.js?v=12"></script>
+  <script src="config.js?v=13"></script>
+  <script src="app.js?v=13"></script>
 </body>
 </html>

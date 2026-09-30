@@ -170,3 +170,9 @@ a{color:inherit}.app-shell{width:min(1200px,92%);margin:0 auto;padding:20px 0 70
 .line-detail-value{font-size:12px;font-weight:700;color:var(--green-dark);white-space:nowrap}
 @media (max-width: 980px){.line-dashboard{grid-template-columns:1fr}.line-chart-wrap{padding:10px 2px 0}}
 @media (max-width: 640px){.line-detail-card{grid-template-columns:32px minmax(0,1fr);grid-template-areas:'rank copy' 'rank value'}.line-detail-rank{grid-area:rank;width:32px;height:32px}.line-detail-copy{grid-area:copy}.line-detail-value{grid-area:value;padding-left:0}.chart-point-label{font-size:10px}.chart-x-label{font-size:10px}}
+
+/* ===== V13 graph-only dashboard ===== */
+.analytics-section{padding-top:22px}
+.analytics-panel{margin-top:0}
+.line-dashboard.graph-only{display:block}
+.line-dashboard.graph-only .line-chart-wrap{width:100%}

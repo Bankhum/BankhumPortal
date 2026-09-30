@@ -63,164 +63,133 @@ resetFilter.addEventListener('click', () => {
   document.getElementById('systems').scrollIntoView({behavior:'smooth'});
 });
 
-// ===== Local usage statistics =====
-const STATS_KEY = 'bankhumPortalUsageV1';
+// ===== Global usage statistics =====
+const STATS_API_URL = (window.BANKHUM_CONFIG?.STATS_API_URL || '').trim();
+const LOCAL_FALLBACK_KEY = 'bankhumPortalUsageFallbackV13';
 const todayKey = () => new Date().toLocaleDateString('en-CA');
+let globalStatsCache = null;
 
 function getSystemMeta() {
-  return cards.map(card => ({
-    id: card.dataset.systemId,
-    name: card.querySelector('h3')?.textContent.trim() || 'ระบบ',
-    url: card.querySelector('.card-link')?.href || ''
-  })).filter(item => item.id);
-}
-
-function emptyStats() {
-  const systems = {};
-  getSystemMeta().forEach(item => systems[item.id] = {count:0, days:{}, lastUsed:null});
-  return {systems, lastSystemId:null, lastUsed:null};
-}
-
-function loadStats() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(STATS_KEY) || 'null');
-    const stats = parsed && parsed.systems ? parsed : emptyStats();
-    getSystemMeta().forEach(item => {
-      if (!stats.systems[item.id]) stats.systems[item.id] = {count:0, days:{}, lastUsed:null};
-      if (!stats.systems[item.id].days) stats.systems[item.id].days = {};
+  const map = new Map();
+  cards.forEach(card => {
+    const id = card.dataset.systemId;
+    if (!id || map.has(id)) return;
+    map.set(id, {
+      id,
+      name: card.querySelector('h3')?.textContent.trim() || 'ระบบ',
+      url: card.querySelector('.card-link')?.href || ''
     });
-    return stats;
-  } catch (_) {
-    return emptyStats();
-  }
+  });
+  return [...map.values()];
 }
 
-function saveStats(stats) {
-  localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+function loadLocalFallback() {
+  try { return JSON.parse(localStorage.getItem(LOCAL_FALLBACK_KEY) || '{}'); }
+  catch (_) { return {}; }
 }
+function saveLocalFallback(data) { localStorage.setItem(LOCAL_FALLBACK_KEY, JSON.stringify(data)); }
 
 function recordUsage(systemId) {
   if (!systemId) return;
-  const stats = loadStats();
-  const now = new Date();
-  const day = todayKey();
-  const entry = stats.systems[systemId] || {count:0, days:{}, lastUsed:null};
-  entry.count = (Number(entry.count) || 0) + 1;
-  entry.days[day] = (Number(entry.days[day]) || 0) + 1;
-  entry.lastUsed = now.toISOString();
-  stats.systems[systemId] = entry;
-  stats.lastSystemId = systemId;
-  stats.lastUsed = now.toISOString();
-  saveStats(stats);
-  renderDashboard();
-}
+  const meta = getSystemMeta().find(item => item.id === systemId);
+  if (!meta) return;
 
-function formatShortDate(iso) {
-  if (!iso) return 'ยังไม่มีข้อมูล';
-  try {
-    return new Intl.DateTimeFormat('th-TH', {
-      day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'
-    }).format(new Date(iso));
-  } catch (_) { return '-'; }
-}
-
-function renderDashboard() {
-  const stats = loadStats();
-  const meta = getSystemMeta();
-  const day = todayKey();
-  const rows = meta.map(item => {
-    const entry = stats.systems[item.id] || {count:0, days:{}, lastUsed:null};
-    return {...item, count:Number(entry.count)||0, today:Number(entry.days?.[day])||0, lastUsed:entry.lastUsed};
-  });
-  const total = rows.reduce((sum, row) => sum + row.count, 0);
-  const todayTotal = rows.reduce((sum, row) => sum + row.today, 0);
-  const sorted = [...rows].sort((a,b) => b.count - a.count || a.name.localeCompare(b.name,'th'));
-  const top = sorted[0] && sorted[0].count > 0 ? sorted[0] : null;
-  const last = stats.lastSystemId ? rows.find(r => r.id === stats.lastSystemId) : null;
-
-  document.getElementById('totalClicks').textContent = total.toLocaleString('th-TH');
-  document.getElementById('todayClicks').textContent = todayTotal.toLocaleString('th-TH');
-  document.getElementById('topSystem').textContent = top ? top.name : '-';
-  document.getElementById('topSystemCount').textContent = top ? `${top.count.toLocaleString('th-TH')} ครั้ง` : 'ยังไม่มีข้อมูล';
-  document.getElementById('lastUsed').textContent = last ? last.name : '-';
-  document.getElementById('lastUsedTime').textContent = stats.lastUsed ? formatShortDate(stats.lastUsed) : 'ยังไม่มีข้อมูล';
-
-  const chart = document.getElementById('usageChart');
-  if (!rows.length) {
-    chart.innerHTML = '<div class="usage-empty">ยังไม่มีข้อมูลระบบให้แสดง</div>';
-    return;
+  // Fire-and-forget request: Google Apps Script receives every click from every visitor.
+  if (STATS_API_URL) {
+    const qs = new URLSearchParams({
+      action: 'click',
+      id: meta.id,
+      name: meta.name,
+      url: meta.url,
+      t: String(Date.now())
+    });
+    const img = new Image();
+    img.referrerPolicy = 'no-referrer';
+    img.src = `${STATS_API_URL}?${qs.toString()}`;
+  } else {
+    // Local fallback until the central endpoint is configured.
+    const local = loadLocalFallback();
+    local[systemId] = (Number(local[systemId]) || 0) + 1;
+    saveLocalFallback(local);
+    globalStatsCache = null;
+    renderDashboard();
   }
+}
 
-  const activeRows = rows;
-  const maxValue = Math.max(1, ...activeRows.map(row => row.count));
+function jsonp(url, timeout = 8000) {
+  return new Promise((resolve, reject) => {
+    const callback = `bankhumStats_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const script = document.createElement('script');
+    const timer = setTimeout(() => cleanup(new Error('timeout')), timeout);
+    function cleanup(error, data) {
+      clearTimeout(timer);
+      try { delete window[callback]; } catch (_) {}
+      script.remove();
+      error ? reject(error) : resolve(data);
+    }
+    window[callback] = data => cleanup(null, data);
+    const sep = url.includes('?') ? '&' : '?';
+    script.src = `${url}${sep}action=stats&callback=${encodeURIComponent(callback)}&t=${Date.now()}`;
+    script.onerror = () => cleanup(new Error('load error'));
+    document.head.appendChild(script);
+  });
+}
+
+async function loadGlobalStats() {
+  if (!STATS_API_URL) return null;
+  try {
+    const data = await jsonp(STATS_API_URL);
+    if (data && data.ok) return data;
+  } catch (_) {}
+  return null;
+}
+
+function lineChartHtml(rows) {
+  const total = rows.reduce((sum, r) => sum + r.count, 0);
+  const maxValue = Math.max(1, ...rows.map(r => r.count));
   const roundedMax = maxValue <= 5 ? 5 : Math.ceil(maxValue / 5) * 5;
-  const width = 920;
-  const height = 340;
+  const width = 920, height = 340;
   const padding = { top: 18, right: 26, bottom: 98, left: 48 };
   const innerWidth = width - padding.left - padding.right;
   const innerHeight = height - padding.top - padding.bottom;
-  const pointGap = activeRows.length > 1 ? innerWidth / (activeRows.length - 1) : 0;
-  const x = i => activeRows.length === 1 ? padding.left + innerWidth / 2 : padding.left + i * pointGap;
+  const gap = rows.length > 1 ? innerWidth / (rows.length - 1) : 0;
+  const x = i => rows.length === 1 ? padding.left + innerWidth / 2 : padding.left + i * gap;
   const y = value => padding.top + innerHeight - ((value / roundedMax) * innerHeight);
-  const linePoints = activeRows.map((row, i) => `${x(i)},${y(row.count)}`).join(' ');
+  const linePoints = rows.map((row, i) => `${x(i)},${y(row.count)}`).join(' ');
   const areaPoints = `${padding.left},${padding.top + innerHeight} ${linePoints} ${padding.left + innerWidth},${padding.top + innerHeight}`;
   const ticks = 5;
-  const yLabels = Array.from({length: ticks + 1}, (_, i) => {
-    const value = Math.round((roundedMax / ticks) * (ticks - i));
-    const posY = y(value);
-    return `<g><line x1="${padding.left}" y1="${posY}" x2="${padding.left + innerWidth}" y2="${posY}" class="chart-grid"></line><text x="${padding.left - 10}" y="${posY + 4}" text-anchor="end" class="chart-y-label">${value}</text></g>`;
+  const yLabels = Array.from({length:ticks+1},(_,i)=>{
+    const value=Math.round((roundedMax/ticks)*(ticks-i)); const py=y(value);
+    return `<g><line x1="${padding.left}" y1="${py}" x2="${padding.left+innerWidth}" y2="${py}" class="chart-grid"></line><text x="${padding.left-10}" y="${py+4}" text-anchor="end" class="chart-y-label">${value}</text></g>`;
   }).join('');
-  const xLabels = activeRows.map((row, i) => {
-    const label = escapeHtml(row.name.length > 18 ? row.name.slice(0, 18) + '…' : row.name);
-    const px = x(i);
-    return `<g><text x="${px}" y="${padding.top + innerHeight + 22}" text-anchor="end" transform="rotate(-35 ${px} ${padding.top + innerHeight + 22})" class="chart-x-label">${label}</text></g>`;
-  }).join('');
-  const points = activeRows.map((row, i) => {
-    const cx = x(i);
-    const cy = y(row.count);
-    const label = escapeHtml(row.name);
-    return `<g>
-      <circle cx="${cx}" cy="${cy}" r="4.5" class="chart-point"></circle>
-      <circle cx="${cx}" cy="${cy}" r="13" class="chart-point-hit">
-        <title>${label}: ${row.count.toLocaleString('th-TH')} ครั้ง</title>
-      </circle>
-      <text x="${cx}" y="${cy - 12}" text-anchor="middle" class="chart-point-label">${row.count}</text>
-    </g>`;
-  }).join('');
-  const detailCards = sorted.map((row, index) => `
-    <div class="line-detail-card ${row.count ? '' : 'is-zero'}">
-      <div class="line-detail-rank">${index + 1}</div>
-      <div class="line-detail-copy">
-        <strong title="${escapeHtml(row.name)}">${escapeHtml(row.name)}</strong>
-        <small>วันนี้ ${row.today.toLocaleString('th-TH')} ครั้ง</small>
-      </div>
-      <div class="line-detail-value">${row.count.toLocaleString('th-TH')} ครั้ง</div>
-    </div>
-  `).join('');
+  const xLabels=rows.map((row,i)=>{const label=escapeHtml(row.name.length>18?row.name.slice(0,18)+'…':row.name);const px=x(i);return `<text x="${px}" y="${padding.top+innerHeight+22}" text-anchor="end" transform="rotate(-35 ${px} ${padding.top+innerHeight+22})" class="chart-x-label">${label}</text>`}).join('');
+  const points=rows.map((row,i)=>{const cx=x(i),cy=y(row.count);return `<g><circle cx="${cx}" cy="${cy}" r="4.5" class="chart-point"></circle><circle cx="${cx}" cy="${cy}" r="13" class="chart-point-hit"><title>${escapeHtml(row.name)}: ${row.count.toLocaleString('th-TH')} ครั้ง</title></circle><text x="${cx}" y="${cy-12}" text-anchor="middle" class="chart-point-label">${row.count}</text></g>`}).join('');
+  return `<div class="line-dashboard graph-only"><div class="line-chart-wrap"><svg viewBox="0 0 ${width} ${height}" class="line-chart" role="img" aria-label="กราฟเส้นสถิติการเปิดระบบ รวม ${total} ครั้ง"><defs><linearGradient id="usageAreaFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(15,122,90,0.30)"></stop><stop offset="100%" stop-color="rgba(15,122,90,0.03)"></stop></linearGradient><linearGradient id="usageStroke" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#0f7a5a"></stop><stop offset="100%" stop-color="#39a57f"></stop></linearGradient></defs>${yLabels}<polyline points="${areaPoints}" class="chart-area"></polyline><polyline points="${linePoints}" class="chart-line"></polyline>${points}${xLabels}</svg></div></div>`;
+}
 
-  chart.innerHTML = `
-    <div class="line-dashboard">
-      <div class="line-chart-wrap">
-        <svg viewBox="0 0 ${width} ${height}" class="line-chart" role="img" aria-label="กราฟเส้นแสดงจำนวนครั้งการใช้งานของแต่ละระบบ รวม ${total} ครั้ง">
-          <defs>
-            <linearGradient id="usageAreaFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="rgba(15,122,90,0.30)"></stop>
-              <stop offset="100%" stop-color="rgba(15,122,90,0.03)"></stop>
-            </linearGradient>
-            <linearGradient id="usageStroke" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stop-color="#0f7a5a"></stop>
-              <stop offset="100%" stop-color="#39a57f"></stop>
-            </linearGradient>
-          </defs>
-          ${yLabels}
-          <polyline points="${areaPoints}" class="chart-area"></polyline>
-          <polyline points="${linePoints}" class="chart-line"></polyline>
-          ${points}
-          ${xLabels}
-        </svg>
-      </div>
-      <div class="line-details">${detailCards}</div>
-    </div>`;
+async function renderDashboard() {
+  const chart = document.getElementById('usageChart');
+  const badge = document.getElementById('statsSourceBadge');
+  const meta = getSystemMeta();
+  chart.innerHTML = '<div class="usage-empty">กำลังโหลดสถิติ...</div>';
+
+  let rows;
+  if (STATS_API_URL) {
+    const data = await loadGlobalStats();
+    if (data) {
+      const counts = data.counts || {};
+      rows = meta.map(item => ({...item, count:Number(counts[item.id])||0}));
+      if (badge) badge.innerHTML = '<i data-lucide="cloud"></i> สถิติรวมทุกผู้ใช้';
+    }
+  }
+  if (!rows) {
+    const local = loadLocalFallback();
+    rows = meta.map(item => ({...item, count:Number(local[item.id])||0}));
+    if (badge) badge.innerHTML = '<i data-lucide="hard-drive"></i> ยังไม่เชื่อมฐานข้อมูลกลาง';
+  }
+
+  chart.innerHTML = lineChartHtml(rows);
+  refreshIcons();
 }
 
 function escapeHtml(value) {
@@ -281,7 +250,7 @@ window.addEventListener('appinstalled', () => showToast('ติดตั้ง B
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('./sw.js?v=12', { updateViaCache: 'none' });
+      const reg = await navigator.serviceWorker.register('./sw.js?v=13', { updateViaCache: 'none' });
       await reg.update();
     } catch (_) {}
   });
