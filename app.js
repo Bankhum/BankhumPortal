@@ -65,7 +65,7 @@ resetFilter.addEventListener('click', () => {
 
 // ===== Global usage statistics =====
 const STATS_API_URL = (window.BANKHUM_CONFIG?.STATS_API_URL || '').trim();
-const LOCAL_FALLBACK_KEY = 'bankhumPortalUsageFallbackV13';
+const LOCAL_FALLBACK_KEY = 'bankhumPortalUsageFallbackV15';
 const todayKey = () => new Date().toLocaleDateString('en-CA');
 let globalStatsCache = null;
 
@@ -163,8 +163,9 @@ function lineChartHtml(rows) {
     return `<g><line x1="${padding.left}" y1="${py}" x2="${padding.left+innerWidth}" y2="${py}" class="chart-grid"></line><text x="${padding.left-10}" y="${py+4}" text-anchor="end" class="chart-y-label">${value}</text></g>`;
   }).join('');
   const xLabels=rows.map((row,i)=>{const label=escapeHtml(row.name.length>18?row.name.slice(0,18)+'…':row.name);const px=x(i);return `<text x="${px}" y="${padding.top+innerHeight+22}" text-anchor="end" transform="rotate(-35 ${px} ${padding.top+innerHeight+22})" class="chart-x-label">${label}</text>`}).join('');
-  const points=rows.map((row,i)=>{const cx=x(i),cy=y(row.count);return `<g><circle cx="${cx}" cy="${cy}" r="4.5" class="chart-point"></circle><circle cx="${cx}" cy="${cy}" r="13" class="chart-point-hit"><title>${escapeHtml(row.name)}: ${row.count.toLocaleString('th-TH')} ครั้ง</title></circle><text x="${cx}" y="${cy-12}" text-anchor="middle" class="chart-point-label">${row.count}</text></g>`}).join('');
-  return `<div class="line-dashboard graph-only"><div class="line-chart-wrap"><svg viewBox="0 0 ${width} ${height}" class="line-chart" role="img" aria-label="กราฟเส้นสถิติการเปิดระบบ รวม ${total} ครั้ง"><defs><linearGradient id="usageAreaFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(15,122,90,0.30)"></stop><stop offset="100%" stop-color="rgba(15,122,90,0.03)"></stop></linearGradient><linearGradient id="usageStroke" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#0f7a5a"></stop><stop offset="100%" stop-color="#39a57f"></stop></linearGradient></defs>${yLabels}<polyline points="${areaPoints}" class="chart-area"></polyline><polyline points="${linePoints}" class="chart-line"></polyline>${points}${xLabels}</svg></div></div>`;
+  const brightColors=['#00b894','#0984e3','#6c5ce7','#e84393','#fdcb6e','#e17055','#00cec9','#a29bfe','#ff7675','#55efc4','#74b9ff','#fd79a8','#f6b93b','#20bf6b','#eb3b5a','#8854d0'];
+  const points=rows.map((row,i)=>{const cx=x(i),cy=y(row.count);const color=brightColors[i%brightColors.length];return `<g><circle cx="${cx}" cy="${cy}" r="6" fill="${color}" class="chart-point-color"></circle><circle cx="${cx}" cy="${cy}" r="14" class="chart-point-hit"><title>${escapeHtml(row.name)}: ${row.count.toLocaleString('th-TH')} ครั้ง</title></circle><text x="${cx}" y="${cy-14}" text-anchor="middle" fill="${color}" class="chart-point-label-color">${row.count}</text></g>`}).join('');
+  return `<div class="line-dashboard graph-only"><div class="line-chart-wrap"><svg viewBox="0 0 ${width} ${height}" class="line-chart" role="img" aria-label="กราฟเส้นสถิติการเปิดระบบ รวม ${total} ครั้ง"><defs><linearGradient id="usageAreaFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#74b9ff" stop-opacity="0.36"></stop><stop offset="48%" stop-color="#55efc4" stop-opacity="0.18"></stop><stop offset="100%" stop-color="#fd79a8" stop-opacity="0.04"></stop></linearGradient><linearGradient id="usageStroke" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#00b894"></stop><stop offset="24%" stop-color="#0984e3"></stop><stop offset="48%" stop-color="#6c5ce7"></stop><stop offset="72%" stop-color="#e84393"></stop><stop offset="100%" stop-color="#f39c12"></stop></linearGradient></defs>${yLabels}<polyline points="${areaPoints}" class="chart-area"></polyline><polyline points="${linePoints}" class="chart-line"></polyline>${points}${xLabels}</svg></div></div>`;
 }
 
 async function renderDashboard() {
@@ -250,7 +251,7 @@ window.addEventListener('appinstalled', () => showToast('ติดตั้ง B
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('./sw.js?v=14', { updateViaCache: 'none' });
+      const reg = await navigator.serviceWorker.register('./sw.js?v=16', { updateViaCache: 'none' });
       await reg.update();
     } catch (_) {}
   });
