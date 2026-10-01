@@ -254,7 +254,7 @@ window.addEventListener('appinstalled', () => showToast('ติดตั้ง B
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('./sw.js?v=19', { updateViaCache: 'none' });
+      const reg = await navigator.serviceWorker.register('./sw.js?v=20', { updateViaCache: 'none' });
       await reg.update();
     } catch (_) {}
   });
@@ -332,6 +332,32 @@ hotlineSend?.addEventListener('click', async () => {
 });
 
 refreshIcons();
+
+
+
+
+// ===== V20 light / dark theme switch =====
+const THEME_KEY = 'bankhumPortalThemeV1';
+const themeToggle = document.getElementById('themeToggle');
+const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+
+function applyTheme(theme) {
+  const next = theme === 'dark' ? 'dark' : 'light';
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem(THEME_KEY, next);
+  themeToggle?.setAttribute('aria-label', next === 'dark' ? 'เปลี่ยนเป็นธีมสว่าง' : 'เปลี่ยนเป็นธีมมืด');
+  themeToggle?.setAttribute('title', next === 'dark' ? 'ธีมสว่าง' : 'ธีมมืด');
+  if (themeColorMeta) themeColorMeta.setAttribute('content', next === 'dark' ? '#0b1712' : '#0f7a5a');
+  refreshIcons();
+}
+
+themeToggle?.addEventListener('click', () => {
+  applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+});
+
+const savedTheme = localStorage.getItem(THEME_KEY);
+const preferredDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+applyTheme(savedTheme || (preferredDark ? 'dark' : 'light'));
 
 
 // ===== V17 Thai / English language switch =====
