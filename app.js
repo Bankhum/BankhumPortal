@@ -251,7 +251,7 @@ window.addEventListener('appinstalled', () => showToast('ติดตั้ง B
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('./sw.js?v=17', { updateViaCache: 'none' });
+      const reg = await navigator.serviceWorker.register('./sw.js?v=18', { updateViaCache: 'none' });
       await reg.update();
     } catch (_) {}
   });
@@ -362,7 +362,7 @@ const thToEn = new Map([
   ['ประเมิน สมศ. รอบ 5','ONESQA Round 5'],['ข้อมูล เอกสาร และหลักฐานประกอบการประเมินคุณภาพภายนอก สมศ. รอบ 5','Documents and evidence for ONESQA external quality assessment Round 5.'],['เปิดเว็บไซต์ประเมิน สมศ.','Open ONESQA'],
   ['ไม่พบระบบที่ค้นหา','No systems found'],['ลองเปลี่ยนคำค้น หรือเลือกหมวดหมู่อื่น','Try another search term or category.'],['แสดงระบบทั้งหมด','Show all systems'],
   ['การใช้งานแต่ละระบบ','Usage by system'],['กราฟเส้นแสดงจำนวนครั้งการใช้งานของแต่ละระบบ','Line chart showing total usage for each system.'],['สถิติรวมทุกผู้ใช้','All-user statistics'],
-  ['พัฒนาโดย','Developed by'],['นายดีลาภ ปราบสงบ','Mr. Deelarp Prabsangob'],['ครูชำนาญการพิเศษ · โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)','Senior Professional Level Teacher · Bankhum School'],
+  ['พัฒนาโดย','Developed by'],['นายดีลาภ ปราบสงบ','Mr. Deelarp Prabsangob'],['ครูชำนาญการพิเศษ','Senior Professional Level Teacher'],['© 2026 โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา) · All rights reserved.','© 2026 Bankhum School · All rights reserved.'],
   ['บริหาร','Manage'],['ประเมิน','Evaluate'],['สถิติ','Stats'],['สายด่วน','Hotline'],['สายด่วนโรงเรียนบ้านคุ้ม','Bankhum School Hotline'],['ช่องทางติดต่อออนไลน์','Online contact'],
   ['สวัสดีครับ 👋 ต้องการติดต่อโรงเรียนเรื่องใด เลือกหัวข้อหรือพิมพ์ข้อความได้เลย','Hello 👋 Choose a topic or type your message to contact the school.'],
   ['สอบถามข้อมูล','General inquiry'],['แจ้งปัญหาระบบ','System issue'],['เรื่องเร่งด่วน','Urgent'],['ข้อความถึงโรงเรียน','Message to school'],['ส่งต่อผ่าน Facebook Messenger','Send via Facebook Messenger'],
