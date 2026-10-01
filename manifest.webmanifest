@@ -2,7 +2,7 @@
   "name": "Bankhum School Portal",
   "short_name": "Bankhum Portal",
   "description": "ศูนย์รวมระบบ บริการออนไลน์ และสถิติการใช้งาน โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)",
-  "start_url": "./?v=20",
+  "start_url": "./?v=21",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f5faf7",
@@ -10,13 +10,13 @@
   "lang": "th",
   "icons": [
     {
-      "src": "icon-192.png?v=20",
+      "src": "icon-192.png?v=21",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "icon-512.png?v=20",
+      "src": "icon-512.png?v=21",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
