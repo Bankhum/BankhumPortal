@@ -7,14 +7,14 @@
 <meta content="#0f7a5a" name="theme-color"/>
 <meta content="ศูนย์รวมระบบและบริการออนไลน์ โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)" name="description"/>
 <title>Bankhum School Portal</title>
-<link href="favicon-32.png?v=18" rel="icon" sizes="32x32" type="image/png"/>
-<link href="favicon.ico?v=18" rel="shortcut icon"/>
-<link href="icon-192.png?v=18" rel="apple-touch-icon"/>
-<link href="manifest.webmanifest?v=18" rel="manifest"/>
+<link href="favicon-32.png?v=19" rel="icon" sizes="32x32" type="image/png"/>
+<link href="favicon.ico?v=19" rel="shortcut icon"/>
+<link href="icon-192.png?v=19" rel="apple-touch-icon"/>
+<link href="manifest.webmanifest?v=19" rel="manifest"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="style.css?v=18" rel="stylesheet"/>
+<link href="style.css?v=19" rel="stylesheet"/>
 </head>
 <body>
 <div class="app-shell">
@@ -358,8 +358,22 @@
 </div>
 </aside>
 <div aria-live="polite" class="toast" id="toast" role="status"></div>
+<script>
+(function(){
+  try {
+    const KEY='bankhumPortalBuild';
+    const BUILD='19';
+    const old=localStorage.getItem(KEY);
+    if(old!==BUILD){
+      localStorage.setItem(KEY,BUILD);
+      if('caches' in window){caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('bankhum-portal-')&&k!=='bankhum-portal-v19').map(k=>caches.delete(k))));}
+      if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.update()));}
+    }
+  } catch(e){}
+})();
+</script>
 <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
-<script src="config.js?v=18"></script>
-<script src="app.js?v=18"></script>
+<script src="config.js?v=19"></script>
+<script src="app.js?v=19"></script>
 </body>
 </html>

@@ -64,7 +64,7 @@ resetFilter.addEventListener('click', () => {
 });
 
 // ===== Global usage statistics =====
-const STATS_API_URL = (window.BANKHUM_CONFIG?.STATS_API_URL || '').trim();
+const STATS_API_URL = (window.BANKHUM_CONFIG?.STATS_API_URL || 'https://script.google.com/macros/s/AKfycbw_Q22NTyv1on8uF77sLSHzHK9JuzLUCq4S-mUU1Nai6eKIr4tdrsp6xp-GFON92Ii0/exec').trim();
 const LOCAL_FALLBACK_KEY = 'bankhumPortalUsageFallbackV15';
 const todayKey = () => new Date().toLocaleDateString('en-CA');
 let globalStatsCache = null;
@@ -137,10 +137,13 @@ function jsonp(url, timeout = 8000) {
 
 async function loadGlobalStats() {
   if (!STATS_API_URL) return null;
-  try {
-    const data = await jsonp(STATS_API_URL);
-    if (data && data.ok) return data;
-  } catch (_) {}
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const data = await jsonp(STATS_API_URL, 12000);
+      if (data && data.ok) return data;
+    } catch (_) {}
+    if (attempt < 3) await new Promise(r => setTimeout(r, 700 * attempt));
+  }
   return null;
 }
 
@@ -186,7 +189,7 @@ async function renderDashboard() {
   if (!rows) {
     const local = loadLocalFallback();
     rows = meta.map(item => ({...item, count:Number(local[item.id])||0}));
-    if (badge) badge.innerHTML = '<i data-lucide="hard-drive"></i> ยังไม่เชื่อมฐานข้อมูลกลาง';
+    if (badge) badge.innerHTML = '<i data-lucide="cloud-off"></i> เชื่อมสถิติกลางไม่สำเร็จ';
   }
 
   chart.innerHTML = lineChartHtml(rows);
@@ -251,7 +254,7 @@ window.addEventListener('appinstalled', () => showToast('ติดตั้ง B
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('./sw.js?v=18', { updateViaCache: 'none' });
+      const reg = await navigator.serviceWorker.register('./sw.js?v=19', { updateViaCache: 'none' });
       await reg.update();
     } catch (_) {}
   });
