@@ -15,6 +15,24 @@
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="style.css?v=21" rel="stylesheet"/>
+
+<style>
+@media (max-width: 768px){
+  .mobile-nav{
+    grid-template-columns: repeat(7, minmax(0,1fr));
+  }
+  .mobile-nav-item{
+    min-width:0;
+    padding-left:4px;
+    padding-right:4px;
+  }
+  .mobile-nav-item span{
+    font-size:10px;
+    white-space:nowrap;
+  }
+}
+</style>
+
 </head>
 <body>
 <div class="app-shell">
@@ -142,7 +160,7 @@
 </div>
 </div>
 <div class="card-grid">
-<article class="system-card" data-category="management" data-search="สารบรรณ หนังสือราชการ เอกสาร ธุรการ" data-system-id="document">
+<article class="system-card" id="document" data-category="management" data-search="สารบรรณ หนังสือราชการ เอกสาร ธุรการ" data-system-id="document">
 <div class="card-head"><div class="icon-tile amber"><i data-lucide="mail-open"></i></div><span class="tag">ธุรการ</span></div>
 <div class="card-body"><h3>ระบบงานสารบรรณ</h3><p>จัดการหนังสือราชการ เอกสารรับ–ส่ง และงานสารบรรณของโรงเรียน</p></div>
 <a class="card-link" href="https://bankhum.com/login.php" rel="noopener noreferrer" target="_blank"><span>เข้าระบบสารบรรณ</span><i data-lucide="arrow-up-right"></i></a>
@@ -316,6 +334,7 @@
 <nav aria-label="เมนูมือถือ" class="mobile-nav">
 <a class="mobile-nav-item active" href="#home"><i data-lucide="home"></i><span>หน้าหลัก</span></a>
 <a class="mobile-nav-item" href="#management"><i data-lucide="building-2"></i><span>บริหาร</span></a>
+<a class="mobile-nav-item" href="#document"><i data-lucide="file-text"></i><span>สารบรรณ</span></a>
 <a class="mobile-nav-item" href="#academic"><i data-lucide="book-open"></i><span>วิชาการ</span></a>
 <a class="mobile-nav-item" href="#student"><i data-lucide="graduation-cap"></i><span>นักเรียน</span></a>
 <a class="mobile-nav-item" href="#assessment"><i data-lucide="clipboard-check"></i><span>ประเมิน</span></a>
