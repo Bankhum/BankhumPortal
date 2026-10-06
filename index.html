@@ -15,123 +15,48 @@
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="style.css?v=21" rel="stylesheet"/>
-<style>
-@media (max-width: 768px){
-  .mobile-nav{
-    display:flex;
-    overflow-x:auto;
-    overflow-y:hidden;
-    gap:4px;
-    padding-left:8px;
-    padding-right:8px;
-    scroll-snap-type:x proximity;
-    scrollbar-width:none;
-    -webkit-overflow-scrolling:touch;
-  }
-  .mobile-nav::-webkit-scrollbar{
-    display:none;
-  }
-  .mobile-nav-item{
-    flex:0 0 68px;
-    min-width:68px;
-    padding-left:4px;
-    padding-right:4px;
-    scroll-snap-align:center;
-  }
-  .mobile-nav-item span{
-    font-size:10px;
-    white-space:nowrap;
-  }
+<style id="portal-app-ui">
+/* System launchers: shared desktop and mobile appearance. */
+.system-card{border-radius:24px;min-width:0}
+.system-card .icon-tile{width:60px;height:60px;flex:0 0 60px;border-radius:19px;box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 6px 14px rgba(25,68,49,.08)}
+.system-card .icon-tile svg{width:30px;height:30px}
+.system-card .card-head{flex-wrap:wrap}
+.system-card .card-link{height:auto;min-height:48px;padding:12px 14px;border-radius:16px;justify-content:flex-start;font-weight:600;line-height:1.5;touch-action:manipulation}
+.system-card .card-link .app-btn-icon{width:22px;height:22px;flex:0 0 22px}
+.system-card .card-link span{min-width:0;overflow-wrap:anywhere}
+.system-card .card-link>svg:last-child{margin-left:auto;flex:0 0 16px}
+.system-card .card-link:active{transform:scale(.98)}
+.card-link:focus-visible,.mobile-nav-item:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+.system-card[hidden]{display:none!important}
+#document,#savings{scroll-margin-top:110px}
+@media(max-width:768px){
+  .card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .system-card{min-height:210px;padding:16px 12px;border-radius:22px}
+  .featured-card{grid-column:span 1}
+  .system-card .icon-tile{width:54px;height:54px;flex-basis:54px;border-radius:17px}
+  .system-card .icon-tile svg{width:28px;height:28px}
+  .system-card .tag{font-size:10px;border-radius:999px;padding:5px 8px;max-width:100%}
+  .system-card .card-body{margin:12px 0}
+  .system-card .card-body h3{font-size:16px;line-height:1.45;margin-bottom:7px}
+  .system-card .card-body p{font-size:12px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .system-card .card-link{margin-top:auto;min-height:48px;padding:10px;gap:6px;font-size:12px}
+  .system-card .card-link .app-btn-icon{width:20px;height:20px;flex-basis:20px}
+  .app-shell{padding-bottom:calc(100px + var(--safe-bottom))}
+  .mobile-nav{position:fixed;left:10px;right:10px;bottom:calc(10px + var(--safe-bottom));z-index:80;display:flex;overflow-x:auto;overflow-y:hidden;gap:4px;padding:7px 8px;border:1px solid var(--border);border-radius:20px;background:rgba(255,255,255,.96);box-shadow:0 12px 32px rgba(24,60,43,.15);backdrop-filter:blur(18px);scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .mobile-nav::-webkit-scrollbar{display:none}
+  .mobile-nav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:0 0 64px;min-width:64px;min-height:52px;gap:4px;padding:4px;border-radius:14px;text-decoration:none;color:var(--muted);scroll-snap-align:center;touch-action:manipulation}
+  .mobile-nav-item svg{width:21px;height:21px;flex-shrink:0}
+  .mobile-nav-item span{font-size:10px;line-height:1.5;white-space:nowrap}
+  .mobile-nav-item.active{color:var(--green);background:var(--green-soft)}
+  .mobile-nav-item[href="#savings"]{color:var(--green-dark);background:var(--green-soft)}
 }
-</style>
-<style id="mobile-app-ui-v2">
-@media (max-width:768px){
-  .card-grid{
-    display:grid!important;
-    grid-template-columns:repeat(2,minmax(0,1fr))!important;
-    gap:12px!important;
-  }
-  .system-card{
-    min-height:210px!important;
-    padding:16px 14px!important;
-    border-radius:24px!important;
-    display:flex!important;
-    flex-direction:column!important;
-    justify-content:space-between!important;
-  }
-  .system-card .icon-tile{
-    width:54px!important;
-    height:54px!important;
-    border-radius:17px!important;
-    display:grid!important;
-    place-items:center!important;
-  }
-  .system-card .icon-tile svg{
-    width:28px!important;
-    height:28px!important;
-  }
-  .system-card .tag{
-    font-size:10px!important;
-    border-radius:999px!important;
-    padding:6px 9px!important;
-  }
-  .system-card .card-body{
-    margin-top:12px!important;
-  }
-  .system-card .card-body h3{
-    font-size:16px!important;
-    line-height:1.35!important;
-    margin-bottom:7px!important;
-  }
-  .system-card .card-body p{
-    font-size:12px!important;
-    line-height:1.5!important;
-    display:-webkit-box!important;
-    -webkit-line-clamp:3!important;
-    -webkit-box-orient:vertical!important;
-    overflow:hidden!important;
-  }
-  .system-card .card-link{
-    margin-top:14px!important;
-    min-height:46px!important;
-    border-radius:16px!important;
-    padding:10px 12px!important;
-    display:flex!important;
-    align-items:center!important;
-    justify-content:flex-start!important;
-    gap:8px!important;
-    font-size:12px!important;
-    font-weight:600!important;
-  }
-  .system-card .card-link .app-btn-icon{
-    width:20px!important;
-    height:20px!important;
-    flex:0 0 20px!important;
-  }
-  .system-card .card-link>svg:last-child{
-    margin-left:auto!important;
-  }
-  .mobile-nav{
-    display:flex!important;
-    overflow-x:auto!important;
-    overflow-y:hidden!important;
-    gap:4px!important;
-    padding-left:8px!important;
-    padding-right:8px!important;
-    scrollbar-width:none!important;
-    -webkit-overflow-scrolling:touch!important;
-  }
-  .mobile-nav::-webkit-scrollbar{
-    display:none!important;
-  }
-  .mobile-nav-item{
-    flex:0 0 68px!important;
-    min-width:68px!important;
-  }
-  .mobile-nav-item span{
-    font-size:10px!important;
-    white-space:nowrap!important;
-  }
+@media(max-width:360px){
+  .system-card .card-link{display:grid;grid-template-columns:1fr auto;gap:5px}
+  .system-card .card-link span{grid-column:1 / -1;grid-row:2}
+  .system-card .card-link>svg:last-child{grid-column:2;grid-row:1}
+}
+@media(prefers-reduced-motion:reduce){
+  .system-card,.system-card .card-link{transition:none}
 }
 </style></head>
 <body>
@@ -260,9 +185,9 @@
 </div>
 <div class="card-grid">
 <article class="system-card" data-category="management" data-search="สารบรรณ หนังสือราชการ เอกสาร ธุรการ" data-system-id="document" id="document">
-<div class="card-head"><div class="icon-tile amber"><i data-lucide="mail-open"></i></div><span class="tag">ธุรการ</span></div>
+<div class="card-head"><div class="icon-tile amber"><i data-lucide="file-text"></i></div><span class="tag">ธุรการ</span></div>
 <div class="card-body"><h3>ระบบงานสารบรรณ</h3><p>จัดการหนังสือราชการ เอกสารรับ–ส่ง และงานสารบรรณของโรงเรียน</p></div>
-<a class="card-link" href="https://saraban.bankhum.ac.th/" rel="noopener noreferrer" target="_blank"><i class="app-btn-icon" data-lucide="file-text"></i><span>เปิดระบบสารบรรณ</span><i data-lucide="arrow-up-right"></i></a>
+<a class="card-link" href="https://sarabun.bankhum.ac.th/" rel="noopener noreferrer" target="_blank"><i class="app-btn-icon" data-lucide="file-text"></i><span>เปิดระบบสารบรรณ</span><i data-lucide="arrow-up-right"></i></a>
 </article>
 <article class="system-card" data-category="management" data-search="สารสนเทศโรงเรียน information ข้อมูล โรงเรียน" data-system-id="information">
 <div class="card-head"><div class="icon-tile violet"><i data-lucide="chart-no-axes-combined"></i></div><span class="tag">สารสนเทศ</span></div>
@@ -434,9 +359,9 @@
 <a class="mobile-nav-item active" href="#home"><i data-lucide="home"></i><span>หน้าหลัก</span></a>
 <a class="mobile-nav-item" href="#management"><i data-lucide="building-2"></i><span>บริหาร</span></a>
 <a class="mobile-nav-item" href="#document"><i data-lucide="file-text"></i><span>สารบรรณ</span></a>
+<a class="mobile-nav-item" href="#savings"><i data-lucide="piggy-bank"></i><span>ออมทรัพย์</span></a>
 <a class="mobile-nav-item" href="#academic"><i data-lucide="book-open"></i><span>วิชาการ</span></a>
 <a class="mobile-nav-item" href="#student"><i data-lucide="graduation-cap"></i><span>นักเรียน</span></a>
-<a class="mobile-nav-item" href="#savings"><i data-lucide="piggy-bank"></i><span>ออมทรัพย์</span></a>
 <a class="mobile-nav-item" href="#assessment"><i data-lucide="clipboard-check"></i><span>ประเมิน</span></a>
 <a class="mobile-nav-item" href="#dashboard"><i data-lucide="chart-no-axes-combined"></i><span>สถิติ</span></a>
 </nav>
@@ -495,5 +420,17 @@
 <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
 <script src="config.js?v=21"></script>
 <script src="app.js?v=21"></script>
+<script>
+document.querySelector('.mobile-nav-item[href="#savings"]').addEventListener('click', function(event){
+  const savingsCard = document.getElementById('savings');
+  if(savingsCard.hidden || savingsCard.closest('.system-section').hidden){
+    event.preventDefault();
+    document.getElementById('clearSearch').click();
+    document.querySelector('.chip[data-filter="all"]').click();
+    savingsCard.scrollIntoView({behavior:'smooth',block:'start'});
+    history.replaceState(null,'','#savings');
+  }
+});
+</script>
 </body>
 </html>
