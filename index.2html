@@ -188,7 +188,7 @@
               </a>
             </article>
 
-            <article class="system-card" data-system-id="salary" data-category="main" data-search="เงินเดือน เลื่อนขั้นเงินเดือน บุคลากร salary bkmoney">
+            <article class="system-card" data-system-id="salary" data-category="main" data-search="เงินเดือน เลื่อนขั้นเงินเดือน บุคลากร salary bkmoney money">
               <div class="card-head">
                 <div class="icon-tile green"><i data-lucide="badge-dollar-sign"></i></div>
                 <span class="tag">บุคลากร</span>
@@ -197,7 +197,7 @@
                 <h3>ระบบแจ้งผลการเลื่อนขั้นเงินเดือน</h3>
                 <p>ตรวจสอบผลการเลื่อนขั้นเงินเดือนสำหรับครูและบุคลากรของโรงเรียน</p>
               </div>
-              <a class="card-link" href="https://bankhum.github.io/bkmoney/" target="_blank" rel="noopener noreferrer">
+              <a class="card-link" href="https://money.bankhum.ac.th/" target="_blank" rel="noopener noreferrer">
                 <span>เปิดระบบ</span><i data-lucide="arrow-up-right"></i>
               </a>
             </article>
