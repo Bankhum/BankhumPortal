@@ -170,139 +170,160 @@ modulesRoot?.addEventListener('click', event => {
   }
 });
 
-// ===== Global usage statistics =====
-const STATS_API_URL = (window.BANKHUM_CONFIG?.STATS_API_URL || 'https://script.google.com/macros/s/AKfycbw_Q22NTyv1on8uF77sLSHzHK9JuzLUCq4S-mUU1Nai6eKIr4tdrsp6xp-GFON92Ii0/exec').trim();
-const LOCAL_FALLBACK_KEY = 'bankhumPortalUsageFallbackV15';
-const todayKey = () => new Date().toLocaleDateString('en-CA');
-let globalStatsCache = null;
+// ===== V23 usage ranking (Cloudflare Pages Functions + D1: /api/stats, /api/click) =====
+const STATS_ENDPOINT = '/api/stats';
+const CLICK_ENDPOINT = '/api/click';
+const STATS_CACHE_KEY = 'bankhumPortalStatsV23';
+const TOP_N = 5;
+let statsDays = 0;
+let statsExpanded = false;
+let lastStats = null;
+const recentClicks = {};
 
-function getSystemMeta() {
-  const map = new Map();
-  MENU.forEach(mod => {
-    if (mod.main?.statId && mod.main.url) {
-      const first = mod.items.find(i => i.statId === mod.main.statId);
-      if (!map.has(mod.main.statId)) map.set(mod.main.statId, { id: mod.main.statId, name: first?.statName || first?.th || mod.th, url: mod.main.url });
-    }
-    mod.items.forEach(item => {
-      if (!item.url || !item.statId || map.has(item.statId)) return;
-      map.set(item.statId, { id: item.statId, name: item.statName || item.th, url: item.url });
-    });
-  });
-  return [...map.values()];
-}
-
-function loadLocalFallback() {
-  try { return JSON.parse(localStorage.getItem(LOCAL_FALLBACK_KEY) || '{}'); }
-  catch (_) { return {}; }
-}
-function saveLocalFallback(data) { localStorage.setItem(LOCAL_FALLBACK_KEY, JSON.stringify(data)); }
-
-function recordUsage(systemId) {
-  if (!systemId) return;
-  const meta = getSystemMeta().find(item => item.id === systemId);
-  if (!meta) return;
-
-  // Fire-and-forget request: Google Apps Script receives every click from every visitor.
-  if (STATS_API_URL) {
-    const qs = new URLSearchParams({
-      action: 'click',
-      id: meta.id,
-      name: meta.name,
-      url: meta.url,
-      t: String(Date.now())
-    });
-    const img = new Image();
-    img.referrerPolicy = 'no-referrer';
-    img.src = `${STATS_API_URL}?${qs.toString()}`;
-  } else {
-    // Local fallback until the central endpoint is configured.
-    const local = loadLocalFallback();
-    local[systemId] = (Number(local[systemId]) || 0) + 1;
-    saveLocalFallback(local);
-    globalStatsCache = null;
-    renderDashboard();
-  }
-}
-
-function jsonp(url, timeout = 8000) {
-  return new Promise((resolve, reject) => {
-    const callback = `bankhumStats_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    const script = document.createElement('script');
-    const timer = setTimeout(() => cleanup(new Error('timeout')), timeout);
-    function cleanup(error, data) {
-      clearTimeout(timer);
-      try { delete window[callback]; } catch (_) {}
-      script.remove();
-      error ? reject(error) : resolve(data);
-    }
-    window[callback] = data => cleanup(null, data);
-    const sep = url.includes('?') ? '&' : '?';
-    script.src = `${url}${sep}action=stats&callback=${encodeURIComponent(callback)}&t=${Date.now()}`;
-    script.onerror = () => cleanup(new Error('load error'));
-    document.head.appendChild(script);
-  });
-}
-
-async function loadGlobalStats() {
-  if (!STATS_API_URL) return null;
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    try {
-      const data = await jsonp(STATS_API_URL, 12000);
-      if (data && data.ok) return data;
-    } catch (_) {}
-    if (attempt < 3) await new Promise(r => setTimeout(r, 700 * attempt));
+function menuItemByStatId(id) {
+  for (const mod of MENU) {
+    const item = mod.items.find(i => i.statId === id);
+    if (item) return { item, mod };
   }
   return null;
 }
 
-function lineChartHtml(rows) {
-  const total = rows.reduce((sum, r) => sum + r.count, 0);
-  const maxValue = Math.max(1, ...rows.map(r => r.count));
-  const roundedMax = maxValue <= 5 ? 5 : Math.ceil(maxValue / 5) * 5;
-  const width = 920, height = 340;
-  const padding = { top: 18, right: 26, bottom: 98, left: 48 };
-  const innerWidth = width - padding.left - padding.right;
-  const innerHeight = height - padding.top - padding.bottom;
-  const gap = rows.length > 1 ? innerWidth / (rows.length - 1) : 0;
-  const x = i => rows.length === 1 ? padding.left + innerWidth / 2 : padding.left + i * gap;
-  const y = value => padding.top + innerHeight - ((value / roundedMax) * innerHeight);
-  const linePoints = rows.map((row, i) => `${x(i)},${y(row.count)}`).join(' ');
-  const areaPoints = `${padding.left},${padding.top + innerHeight} ${linePoints} ${padding.left + innerWidth},${padding.top + innerHeight}`;
-  const ticks = 5;
-  const yLabels = Array.from({length:ticks+1},(_,i)=>{
-    const value=Math.round((roundedMax/ticks)*(ticks-i)); const py=y(value);
-    return `<g><line x1="${padding.left}" y1="${py}" x2="${padding.left+innerWidth}" y2="${py}" class="chart-grid"></line><text x="${padding.left-10}" y="${py+4}" text-anchor="end" class="chart-y-label">${value}</text></g>`;
+function recordUsage(systemId) {
+  if (!systemId) return;
+  const now = Date.now();
+  if (recentClicks[systemId] && now - recentClicks[systemId] < 3000) return; // ignore rapid double taps
+  recentClicks[systemId] = now;
+  const body = JSON.stringify({ id: systemId, url: menuItemByStatId(systemId)?.item.url || '' });
+  // sendBeacon still delivers when the page is navigating away to the opened system
+  const sent = navigator.sendBeacon && navigator.sendBeacon(CLICK_ENDPOINT, new Blob([body], { type: 'text/plain' }));
+  if (!sent) fetch(CLICK_ENDPOINT, { method: 'POST', body, keepalive: true }).catch(() => {});
+}
+
+function readStatsCache(days) {
+  try { return JSON.parse(localStorage.getItem(`${STATS_CACHE_KEY}_${days}`)); } catch (_) { return null; }
+}
+function writeStatsCache(days, data) {
+  try { localStorage.setItem(`${STATS_CACHE_KEY}_${days}`, JSON.stringify(data)); } catch (_) {}
+}
+
+async function fetchStats(days) {
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    try {
+      const res = await fetch(`${STATS_ENDPOINT}?days=${days}`, { signal: ctrl.signal, cache: 'no-store' });
+      const data = await res.json();
+      if (res.ok && data.ok) { writeStatsCache(days, data); return { data, live: true }; }
+    } catch (_) {
+    } finally { clearTimeout(timer); }
+    if (attempt < 3) await new Promise(r => setTimeout(r, 600 * attempt));
+  }
+  const cached = readStatsCache(days);
+  return cached ? { data: cached, live: false } : null;
+}
+
+function formatThaiDate(ts, lang) {
+  if (!ts) return '';
+  const d = new Date(ts.replace(' ', 'T') + '+07:00');
+  return d.toLocaleString(lang === 'en' ? 'en-GB' : 'th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
+}
+
+function rankingHtml(data, lang) {
+  const items = (data.items || []).filter(i => i.count > 0);
+  if (!items.length) {
+    return `<div class="usage-empty">${lang === 'en' ? 'No usage recorded in this period yet.' : 'ยังไม่มีการใช้งานในช่วงเวลานี้'}</div>`;
+  }
+  const max = items[0].count;
+  const total = data.total || items.reduce((s, i) => s + i.count, 0);
+  const shown = statsExpanded ? items : items.slice(0, TOP_N);
+  const rows = shown.map((it, idx) => {
+    const rank = idx + 1;
+    const found = menuItemByStatId(it.id);
+    const color = found ? found.mod.color : 'green';
+    const icon = found ? found.item.icon : 'circle';
+    const name = lang === 'en' ? (it.name_en || it.name_th) : it.name_th;
+    const pct = total ? Math.round((it.count / total) * 100) : 0;
+    const width = Math.max(2, (it.count / max) * 100);
+    const last = it.last_used ? `${lang === 'en' ? 'Last used' : 'ใช้ล่าสุด'} ${formatThaiDate(it.last_used, lang)}` : '';
+    return `<li class="rank-row${rank <= 3 ? ' is-top' : ''}" title="${escapeAttr(`${name}: ${it.count.toLocaleString()} ${lang === 'en' ? 'opens' : 'ครั้ง'} (${pct}%)`)}">
+      <span class="rank-no rank-${rank}">${rank}</span>
+      <span class="rank-icon c-${color}"><i data-lucide="${escapeAttr(icon)}"></i></span>
+      <div class="rank-main">
+        <div class="rank-line">
+          <strong class="rank-name">${escapeAttr(name)}</strong>
+          <span class="rank-value"><b>${it.count.toLocaleString()}</b> ${lang === 'en' ? 'opens' : 'ครั้ง'}<small>${pct}%</small></span>
+        </div>
+        <div class="rank-track" aria-hidden="true"><span class="rank-fill" style="width:${width}%"></span></div>
+        ${last ? `<small class="rank-last">${escapeAttr(last)}</small>` : ''}
+      </div>
+    </li>`;
   }).join('');
-  const xLabels=rows.map((row,i)=>{const label=escapeHtml(row.name.length>18?row.name.slice(0,18)+'…':row.name);const px=x(i);return `<text x="${px}" y="${padding.top+innerHeight+22}" text-anchor="end" transform="rotate(-35 ${px} ${padding.top+innerHeight+22})" class="chart-x-label">${label}</text>`}).join('');
-  const brightColors=['#00b894','#0984e3','#6c5ce7','#e84393','#fdcb6e','#e17055','#00cec9','#a29bfe','#ff7675','#55efc4','#74b9ff','#fd79a8','#f6b93b','#20bf6b','#eb3b5a','#8854d0'];
-  const points=rows.map((row,i)=>{const cx=x(i),cy=y(row.count);const color=brightColors[i%brightColors.length];return `<g><circle cx="${cx}" cy="${cy}" r="6" fill="${color}" class="chart-point-color"></circle><circle cx="${cx}" cy="${cy}" r="14" class="chart-point-hit"><title>${escapeHtml(row.name)}: ${row.count.toLocaleString('th-TH')} ครั้ง</title></circle><text x="${cx}" y="${cy-14}" text-anchor="middle" fill="${color}" class="chart-point-label-color">${row.count}</text></g>`}).join('');
-  return `<div class="line-dashboard graph-only"><div class="line-chart-wrap"><svg viewBox="0 0 ${width} ${height}" class="line-chart" role="img" aria-label="กราฟเส้นสถิติการเปิดระบบ รวม ${total} ครั้ง"><defs><linearGradient id="usageAreaFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#74b9ff" stop-opacity="0.36"></stop><stop offset="48%" stop-color="#55efc4" stop-opacity="0.18"></stop><stop offset="100%" stop-color="#fd79a8" stop-opacity="0.04"></stop></linearGradient><linearGradient id="usageStroke" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#00b894"></stop><stop offset="24%" stop-color="#0984e3"></stop><stop offset="48%" stop-color="#6c5ce7"></stop><stop offset="72%" stop-color="#e84393"></stop><stop offset="100%" stop-color="#f39c12"></stop></linearGradient></defs>${yLabels}<polyline points="${areaPoints}" class="chart-area"></polyline><polyline points="${linePoints}" class="chart-line"></polyline>${points}${xLabels}</svg></div></div>`;
+  const more = items.length > TOP_N
+    ? `<button class="rank-toggle" id="rankToggle" type="button" aria-expanded="${statsExpanded}">
+        <span>${statsExpanded
+          ? (lang === 'en' ? 'Show top 5 only' : 'แสดงเฉพาะ 5 อันดับแรก')
+          : (lang === 'en' ? `Show all ${items.length} systems` : `แสดงทั้งหมด ${items.length} ระบบ`)}</span>
+        <i data-lucide="${statsExpanded ? 'chevron-up' : 'chevron-down'}"></i>
+      </button>`
+    : '';
+  return `<div class="rank-summary">
+      <div><span>${lang === 'en' ? 'Total opens' : 'เปิดใช้งานรวม'}</span><strong>${total.toLocaleString()}</strong></div>
+      <div><span>${lang === 'en' ? 'Systems used' : 'ระบบที่มีการใช้งาน'}</span><strong>${items.length}</strong></div>
+      <div><span>${lang === 'en' ? 'Most used' : 'ใช้มากที่สุด'}</span><strong class="rank-summary-top">${escapeAttr(lang === 'en' ? (items[0].name_en || items[0].name_th) : items[0].name_th)}</strong></div>
+    </div>
+    <ol class="rank-list">${rows}</ol>${more}`;
+}
+
+function paintDashboard() {
+  const box = document.getElementById('usageChart');
+  if (!box || !lastStats) return;
+  const lang = currentLang();
+  box.innerHTML = rankingHtml(lastStats.data, lang);
+  const badge = document.getElementById('statsSourceBadge');
+  if (badge) {
+    const time = new Date(lastStats.data.updated).toLocaleTimeString(lang === 'en' ? 'en-GB' : 'th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
+    badge.classList.toggle('is-offline', !lastStats.live);
+    badge.innerHTML = lastStats.live
+      ? `<i data-lucide="cloud"></i> ${lang === 'en' ? 'Live' : 'ข้อมูลล่าสุด'} ${time}`
+      : `<i data-lucide="cloud-off"></i> ${lang === 'en' ? 'Saved data' : 'ข้อมูลที่บันทึกไว้'} ${time}`;
+  }
+  document.getElementById('rankToggle')?.addEventListener('click', () => {
+    statsExpanded = !statsExpanded;
+    paintDashboard();
+    if (!statsExpanded) document.getElementById('dashboard')?.scrollIntoView({ behavior: 'smooth' });
+  });
+  refreshIcons();
 }
 
 async function renderDashboard() {
-  const chart = document.getElementById('usageChart');
-  const badge = document.getElementById('statsSourceBadge');
-  const meta = getSystemMeta();
-  chart.innerHTML = '<div class="usage-empty">กำลังโหลดสถิติ...</div>';
-
-  let rows;
-  if (STATS_API_URL) {
-    const data = await loadGlobalStats();
-    if (data) {
-      const counts = data.counts || {};
-      rows = meta.map(item => ({...item, count:Number(counts[item.id])||0}));
-      if (badge) badge.innerHTML = '<i data-lucide="cloud"></i> สถิติรวมทุกผู้ใช้';
-    }
+  const box = document.getElementById('usageChart');
+  if (!box) return;
+  const days = statsDays;
+  const cached = readStatsCache(days);
+  if (cached && !lastStats) { lastStats = { data: cached, live: false }; paintDashboard(); }
+  else if (!lastStats) box.innerHTML = `<div class="usage-empty">${currentLang() === 'en' ? 'Loading statistics…' : 'กำลังโหลดสถิติ...'}</div>`;
+  const result = await fetchStats(days);
+  if (days !== statsDays) return; // period changed while loading
+  if (result) { lastStats = result; paintDashboard(); }
+  else if (!lastStats) {
+    box.innerHTML = `<div class="usage-empty">${currentLang() === 'en' ? 'Could not load statistics. Please try again.' : 'โหลดสถิติไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'}
+      <button class="rank-retry" type="button" onclick="renderDashboard()">${currentLang() === 'en' ? 'Retry' : 'ลองใหม่'}</button></div>`;
   }
-  if (!rows) {
-    const local = loadLocalFallback();
-    rows = meta.map(item => ({...item, count:Number(local[item.id])||0}));
-    if (badge) badge.innerHTML = '<i data-lucide="cloud-off"></i> เชื่อมสถิติกลางไม่สำเร็จ';
-  }
-
-  chart.innerHTML = lineChartHtml(rows);
-  refreshIcons();
 }
+
+document.querySelectorAll('[data-stats-days]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    statsDays = parseInt(btn.dataset.statsDays, 10) || 0;
+    document.querySelectorAll('[data-stats-days]').forEach(b => {
+      const on = b === btn; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on));
+    });
+    lastStats = null;
+    statsExpanded = false;
+    renderDashboard();
+  });
+});
+setInterval(() => { if (document.visibilityState === 'visible') renderDashboard(); }, 60000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') renderDashboard(); });
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
@@ -354,7 +375,7 @@ window.addEventListener('appinstalled', () => showToast('ติดตั้ง B
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('./sw.js?v=22', { updateViaCache: 'none' });
+      const reg = await navigator.serviceWorker.register('./sw.js?v=23', { updateViaCache: 'none' });
       await reg.update();
     } catch (_) {}
   });
@@ -488,6 +509,7 @@ const thToEn = new Map([
   ['รวมเว็บไซต์และระบบสำหรับการประเมินคุณภาพของสถานศึกษา','Quality assurance and school evaluation resources.'],
   ['โรงเรียนคุณภาพ','Quality School'],['ข้อมูลและเอกสารที่เกี่ยวข้องกับการดำเนินงานโรงเรียนคุณภาพ','Quality School information and supporting documents.'],['เปิดเว็บไซต์โรงเรียนคุณภาพ','Open Quality School'],
   ['ประเมิน สมศ. รอบ 5','ONESQA Round 5'],['ข้อมูล เอกสาร และหลักฐานประกอบการประเมินคุณภาพภายนอก สมศ. รอบ 5','Documents and evidence for ONESQA external quality assessment Round 5.'],['เปิดเว็บไซต์ประเมิน สมศ.','Open ONESQA'],
+  ['อันดับระบบที่ใช้งานมากที่สุด','Most used systems'],['เรียงจากจำนวนครั้งที่เปิดใช้งานจริงของผู้ใช้ทุกคน','Ranked by how often everyone opens each system.'],['จัดอันดับระบบที่ถูกเปิดใช้งานมากที่สุด อัปเดตอัตโนมัติทุก 1 นาที','Systems ranked by usage, refreshed every minute.'],['30 วัน','30 days'],['7 วัน','7 days'],
   ['ไม่พบระบบที่ค้นหา','No systems found'],['ลองเปลี่ยนคำค้น หรือเลือกหมวดหมู่อื่น','Try another search term or category.'],['แสดงระบบทั้งหมด','Show all systems'],
   ['การใช้งานแต่ละระบบ','Usage by system'],['กราฟเส้นแสดงจำนวนครั้งการใช้งานของแต่ละระบบ','Line chart showing total usage for each system.'],['สถิติรวมทุกผู้ใช้','All-user statistics'],
   ['พัฒนาโดย','Developed by'],['นายดีลาภ ปราบสงบ','Mr. Deelarp Prabsangob'],['ครูชำนาญการพิเศษ','Senior Professional Level Teacher'],['© 2026 โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา) · All rights reserved.','© 2026 Bankhum School · All rights reserved.'],
@@ -528,6 +550,7 @@ function setLanguage(lang) {
   document.querySelector('.lang-en')?.classList.toggle('active', lang === 'en');
   if (searchInput) searchInput.placeholder = lang === 'en' ? 'Search menus, e.g. salary, sarabun, grades, savings…' : 'ค้นหาเมนู เช่น เงินเดือน, สารบรรณ, วัดผล, ออมทรัพย์...';
   renderMenu();
+  paintDashboard();
   if (hotlineMessage) hotlineMessage.placeholder = lang === 'en' ? 'Type your message…' : 'พิมพ์รายละเอียดที่ต้องการติดต่อ...';
   languageToggle?.setAttribute('aria-label', lang === 'en' ? 'Switch to Thai' : 'Switch to English');
   refreshIcons();

@@ -7,14 +7,14 @@
 <meta content="#0f7a5a" name="theme-color"/>
 <meta content="ศูนย์รวมระบบและบริการออนไลน์ โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)" name="description"/>
 <title>Bankhum School Portal</title>
-<link href="favicon-32.png?v=22" rel="icon" sizes="32x32" type="image/png"/>
-<link href="favicon.ico?v=22" rel="shortcut icon"/>
-<link href="icon-192.png?v=22" rel="apple-touch-icon"/>
-<link href="manifest.webmanifest?v=22" rel="manifest"/>
+<link href="favicon-32.png?v=23" rel="icon" sizes="32x32" type="image/png"/>
+<link href="favicon.ico?v=23" rel="shortcut icon"/>
+<link href="icon-192.png?v=23" rel="apple-touch-icon"/>
+<link href="manifest.webmanifest?v=23" rel="manifest"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="style.css?v=22" rel="stylesheet"/>
+<link href="style.css?v=23" rel="stylesheet"/>
 </head>
 <body>
 <div class="app-shell">
@@ -113,18 +113,23 @@
 <div>
 <span class="section-kicker">USAGE DASHBOARD</span>
 <h2><i data-lucide="chart-no-axes-combined"></i> สถิติการใช้งานระบบ</h2>
-<p>สรุปจำนวนครั้งที่เปิดแต่ละระบบจากผู้ใช้งานทุกคน</p>
+<p>จัดอันดับระบบที่ถูกเปิดใช้งานมากที่สุด อัปเดตอัตโนมัติทุก 1 นาที</p>
 </div>
 </div>
 <div class="analytics-panel">
 <div class="analytics-panel-head">
 <div>
-<h3>การใช้งานแต่ละระบบ</h3>
-<p>กราฟเส้นสีสดใส แสดงจำนวนครั้งการใช้งานของแต่ละระบบ</p>
+<h3>อันดับระบบที่ใช้งานมากที่สุด</h3>
+<p>เรียงจากจำนวนครั้งที่เปิดใช้งานจริงของผู้ใช้ทุกคน</p>
 </div>
 <span class="local-badge" id="statsSourceBadge"><i data-lucide="cloud"></i> สถิติรวมทุกคน</span>
 </div>
-<div aria-live="polite" class="usage-chart" id="usageChart"></div>
+<div aria-label="ช่วงเวลา" class="stats-period" role="group">
+<button aria-pressed="true" class="active" data-stats-days="0" type="button">ทั้งหมด</button>
+<button aria-pressed="false" data-stats-days="30" type="button">30 วัน</button>
+<button aria-pressed="false" data-stats-days="7" type="button">7 วัน</button>
+</div>
+<div aria-live="polite" class="usage-chart usage-ranking" id="usageChart"></div>
 </div>
 </section>
 </main>
@@ -218,19 +223,19 @@
 (function(){
   try {
     const KEY='bankhumPortalBuild';
-    const BUILD='22';
+    const BUILD='23';
     const old=localStorage.getItem(KEY);
     if(old!==BUILD){
       localStorage.setItem(KEY,BUILD);
-      if('caches' in window){caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('bankhum-portal-')&&k!=='bankhum-portal-v22').map(k=>caches.delete(k))));}
+      if('caches' in window){caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('bankhum-portal-')&&k!=='bankhum-portal-v23').map(k=>caches.delete(k))));}
       if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.update()));}
     }
   } catch(e){}
 })();
 </script>
 <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
-<script src="config.js?v=22"></script>
-<script src="menu.js?v=22"></script>
-<script src="app.js?v=22"></script>
+<script src="config.js?v=23"></script>
+<script src="menu.js?v=23"></script>
+<script src="app.js?v=23"></script>
 </body>
 </html>

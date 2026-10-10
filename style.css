@@ -483,3 +483,58 @@ html[data-theme="dark"] .mobile-nav-item{color:#d1dfd8}
 @media (max-width:470px){
   .hero-copy h1{font-size:23px!important;line-height:1.25}
 }
+
+
+/* ===== V23 usage ranking ===== */
+.stats-period{display:inline-flex;gap:4px;padding:4px;margin:2px 0 14px;border:1px solid var(--border);border-radius:13px;background:#f4f8f6}
+.stats-period button{min-height:34px;padding:0 14px;border:0;border-radius:10px;background:transparent;color:#5f7369;font:500 12px "Kanit",sans-serif;cursor:pointer;transition:.18s}
+.stats-period button.active{background:#fff;color:var(--green-dark);box-shadow:0 2px 8px rgba(25,68,49,.1)}
+.usage-ranking{display:block}
+.rank-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.rank-summary>div{min-width:0;padding:11px 13px;border:1px solid #e4eee8;border-radius:14px;background:#fbfdfc}
+.rank-summary span{display:block;font-size:11px;color:var(--muted)}
+.rank-summary strong{display:block;margin-top:2px;font-size:20px;line-height:1.25;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-summary .rank-summary-top{font-size:14px;line-height:1.75}
+.rank-list{list-style:none;display:grid;gap:8px}
+.rank-row{display:grid;grid-template-columns:32px 40px minmax(0,1fr);align-items:center;gap:11px;padding:11px 14px 11px 11px;border:1px solid #e6efea;border-radius:16px;background:#fff}
+.rank-no{width:32px;height:32px;display:grid;place-items:center;border-radius:50%;background:#eef3f0;color:#5f7369;font-size:14px;font-weight:700}
+.rank-no.rank-1{background:#fde68a;color:#78350f}.rank-no.rank-2{background:#e2e8f0;color:#334155}.rank-no.rank-3{background:#fed7aa;color:#7c2d12}
+.rank-icon{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:var(--c-soft);color:var(--c-ink)}
+.rank-icon svg{width:20px;height:20px}
+.rank-main{min-width:0}
+.rank-line{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.rank-name{min-width:0;font-size:14px;font-weight:500;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank-value{flex:0 0 auto;font-size:12px;color:var(--muted);white-space:nowrap}
+.rank-value b{font-size:16px;color:var(--text);font-weight:600}
+.rank-value small{margin-left:6px;padding:1px 6px;border-radius:999px;background:#f1f5f3;font-size:10px;color:#5f7369}
+.rank-track{height:8px;margin-top:7px;overflow:hidden;border-radius:999px;background:#edf2ef}
+.rank-fill{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#16a34a,#0f7a5a);transition:width .45s ease}
+.rank-last{display:block;margin-top:5px;font-size:10px;color:#8a9a92}
+.rank-toggle{width:100%;min-height:46px;margin-top:12px;display:flex;align-items:center;justify-content:center;gap:8px;border:1px dashed #b9d8c8;border-radius:14px;background:#f3faf6;color:var(--green-dark);font:600 13px "Kanit",sans-serif;cursor:pointer;transition:.18s}
+.rank-toggle:hover{background:var(--green);color:#fff;border-style:solid;border-color:var(--green)}
+.rank-toggle svg{width:18px;height:18px}
+.rank-retry{display:block;margin:10px auto 0;padding:8px 16px;border:0;border-radius:10px;background:var(--green);color:#fff;font:500 12px "Kanit",sans-serif;cursor:pointer}
+.local-badge.is-offline{background:#fff7ed!important;color:#9a3412!important;border-color:#fed7aa!important}
+@media (max-width:700px){
+  .stats-period{display:flex;width:100%}.stats-period button{flex:1}
+  .rank-summary{grid-template-columns:1fr 1fr;gap:8px}
+  .rank-summary>div:last-child{grid-column:1/-1}
+  .rank-summary strong{font-size:18px}
+  .rank-row{grid-template-columns:28px 34px minmax(0,1fr);gap:9px;padding:10px 11px 10px 9px}
+  .rank-no{width:28px;height:28px;font-size:13px}
+  .rank-icon{width:34px;height:34px;border-radius:10px}.rank-icon svg{width:18px;height:18px}
+  .rank-name{font-size:13px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .rank-value b{font-size:15px}.rank-value small{display:none}
+}
+html[data-theme="dark"] .stats-period{background:rgba(18,36,30,.9);border-color:#2f463d}
+html[data-theme="dark"] .stats-period button{color:#c2d3cc}
+html[data-theme="dark"] .stats-period button.active{background:#1d4a3a;color:#fff}
+html[data-theme="dark"] .rank-summary>div,html[data-theme="dark"] .rank-row{background:rgba(18,36,30,.9);border-color:#2f463d}
+html[data-theme="dark"] .rank-summary strong,html[data-theme="dark"] .rank-name,html[data-theme="dark"] .rank-value b{color:#f2fbf7}
+html[data-theme="dark"] .rank-no{background:#22382f;color:#d1dfd8}
+html[data-theme="dark"] .rank-no.rank-1{background:#a16207;color:#fff}html[data-theme="dark"] .rank-no.rank-2{background:#475569;color:#fff}html[data-theme="dark"] .rank-no.rank-3{background:#9a3412;color:#fff}
+html[data-theme="dark"] .rank-track{background:#22382f}
+html[data-theme="dark"] .rank-fill{background:linear-gradient(90deg,#4ade80,#34d399)}
+html[data-theme="dark"] .rank-value small{background:#22382f;color:#c2d3cc}
+html[data-theme="dark"] .rank-toggle{background:#17382d;border-color:#2f6b55;color:#bff3dc}
+html[data-theme="dark"] .usage-empty{background:rgba(18,36,30,.9);color:#c2d3cc}
