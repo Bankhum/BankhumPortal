@@ -25,7 +25,7 @@ window.BANKHUM_MENU = [
       { th: 'ตารางเรียน / ตารางสอน', en: 'Class & teaching timetable', icon: 'calendar-days', keywords: 'timetable schedule' },
       { th: 'วัดผลและประเมินผล', en: 'Measurement & evaluation', icon: 'clipboard-list', url: 'https://bankhum.krusarawut.com/login.php', statId: 'assessment-system', statName: 'ระบบวัดผลและประเมินผลโรงเรียน', keywords: 'คะแนน เกรด ผลการเรียน grade assessment' },
       { th: 'แผนการจัดการเรียนรู้ออนไลน์', en: 'Online lesson plans', icon: 'notebook-pen', url: 'https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbyUZPqvNrehG-h_xLrX1_pNpSMbyxu-ZWPfb46n5l370yDaEzWINLqbGOAk7r38Xrv-/exec', statId: 'lessonplan', statName: 'สร้างแผนการสอนออนไลน์', keywords: 'แผนการสอน lesson plan' },
-      { th: 'วิจัยในชั้นเรียน', en: 'Classroom research', icon: 'flask-conical', keywords: 'research' },
+      { th: 'นวัตกรรมและวิจัยในชั้นเรียน', en: 'Teaching innovations & research', icon: 'lightbulb', url: 'https://inno.bankhum.ac.th/', statId: 'inno', statName: 'INNO BANKHUM นวัตกรรมการเรียนการสอน', keywords: 'inno นวัตกรรม วิจัยในชั้นเรียน สื่อการสอน ผลงานวิชาการ research innovation' },
       { th: 'นิเทศภายใน', en: 'Internal supervision', icon: 'presentation', url: 'https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbxSqnz3gYAjEPAiVe9YZ_ubhgA8Dqqyr1YE5Uf4kpYi0C-VVEL3ZaJC8ESFSoJltkkm/exec', statId: 'supervision', statName: 'ระบบนิเทศการจัดกิจกรรมการเรียนการสอน', keywords: 'นิเทศ supervision การเรียนการสอน' }
     ]
   },
