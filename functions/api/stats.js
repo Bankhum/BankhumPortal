@@ -15,10 +15,26 @@ function clampDays(value) {
   return Number.isFinite(n) && n > 0 ? Math.min(n, 3650) : 0;
 }
 
-export async function onRequestGet({ request, env }) {
+// Every open portal tab asks for stats once a minute, and each answer counts the whole clicks table.
+// Keep one answer per Cloudflare location for 60 s so D1 rows-read stays flat as the click history grows.
+const CACHE_SECONDS = 60;
+
+export async function onRequestGet({ request, env, waitUntil }) {
   if (!env.DB) return json({ ok: false, error: 'D1 binding "DB" is not configured' }, 500);
   const url = new URL(request.url);
   const days = clampDays(url.searchParams.get('days'));
+  const cache = typeof caches !== 'undefined' ? caches.default : null;
+  const cacheKey = new Request(`${url.origin}/api/stats?days=${days}`);
+  if (cache) {
+    const hit = await cache.match(cacheKey);
+    if (hit) return hit;
+  }
+  const response = await buildStats(env, days);
+  if (cache) waitUntil(cache.put(cacheKey, response.clone()));
+  return response;
+}
+
+async function buildStats(env, days) {
   const since = days > 0 ? `AND c.ts >= datetime('now', '+7 hours', '-${days} days')` : '';
 
   const { results } = await env.DB.prepare(`
@@ -34,6 +50,6 @@ export async function onRequestGet({ request, env }) {
   return json(
     { ok: true, days, total, updated: new Date().toISOString(), items: results },
     200,
-    { 'Cache-Control': 'public, max-age=15' }
+    { 'Cache-Control': `public, max-age=${CACHE_SECONDS}` }
   );
 }
