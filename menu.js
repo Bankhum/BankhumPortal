@@ -18,7 +18,10 @@ window.BANKHUM_MENU = [
   {
     id: 'mod-academic', no: '01', color: 'blue', icon: 'graduation-cap',
     th: 'งานวิชาการ', en: 'Academic Affairs', code: 'BANKHUM SIS', short: 'วิชาการ', shortEn: 'Academic',
-    main: { url: 'https://sis.bankhum.ac.th/', statId: 'sis', th: 'เปิด BANKHUM SIS', en: 'Open BANKHUM SIS' },
+    main: [
+      { url: 'https://sis.bankhum.ac.th/', statId: 'sis', th: 'เปิด BANKHUM SIS', en: 'Open BANKHUM SIS' },
+      { url: 'https://inno.bankhum.ac.th/', statId: 'inno', icon: 'lightbulb', th: 'INNO BANKHUM ศูนย์เผยแพร่นวัตกรรม', en: 'INNO Bankhum innovations' }
+    ],
     items: [
       { th: 'ข้อมูลนักเรียน', en: 'Student information', icon: 'id-card', url: 'https://sis.bankhum.ac.th/', statId: 'sis', statName: 'สารสนเทศนักเรียน (ใหม่)', keywords: 'sis สารสนเทศนักเรียน student' },
       { th: 'เช็กชื่อนักเรียน', en: 'Student attendance check', icon: 'user-check', keywords: 'เช็คชื่อ มาเรียน attendance' },
@@ -123,6 +126,7 @@ window.BANKHUM_MENU = [
     th: 'ประชาสัมพันธ์และเว็บไซต์โรงเรียน', en: 'PR & School Website', code: 'NEWS & WEBSITE', short: 'ประชาสัมพันธ์', shortEn: 'News',
     items: [
       { th: 'เว็บไซต์โรงเรียน', en: 'School website', icon: 'globe', url: 'https://www.bankhum.ac.th', statId: 'website', statName: 'เว็บไซต์โรงเรียน', keywords: 'website เว็บไซต์ official' },
+      { th: 'ศูนย์เผยแพร่นวัตกรรม (INNO)', en: 'Teaching innovations (INNO)', icon: 'lightbulb', url: 'https://inno.bankhum.ac.th/', statId: 'inno', statName: 'INNO BANKHUM นวัตกรรมการเรียนการสอน', keywords: 'inno นวัตกรรม ผลงานครู เผยแพร่' },
       { th: 'ข่าวสารและกิจกรรม', en: 'News & activities', icon: 'newspaper', keywords: 'ข่าว news' },
       { th: 'ประกาศจากโรงเรียน', en: 'School announcements', icon: 'megaphone', keywords: 'ประกาศ announcement' },
       { th: 'แกลเลอรีรูปภาพและวิดีโอ', en: 'Photo & video gallery', icon: 'images', keywords: 'รูป วิดีโอ gallery' },

@@ -71,8 +71,9 @@ function renderModules(lang) {
   if (!modulesRoot) return;
   modulesRoot.innerHTML = MENU.map(mod => {
     const ready = mod.items.filter(i => i.url).length;
-    const main = mod.main ? `<a class="module-main" href="${escapeAttr(mod.main.url)}" target="_blank" rel="noopener noreferrer" data-system-id="${escapeAttr(mod.main.statId || '')}" data-label="${escapeAttr(lang === 'en' ? mod.main.en : mod.main.th)}">
-        <span>${escapeAttr(lang === 'en' ? mod.main.en : mod.main.th)}</span><i data-lucide="arrow-up-right"></i></a>` : '';
+    const mains = [].concat(mod.main || []);
+    const main = mains.map((m, i) => `<a class="module-main${i ? ' is-secondary' : ''}" href="${escapeAttr(m.url)}" target="_blank" rel="noopener noreferrer" data-system-id="${escapeAttr(m.statId || '')}" data-label="${escapeAttr(lang === 'en' ? m.en : m.th)}">
+        ${m.icon ? `<i data-lucide="${escapeAttr(m.icon)}"></i>` : ''}<span>${escapeAttr(lang === 'en' ? m.en : m.th)}</span><i data-lucide="arrow-up-right"></i></a>`).join('');
     return `<section class="module c-${mod.color}" id="${mod.id}" data-module="${mod.id}" aria-labelledby="${mod.id}-title">
       <header class="module-head">
         <span class="module-no">${escapeAttr(mod.no)}</span>
@@ -375,7 +376,7 @@ window.addEventListener('appinstalled', () => showToast('ติดตั้ง B
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('./sw.js?v=24', { updateViaCache: 'none' });
+      const reg = await navigator.serviceWorker.register('./sw.js?v=25', { updateViaCache: 'none' });
       await reg.update();
     } catch (_) {}
   });

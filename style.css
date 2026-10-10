@@ -538,3 +538,8 @@ html[data-theme="dark"] .rank-fill{background:linear-gradient(90deg,#4ade80,#34d
 html[data-theme="dark"] .rank-value small{background:#22382f;color:#c2d3cc}
 html[data-theme="dark"] .rank-toggle{background:#17382d;border-color:#2f6b55;color:#bff3dc}
 html[data-theme="dark"] .usage-empty{background:rgba(18,36,30,.9);color:#c2d3cc}
+
+/* ===== V25 secondary module button ===== */
+.module-foot{display:grid;gap:8px}
+.module-main.is-secondary{background:linear-gradient(135deg,#f59e0b,#ea580c);box-shadow:0 8px 18px rgba(234,88,12,.25)}
+.module-main svg:first-child:not(:last-child){width:18px;height:18px}
