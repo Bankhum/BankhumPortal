@@ -1,11 +1,15 @@
-const cards = [...document.querySelectorAll('.system-card')];
-const sections = [...document.querySelectorAll('.system-section')];
+// ===== V22 menu: built from menu.js (window.BANKHUM_MENU) =====
+const MENU = Array.isArray(window.BANKHUM_MENU) ? window.BANKHUM_MENU : [];
+const modulesRoot = document.getElementById('systems');
+const launcherRoot = document.getElementById('moduleLauncher');
 const searchInput = document.getElementById('searchInput');
 const clearSearch = document.getElementById('clearSearch');
 const chips = [...document.querySelectorAll('.chip')];
 const emptyState = document.getElementById('emptyState');
 const resetFilter = document.getElementById('resetFilter');
 const systemCount = document.getElementById('systemCount');
+const soonCount = document.getElementById('soonCount');
+const moduleCount = document.getElementById('moduleCount');
 const toast = document.getElementById('toast');
 let currentFilter = 'all';
 
@@ -13,54 +17,157 @@ function refreshIcons() {
   if (window.lucide) window.lucide.createIcons();
 }
 
-systemCount.textContent = cards.length;
+function currentLang() {
+  return document.documentElement.lang === 'en' ? 'en' : 'th';
+}
+
+function escapeAttr(value) {
+  return String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+}
+
+function itemLabel(item, lang) { return lang === 'en' ? (item.en || item.th) : item.th; }
+
+function renderLauncher(lang) {
+  if (!launcherRoot) return;
+  launcherRoot.innerHTML = MENU.map(mod => {
+    const ready = mod.items.filter(i => i.url).length;
+    return `<a class="launcher-tile c-${mod.color}" href="#${mod.id}" aria-label="${escapeAttr(lang === 'en' ? mod.en : mod.th)}">
+      <span class="launcher-icon"><i data-lucide="${escapeAttr(mod.icon)}"></i></span>
+      <span class="launcher-text">
+        <strong class="lt-full">${escapeAttr(lang === 'en' ? mod.en : mod.th)}</strong>
+        <strong class="lt-short">${escapeAttr(lang === 'en' ? (mod.shortEn || mod.en) : (mod.short || mod.th))}</strong>
+        <small>${escapeAttr(mod.code)}</small>
+      </span>
+      <span class="launcher-count" title="${lang === 'en' ? 'ready' : 'พร้อมใช้งาน'}">${ready}/${mod.items.length}</span>
+      ${mod.isNew ? '<span class="launcher-new">NEW</span>' : ''}
+    </a>`;
+  }).join('');
+}
+
+function renderItem(item, mod, lang) {
+  const label = escapeAttr(itemLabel(item, lang));
+  const search = escapeAttr(`${item.th} ${item.en || ''} ${item.keywords || ''} ${mod.th} ${mod.en} ${mod.code}`.toLowerCase());
+  const icon = `<span class="menu-icon"><i data-lucide="${escapeAttr(item.icon || 'circle')}"></i></span>`;
+  if (item.url) {
+    const external = !item.internal;
+    const attrs = external ? ' target="_blank" rel="noopener noreferrer"' : '';
+    const stat = item.statId ? ` data-system-id="${escapeAttr(item.statId)}" data-stat-name="${escapeAttr(item.statName || item.th)}"` : '';
+    return `<li class="menu-item" data-status="ready" data-search="${search}">
+      <a class="menu-tile is-ready" href="${escapeAttr(item.url)}"${attrs}${stat} data-label="${label}">
+        ${icon}<span class="menu-label">${label}</span>
+        <i class="menu-go" data-lucide="${external ? 'arrow-up-right' : 'chevron-right'}"></i>
+      </a>
+    </li>`;
+  }
+  return `<li class="menu-item" data-status="soon" data-search="${search}">
+    <button class="menu-tile is-soon" type="button" aria-disabled="true" data-label="${label}">
+      ${icon}<span class="menu-label">${label}</span>
+      <span class="soon-badge">${lang === 'en' ? 'Soon' : 'เร็วๆ นี้'}</span>
+    </button>
+  </li>`;
+}
+
+function renderModules(lang) {
+  if (!modulesRoot) return;
+  modulesRoot.innerHTML = MENU.map(mod => {
+    const ready = mod.items.filter(i => i.url).length;
+    const main = mod.main ? `<a class="module-main" href="${escapeAttr(mod.main.url)}" target="_blank" rel="noopener noreferrer" data-system-id="${escapeAttr(mod.main.statId || '')}" data-label="${escapeAttr(lang === 'en' ? mod.main.en : mod.main.th)}">
+        <span>${escapeAttr(lang === 'en' ? mod.main.en : mod.main.th)}</span><i data-lucide="arrow-up-right"></i></a>` : '';
+    return `<section class="module c-${mod.color}" id="${mod.id}" data-module="${mod.id}" aria-labelledby="${mod.id}-title">
+      <header class="module-head">
+        <span class="module-no">${escapeAttr(mod.no)}</span>
+        <div class="module-title">
+          <h2 id="${mod.id}-title">${escapeAttr(lang === 'en' ? mod.en : mod.th)}</h2>
+          <span class="module-code">${escapeAttr(mod.code)}</span>
+        </div>
+        <span class="module-ready">${ready}/${mod.items.length} ${lang === 'en' ? 'ready' : 'พร้อมใช้'}</span>
+      </header>
+      <ul class="menu-list">${mod.items.map(item => renderItem(item, mod, lang)).join('')}</ul>
+      ${main ? `<div class="module-foot">${main}</div>` : ''}
+    </section>`;
+  }).join('');
+}
+
+function renderMenu() {
+  const lang = currentLang();
+  renderLauncher(lang);
+  renderModules(lang);
+  updateCounts();
+  applyFilters();
+  refreshIcons();
+}
+
+function updateCounts() {
+  const readyUrls = new Set();
+  let soon = 0;
+  MENU.forEach(mod => mod.items.forEach(item => {
+    if (item.url && !item.internal) readyUrls.add(item.url);
+    if (!item.url) soon++;
+  }));
+  if (systemCount) systemCount.textContent = readyUrls.size;
+  if (soonCount) soonCount.textContent = soon;
+  if (moduleCount) moduleCount.textContent = MENU.length;
+}
 
 function applyFilters() {
-  const q = searchInput.value.trim().toLowerCase();
+  if (!modulesRoot) return;
+  const q = (searchInput?.value || '').trim().toLowerCase();
   let visible = 0;
-
-  cards.forEach(card => {
-    const category = card.dataset.category;
-    const text = `${card.innerText} ${card.dataset.search || ''}`.toLowerCase();
-    const categoryMatch = currentFilter === 'all' || category === currentFilter;
-    const textMatch = !q || text.includes(q);
-    const show = categoryMatch && textMatch;
-    card.hidden = !show;
-    if (show) visible++;
+  modulesRoot.querySelectorAll('.module').forEach(mod => {
+    let modVisible = 0;
+    mod.querySelectorAll('.menu-item').forEach(li => {
+      const statusOk = currentFilter === 'all' || li.dataset.status === currentFilter;
+      const text = `${li.dataset.search || ''} ${li.textContent}`.toLowerCase();
+      const show = statusOk && (!q || text.includes(q));
+      li.hidden = !show;
+      if (show) modVisible++;
+    });
+    mod.hidden = modVisible === 0;
+    visible += modVisible;
   });
-
-  sections.forEach(section => {
-    const hasVisible = [...section.querySelectorAll('.system-card')].some(card => !card.hidden);
-    section.hidden = !hasVisible;
-  });
-
-  emptyState.hidden = visible !== 0;
-  clearSearch.hidden = !q;
-  systemCount.textContent = visible;
+  if (emptyState) emptyState.hidden = visible !== 0;
+  if (clearSearch) clearSearch.hidden = !q;
 }
 
 chips.forEach(chip => {
   chip.addEventListener('click', () => {
-    chips.forEach(c => c.classList.remove('active'));
+    chips.forEach(c => { c.classList.remove('active'); c.setAttribute('aria-pressed', 'false'); });
     chip.classList.add('active');
+    chip.setAttribute('aria-pressed', 'true');
     currentFilter = chip.dataset.filter;
     applyFilters();
   });
 });
 
-searchInput.addEventListener('input', applyFilters);
-clearSearch.addEventListener('click', () => {
+searchInput?.addEventListener('input', applyFilters);
+clearSearch?.addEventListener('click', () => {
   searchInput.value = '';
   searchInput.focus();
   applyFilters();
 });
 
-resetFilter.addEventListener('click', () => {
+resetFilter?.addEventListener('click', () => {
   currentFilter = 'all';
   searchInput.value = '';
-  chips.forEach(c => c.classList.toggle('active', c.dataset.filter === 'all'));
+  chips.forEach(c => { const on = c.dataset.filter === 'all'; c.classList.toggle('active', on); c.setAttribute('aria-pressed', String(on)); });
   applyFilters();
-  document.getElementById('systems').scrollIntoView({behavior:'smooth'});
+  modulesRoot.scrollIntoView({behavior:'smooth'});
+});
+
+// Clicks on menu buttons: count usage for real systems, explain "coming soon" ones.
+modulesRoot?.addEventListener('click', event => {
+  const soon = event.target.closest('.menu-tile.is-soon');
+  if (soon) {
+    showToast(currentLang() === 'en'
+      ? `${soon.dataset.label} is coming soon`
+      : `เมนู “${soon.dataset.label}” อยู่ระหว่างเตรียมเปิดใช้งาน`);
+    return;
+  }
+  const link = event.target.closest('a[data-system-id]');
+  if (link && link.dataset.systemId) {
+    recordUsage(link.dataset.systemId);
+    showToast(currentLang() === 'en' ? `Opening ${link.dataset.label}…` : `กำลังเปิด ${link.dataset.label}...`);
+  }
 });
 
 // ===== Global usage statistics =====
@@ -71,13 +178,14 @@ let globalStatsCache = null;
 
 function getSystemMeta() {
   const map = new Map();
-  cards.forEach(card => {
-    const id = card.dataset.systemId;
-    if (!id || map.has(id)) return;
-    map.set(id, {
-      id,
-      name: card.querySelector('h3')?.textContent.trim() || 'ระบบ',
-      url: card.querySelector('.card-link')?.href || ''
+  MENU.forEach(mod => {
+    if (mod.main?.statId && mod.main.url) {
+      const first = mod.items.find(i => i.statId === mod.main.statId);
+      if (!map.has(mod.main.statId)) map.set(mod.main.statId, { id: mod.main.statId, name: first?.statName || first?.th || mod.th, url: mod.main.url });
+    }
+    mod.items.forEach(item => {
+      if (!item.url || !item.statId || map.has(item.statId)) return;
+      map.set(item.statId, { id: item.statId, name: item.statName || item.th, url: item.url });
     });
   });
   return [...map.values()];
@@ -200,9 +308,11 @@ function escapeHtml(value) {
   return String(value).replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
 }
 
+renderMenu();
+
 // Mobile navigation highlight
 const mobileLinks = [...document.querySelectorAll('.mobile-nav-item')];
-const targets = ['home','management','academic','student','assessment','dashboard']
+const targets = ['home','systems','mod-sarabun','mod-student','dashboard']
   .map(id => document.getElementById(id))
   .filter(Boolean);
 
@@ -216,16 +326,6 @@ const observer = new IntersectionObserver(entries => {
   });
 }, {rootMargin:'-30% 0px -55% 0px', threshold:[0.05,0.2,0.5]});
 targets.forEach(el => observer.observe(el));
-
-// Feedback + count each outbound system click
-cards.forEach(card => {
-  const link = card.querySelector('.card-link');
-  if (!link) return;
-  link.addEventListener('click', () => {
-    recordUsage(card.dataset.systemId);
-    showToast(`กำลังเปิด ${card.querySelector('h3')?.textContent || 'ระบบ'}...`);
-  });
-});
 
 function showToast(message) {
   toast.textContent = message;
@@ -254,14 +354,13 @@ window.addEventListener('appinstalled', () => showToast('ติดตั้ง B
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('./sw.js?v=21', { updateViaCache: 'none' });
+      const reg = await navigator.serviceWorker.register('./sw.js?v=22', { updateViaCache: 'none' });
       await reg.update();
     } catch (_) {}
   });
 }
 
 refreshIcons();
-applyFilters();
 renderDashboard();
 
 
@@ -395,7 +494,16 @@ const thToEn = new Map([
   ['บริหาร','Manage'],['ประเมิน','Evaluate'],['สถิติ','Stats'],['สายด่วน','Hotline'],['สายด่วนโรงเรียนบ้านคุ้ม','Bankhum School Hotline'],['ช่องทางติดต่อออนไลน์','Online contact'],
   ['สวัสดีครับ 👋 ต้องการติดต่อโรงเรียนเรื่องใด เลือกหัวข้อหรือพิมพ์ข้อความได้เลย','Hello 👋 Choose a topic or type your message to contact the school.'],
   ['สอบถามข้อมูล','General inquiry'],['แจ้งปัญหาระบบ','System issue'],['เรื่องเร่งด่วน','Urgent'],['ข้อความถึงโรงเรียน','Message to school'],['ส่งต่อผ่าน Facebook Messenger','Send via Facebook Messenger'],
-  ['ระบบจะคัดลอกข้อความของคุณ แล้วเปิดช่องทาง Facebook ของโรงเรียนเพื่อส่งข้อความต่อ','Your message will be copied, then the school Facebook Messenger will open.']
+  ['ระบบจะคัดลอกข้อความของคุณ แล้วเปิดช่องทาง Facebook ของโรงเรียนเพื่อส่งข้อความต่อ','Your message will be copied, then the school Facebook Messenger will open.'],
+  // V22 portal layout
+  ['ระบบงาน','Systems'],['สารบรรณ','Sarabun'],['ศูนย์รวมระบบบริหารสถานศึกษา','School Management Portal'],
+  ['“หนึ่งพอร์ทัล ครบทุกงาน เชื่อมทุกข้อมูล เพื่อการบริหารที่ทันสมัย”','“One portal for every task, connecting all data for modern school management.”'],
+  ['เข้าถึงระบบงานสำคัญของโรงเรียนได้จากหน้าเดียว ใช้งานง่าย รองรับทั้งคอมพิวเตอร์ แท็บเล็ต และโทรศัพท์มือถือ','Access the school’s key systems from one place, on computers, tablets, and phones.'],
+  ['กลุ่มงาน','work groups'],['เมนูเตรียมเปิดใช้','menus coming soon'],
+  ['ระบบหลักของโรงเรียนบ้านคุ้ม','Bankhum School core systems'],['เลือกกลุ่มงานเพื่อไปยังเมนูที่ต้องการ','Choose a work group to jump to its menus.'],
+  ['พร้อมใช้งาน','Ready'],['เร็วๆ นี้','Coming soon'],
+  ['Bankhum School Portal · ศูนย์รวมระบบบริหารสถานศึกษา','Bankhum School Portal · School management hub'],
+  ['“บริหารดี ครูมีความสุข นักเรียนคุณภาพ โรงเรียนพัฒนาอย่างยั่งยืน”','“Good management, happy teachers, quality students, sustainable school.”']
 ]);
 const enToTh = new Map([...thToEn.entries()].map(([th,en]) => [en,th]));
 
@@ -418,7 +526,8 @@ function setLanguage(lang) {
   localStorage.setItem(LANGUAGE_KEY, lang);
   document.querySelector('.lang-th')?.classList.toggle('active', lang === 'th');
   document.querySelector('.lang-en')?.classList.toggle('active', lang === 'en');
-  if (searchInput) searchInput.placeholder = lang === 'en' ? 'Search salary, procurement, assessment, lesson plans…' : 'ค้นหา เช่น เงินเดือน, พัสดุ, วัดผล, สมศ., แผนการสอน...';
+  if (searchInput) searchInput.placeholder = lang === 'en' ? 'Search menus, e.g. salary, sarabun, grades, savings…' : 'ค้นหาเมนู เช่น เงินเดือน, สารบรรณ, วัดผล, ออมทรัพย์...';
+  renderMenu();
   if (hotlineMessage) hotlineMessage.placeholder = lang === 'en' ? 'Type your message…' : 'พิมพ์รายละเอียดที่ต้องการติดต่อ...';
   languageToggle?.setAttribute('aria-label', lang === 'en' ? 'Switch to Thai' : 'Switch to English');
   refreshIcons();

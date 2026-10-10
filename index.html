@@ -7,133 +7,15 @@
 <meta content="#0f7a5a" name="theme-color"/>
 <meta content="ศูนย์รวมระบบและบริการออนไลน์ โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)" name="description"/>
 <title>Bankhum School Portal</title>
-<link href="favicon-32.png?v=21" rel="icon" sizes="32x32" type="image/png"/>
-<link href="favicon.ico?v=21" rel="shortcut icon"/>
-<link href="icon-192.png?v=21" rel="apple-touch-icon"/>
-<link href="manifest.webmanifest?v=21" rel="manifest"/>
+<link href="favicon-32.png?v=22" rel="icon" sizes="32x32" type="image/png"/>
+<link href="favicon.ico?v=22" rel="shortcut icon"/>
+<link href="icon-192.png?v=22" rel="apple-touch-icon"/>
+<link href="manifest.webmanifest?v=22" rel="manifest"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="style.css?v=21" rel="stylesheet"/>
-<style>
-@media (max-width: 768px){
-  .mobile-nav{
-    display:flex;
-    overflow-x:auto;
-    overflow-y:hidden;
-    gap:4px;
-    padding-left:8px;
-    padding-right:8px;
-    scroll-snap-type:x proximity;
-    scrollbar-width:none;
-    -webkit-overflow-scrolling:touch;
-  }
-  .mobile-nav::-webkit-scrollbar{
-    display:none;
-  }
-  .mobile-nav-item{
-    flex:0 0 68px;
-    min-width:68px;
-    padding-left:4px;
-    padding-right:4px;
-    scroll-snap-align:center;
-  }
-  .mobile-nav-item span{
-    font-size:10px;
-    white-space:nowrap;
-  }
-}
-</style>
-<style id="mobile-app-ui-v2">
-@media (max-width:768px){
-  .card-grid{
-    display:grid!important;
-    grid-template-columns:repeat(2,minmax(0,1fr))!important;
-    gap:12px!important;
-  }
-  .system-card{
-    min-height:210px!important;
-    padding:16px 14px!important;
-    border-radius:24px!important;
-    display:flex!important;
-    flex-direction:column!important;
-    justify-content:space-between!important;
-  }
-  .system-card .icon-tile{
-    width:54px!important;
-    height:54px!important;
-    border-radius:17px!important;
-    display:grid!important;
-    place-items:center!important;
-  }
-  .system-card .icon-tile svg{
-    width:28px!important;
-    height:28px!important;
-  }
-  .system-card .tag{
-    font-size:10px!important;
-    border-radius:999px!important;
-    padding:6px 9px!important;
-  }
-  .system-card .card-body{
-    margin-top:12px!important;
-  }
-  .system-card .card-body h3{
-    font-size:16px!important;
-    line-height:1.35!important;
-    margin-bottom:7px!important;
-  }
-  .system-card .card-body p{
-    font-size:12px!important;
-    line-height:1.5!important;
-    display:-webkit-box!important;
-    -webkit-line-clamp:3!important;
-    -webkit-box-orient:vertical!important;
-    overflow:hidden!important;
-  }
-  .system-card .card-link{
-    margin-top:14px!important;
-    min-height:46px!important;
-    border-radius:16px!important;
-    padding:10px 12px!important;
-    display:flex!important;
-    align-items:center!important;
-    justify-content:flex-start!important;
-    gap:8px!important;
-    font-size:12px!important;
-    font-weight:600!important;
-  }
-  .system-card .card-link .app-btn-icon{
-    width:20px!important;
-    height:20px!important;
-    flex:0 0 20px!important;
-  }
-  .system-card .card-link>svg:last-child{
-    margin-left:auto!important;
-  }
-  .mobile-nav{
-    display:flex!important;
-    overflow-x:auto!important;
-    overflow-y:hidden!important;
-    gap:4px!important;
-    padding-left:8px!important;
-    padding-right:8px!important;
-    scrollbar-width:none!important;
-    -webkit-overflow-scrolling:touch!important;
-  }
-  .mobile-nav::-webkit-scrollbar{
-    display:none!important;
-  }
-  .mobile-nav-item{
-    flex:0 0 68px!important;
-    min-width:68px!important;
-  }
-  .mobile-nav-item span{
-    font-size:10px!important;
-    white-space:nowrap!important;
-  }
-}
-</style></head>
+<link href="style.css?v=22" rel="stylesheet"/>
+</head>
 <body>
 <div class="app-shell">
 <header class="topbar">
@@ -146,10 +28,10 @@
 </a>
 <nav aria-label="เมนูหลัก" class="desktop-nav">
 <a href="#home">หน้าหลัก</a>
-<a href="#management">บริหารงาน</a>
-<a href="#academic">วิชาการ</a>
-<a href="#student">นักเรียน</a>
-<a href="#assessment">งานประเมินต่างๆ</a>
+<a href="#systems">ระบบงาน</a>
+<a href="#mod-academic">วิชาการ</a>
+<a href="#mod-sarabun">สารบรรณ</a>
+<a href="#mod-student">นักเรียน</a>
 <a href="#dashboard">สถิติการใช้งาน</a>
 </nav>
 <div class="top-actions"><button aria-label="เปลี่ยนภาษา ไทย อังกฤษ" class="language-toggle" id="languageToggle" title="ไทย / English" type="button"><span class="lang-label lang-th active">TH</span><span class="lang-divider">/</span><span class="lang-label lang-en">EN</span></button>
@@ -170,9 +52,10 @@
 <span class="status-dot" title="ระบบออนไลน์"></span>
 </div>
 <div class="hero-copy">
-<div class="eyebrow"><i data-lucide="sparkles"></i> SCHOOL WEB APP</div>
-<h1>ศูนย์รวมระบบออนไลน์<br/><span>โรงเรียนบ้านคุ้ม</span></h1>
-<p>เข้าถึงระบบงานสำคัญของโรงเรียนได้จากหน้าเดียว ใช้งานง่าย สบายตา และรองรับทั้งคอมพิวเตอร์ แท็บเล็ต และโทรศัพท์มือถือ</p>
+<div class="eyebrow"><i data-lucide="sparkles"></i> BANKHUM SCHOOL PORTAL</div>
+<h1>ศูนย์รวมระบบบริหารสถานศึกษา<br/><span>โรงเรียนบ้านคุ้ม</span></h1>
+<p class="hero-slogan">“หนึ่งพอร์ทัล ครบทุกงาน เชื่อมทุกข้อมูล เพื่อการบริหารที่ทันสมัย”</p>
+<p>เข้าถึงระบบงานสำคัญของโรงเรียนได้จากหน้าเดียว ใช้งานง่าย รองรับทั้งคอมพิวเตอร์ แท็บเล็ต และโทรศัพท์มือถือ</p>
 <div class="hero-quick-actions">
 <a class="primary-hero-btn" href="#systems">
 <i data-lucide="grid-2x2"></i>
@@ -184,203 +67,41 @@
 <div class="hero-metrics">
 <div class="metric">
 <div class="metric-icon green"><i data-lucide="layout-grid"></i></div>
-<div><strong id="systemCount">13</strong><span>ระบบพร้อมใช้งาน</span></div>
+<div><strong id="moduleCount">9</strong><span>กลุ่มงาน</span></div>
 </div>
 <div class="metric">
-<div class="metric-icon blue"><i data-lucide="smartphone"></i></div>
-<div><strong>100%</strong><span>รองรับมือถือ</span></div>
+<div class="metric-icon blue"><i data-lucide="mouse-pointer-click"></i></div>
+<div><strong id="systemCount">0</strong><span>ระบบพร้อมใช้งาน</span></div>
 </div>
 <div class="metric">
-<div class="metric-icon amber"><i data-lucide="mouse-pointer-click"></i></div>
-<div><strong>1 Click</strong><span>เข้าถึงระบบ</span></div>
+<div class="metric-icon amber"><i data-lucide="hourglass"></i></div>
+<div><strong id="soonCount">0</strong><span>เมนูเตรียมเปิดใช้</span></div>
 </div>
 </div>
+</section>
+<section aria-labelledby="launcherTitle" class="launcher-section">
+<div class="section-heading">
+<div>
+<span class="section-kicker">SCHOOL SYSTEMS</span>
+<h2 id="launcherTitle"><i data-lucide="layout-grid"></i> ระบบหลักของโรงเรียนบ้านคุ้ม</h2>
+<p>เลือกกลุ่มงานเพื่อไปยังเมนูที่ต้องการ</p>
+</div>
+</div>
+<nav aria-label="กลุ่มงาน" class="module-launcher" id="moduleLauncher"></nav>
 </section>
 <section aria-label="ค้นหาและกรองระบบ" class="tools-panel">
 <div class="search-box">
 <i data-lucide="search"></i>
-<input autocomplete="off" id="searchInput" placeholder="ค้นหา เช่น เงินเดือน, พัสดุ, วัดผล, สมศ., แผนการสอน..." type="search"/>
+<input autocomplete="off" id="searchInput" placeholder="ค้นหาเมนู เช่น เงินเดือน, สารบรรณ, วัดผล, ออมทรัพย์..." type="search"/>
 <button aria-label="ล้างคำค้น" class="clear-search" hidden="" id="clearSearch" type="button"><i data-lucide="x"></i></button>
 </div>
-<div aria-label="กรองตามหมวดหมู่" class="chips" role="group">
-<button class="chip active" data-filter="all" type="button"><i data-lucide="layout-grid"></i>ทั้งหมด</button>
-<button class="chip" data-filter="main" type="button"><i data-lucide="star"></i>ระบบหลัก</button>
-<button class="chip" data-filter="management" type="button"><i data-lucide="building-2"></i>บริหารงาน</button>
-<button class="chip" data-filter="academic" type="button"><i data-lucide="book-open"></i>วิชาการ</button>
-<button class="chip" data-filter="student" type="button"><i data-lucide="graduation-cap"></i>นักเรียน</button>
-<button class="chip" data-filter="assessment" type="button"><i data-lucide="clipboard-check"></i>งานประเมิน</button>
+<div aria-label="กรองเมนู" class="chips" role="group">
+<button aria-pressed="true" class="chip active" data-filter="all" type="button"><i data-lucide="layout-grid"></i><span>ทั้งหมด</span></button>
+<button aria-pressed="false" class="chip" data-filter="ready" type="button"><i data-lucide="circle-check"></i><span>พร้อมใช้งาน</span></button>
+<button aria-pressed="false" class="chip" data-filter="soon" type="button"><i data-lucide="hourglass"></i><span>เร็วๆ นี้</span></button>
 </div>
 </section>
-<div class="systems-wrap" id="systems">
-<section class="system-section" data-section="main">
-<div class="section-heading">
-<div>
-<span class="section-kicker">QUICK ACCESS</span>
-<h2><i data-lucide="star"></i> เว็บไซต์และระบบหลัก</h2>
-<p>ระบบที่ใช้งานบ่อยและควรเข้าถึงได้อย่างรวดเร็ว</p>
-</div>
-</div>
-<div class="card-grid">
-<article class="system-card featured-card" data-category="main" data-search="เว็บไซต์โรงเรียน บ้านคุ้ม bankhum official website ข่าว ประกาศ" data-system-id="website">
-<div class="card-accent"></div>
-<div class="card-head">
-<div class="icon-tile blue"><i data-lucide="globe-2"></i></div>
-<span class="tag">Official</span>
-</div>
-<div class="card-body">
-<h3>เว็บไซต์โรงเรียน</h3>
-<p>เว็บไซต์หลักสำหรับข่าวสาร ประกาศ กิจกรรม และข้อมูลของโรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)</p>
-</div>
-<a class="card-link" href="https://www.bankhum.ac.th" rel="noopener noreferrer" target="_blank">
-<i class="app-btn-icon" data-lucide="globe-2"></i><span>เข้าเว็บไซต์โรงเรียน</span><i data-lucide="arrow-up-right"></i>
-</a>
-</article>
-<article class="system-card" data-category="main" data-search="เงินเดือน เลื่อนขั้นเงินเดือน บุคลากร salary bkmoney money" data-system-id="salary">
-<div class="card-head">
-<div class="icon-tile green"><i data-lucide="badge-dollar-sign"></i></div>
-<span class="tag">บุคลากร</span>
-</div>
-<div class="card-body">
-<h3>ระบบแจ้งผลการเลื่อนขั้นเงินเดือน</h3>
-<p>ตรวจสอบผลการเลื่อนขั้นเงินเดือนสำหรับครูและบุคลากรของโรงเรียน</p>
-</div>
-<a class="card-link" href="https://money.bankhum.ac.th/" rel="noopener noreferrer" target="_blank">
-<i class="app-btn-icon" data-lucide="badge-dollar-sign"></i><span>เปิดระบบ</span><i data-lucide="arrow-up-right"></i>
-</a>
-</article>
-</div>
-</section>
-<section class="system-section" data-section="management" id="management">
-<div class="section-heading">
-<div>
-<span class="section-kicker">SCHOOL MANAGEMENT</span>
-<h2><i data-lucide="building-2"></i> ระบบบริหารงานโรงเรียน</h2>
-<p>งานสารบรรณ สารสนเทศ และการบริหารบุคลากร</p>
-</div>
-</div>
-<div class="card-grid">
-<article class="system-card" data-category="management" data-search="สารบรรณ หนังสือราชการ เอกสาร ธุรการ" data-system-id="document" id="document">
-<div class="card-head"><div class="icon-tile amber"><i data-lucide="mail-open"></i></div><span class="tag">ธุรการ</span></div>
-<div class="card-body"><h3>ระบบงานสารบรรณ</h3><p>จัดการหนังสือราชการ เอกสารรับ–ส่ง และงานสารบรรณของโรงเรียน</p></div>
-<a class="card-link" href="https://sarabun.bankhum.ac.th/" rel="noopener noreferrer" target="_blank"><i class="app-btn-icon" data-lucide="file-text"></i><span>เปิดระบบสารบรรณ</span><i data-lucide="arrow-up-right"></i></a>
-</article>
-<article class="system-card" data-category="management" data-search="สารสนเทศโรงเรียน information ข้อมูล โรงเรียน" data-system-id="information">
-<div class="card-head"><div class="icon-tile violet"><i data-lucide="chart-no-axes-combined"></i></div><span class="tag">สารสนเทศ</span></div>
-<div class="card-body"><h3>ระบบสารสนเทศโรงเรียน</h3><p>บริหารและรวบรวมข้อมูลสารสนเทศเพื่อสนับสนุนการดำเนินงานของโรงเรียน</p></div>
-<a class="card-link" href="https://bankhum.com/login.php" rel="noopener noreferrer" target="_blank"><i class="app-btn-icon" data-lucide="chart-no-axes-combined"></i><span>เข้าระบบสารสนเทศ</span><i data-lucide="arrow-up-right"></i></a>
-</article>
-<article class="system-card" data-category="management" data-search="ลงเวลาครู เวลาเข้าออก attendance zlink บุคลากร" data-system-id="attendance">
-<div class="card-head"><div class="icon-tile cyan"><i data-lucide="clock-3"></i></div><span class="tag">Attendance</span></div>
-<div class="card-body"><h3>ระบบลงเวลาครู</h3><p>ระบบลงเวลาเข้า–ออกสำหรับครูและบุคลากรของโรงเรียน</p></div>
-<a class="card-link" href="https://zlink.minervaiot.com/login" rel="noopener noreferrer" target="_blank"><i class="app-btn-icon" data-lucide="clock-3"></i><span>เข้าสู่ระบบลงเวลา</span><i data-lucide="arrow-up-right"></i></a>
-</article>
-<article class="system-card" data-category="management" data-search="การเงิน พัสดุ งบประมาณ จัดซื้อ procurement finance budget" data-system-id="finance">
-<div class="card-head"><div class="icon-tile green"><i data-lucide="package-check"></i></div><span class="tag">การเงินและพัสดุ</span></div>
-<div class="card-body"><h3>ระบบบริหารการเงินและพัสดุโรงเรียน</h3><p>ระบบสำหรับบริหารงานการเงิน งบประมาณ และงานพัสดุของโรงเรียน</p></div>
-<a class="card-link" href="https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbwUz9mm1SC5LS2wpQPMDblnGBcJ2s4Y4-A073e42ZGrT_bIGuBLIc1nBylaj56LS_HiRw/exec" rel="noopener noreferrer" target="_blank"><i class="app-btn-icon" data-lucide="package-check"></i><span>เปิดระบบการเงินและพัสดุ</span><i data-lucide="arrow-up-right"></i></a>
-</article>
-</div>
-</section>
-<section class="system-section" data-section="academic" id="academic">
-<div class="section-heading">
-<div>
-<span class="section-kicker">ACADEMIC</span>
-<h2><i data-lucide="book-open"></i> ระบบงานวิชาการ</h2>
-<p>สนับสนุนการจัดการเรียนรู้ การนิเทศ และการจัดทำแผนการสอน</p>
-</div>
-</div>
-<div class="card-grid">
-<article class="system-card" data-category="academic" data-search="นิเทศ การจัดกิจกรรม การเรียนการสอน supervision ครู ห้องเรียน" data-system-id="supervision">
-<div class="card-head"><div class="icon-tile rose"><i data-lucide="presentation"></i></div><span class="tag">นิเทศ</span></div>
-<div class="card-body"><h3>ระบบนิเทศการจัดกิจกรรมการเรียนการสอน</h3><p>บันทึกและติดตามการนิเทศการจัดกิจกรรมการเรียนรู้ภายในโรงเรียน</p></div>
-<a class="card-link" href="https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbxSqnz3gYAjEPAiVe9YZ_ubhgA8Dqqyr1YE5Uf4kpYi0C-VVEL3ZaJC8ESFSoJltkkm/exec?fbclid=IwY2xjawTkbYtwZG9mBWV4dG4DYWVtAjEwAGJyaWQRMXlUeWhlZnpWV0dJU2w1MHVzcnRjBmFwcF9pZBAyMjIwMzkxNzg4MjAwODkyAAEeGLr1ghwOhHGJ8VDxf6EOeRqYF4URJyGH4-yXhx7k4JfAIbA_HYDUQdCnvpo_aem_NyYqHTPO72xEYpCGOz57vA" rel="noopener noreferrer" target="_blank"><i class="app-btn-icon" data-lucide="presentation"></i><span>เปิดระบบนิเทศ</span><i data-lucide="arrow-up-right"></i></a>
-</article>
-<article class="system-card" data-category="academic" data-search="สร้างแผนการสอนออนไลน์ lesson plan แผนการจัดการเรียนรู้ ครู" data-system-id="lessonplan">
-<div class="card-head"><div class="icon-tile blue"><i data-lucide="notebook-pen"></i></div><span class="tag">Lesson Plan</span></div>
-<div class="card-body"><h3>สร้างแผนการสอนออนไลน์</h3><p>เครื่องมือสำหรับจัดทำแผนการจัดการเรียนรู้ออนไลน์อย่างสะดวกและเป็นระบบ</p></div>
-<a class="card-link" href="https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbyUZPqvNrehG-h_xLrX1_pNpSMbyxu-ZWPfb46n5l370yDaEzWINLqbGOAk7r38Xrv-/exec" rel="noopener noreferrer" target="_blank"><i class="app-btn-icon" data-lucide="notebook-pen"></i><span>สร้างแผนการสอน</span><i data-lucide="arrow-up-right"></i></a>
-</article>
-<article class="system-card" data-category="academic" data-search="วัดผล ประเมินผล คะแนน ผลการเรียน academic assessment grade" data-system-id="assessment-system">
-<div class="card-head"><div class="icon-tile violet"><i data-lucide="clipboard-list"></i></div><span class="tag">วัดผล</span></div>
-<div class="card-body"><h3>ระบบวัดผลและประเมินผลโรงเรียน</h3><p>ระบบสำหรับงานวัดผล ประเมินผล และจัดการข้อมูลผลการเรียนของโรงเรียน</p></div>
-<a class="card-link" href="https://bankhum.krusarawut.com/login.php" rel="noopener noreferrer" target="_blank"><i class="app-btn-icon" data-lucide="clipboard-list"></i><span>เข้าสู่ระบบวัดผล</span><i data-lucide="arrow-up-right"></i></a>
-</article>
-</div>
-</section>
-<section class="system-section" data-section="student" id="student">
-<div class="section-heading">
-<div>
-<span class="section-kicker">STUDENT SERVICES</span>
-<h2><i data-lucide="graduation-cap"></i> ระบบสำหรับนักเรียน</h2>
-<p>ระบบส่งเสริมการออม คุณลักษณะที่ดี และการมีส่วนร่วมของนักเรียน</p>
-</div>
-</div>
-<div class="card-grid"><article class="system-card" data-category="student" data-search="สารสนเทศนักเรียน sis student information ข้อมูลนักเรียน" data-system-id="sis" id="sis">
-<div class="card-head">
-<div class="icon-tile blue"><i data-lucide="id-card"></i></div>
-<span class="tag">NEW · SIS</span>
-</div>
-<div class="card-body">
-<h3>สารสนเทศนักเรียน (ใหม่)</h3>
-<p>ระบบสารสนเทศนักเรียน สำหรับดูและจัดการข้อมูลนักเรียนผ่านระบบออนไลน์ของโรงเรียน</p>
-</div>
-<a class="card-link" href="https://sis.bankhum.ac.th/" rel="noopener noreferrer" target="_blank">
-<i class="app-btn-icon" data-lucide="id-card"></i>
-<span>เปิดระบบสารสนเทศนักเรียน</span>
-<i data-lucide="arrow-up-right"></i>
-</a>
-</article><article class="system-card email-card" data-category="student" data-search="อีเมล์ นักเรียน ครู email school mail bankhum" data-system-id="school-email">
-<div class="card-head">
-<div class="icon-tile cyan"><i data-lucide="mail"></i></div>
-<span class="tag">Email</span>
-</div>
-<div class="card-body">
-<h3>อีเมล์ นักเรียน/ครู</h3>
-<p>ค้นหาและเข้าใช้งานอีเมล์โรงเรียนสำหรับนักเรียนและครู โรงเรียนบ้านคุ้ม</p>
-</div>
-<a class="card-link" href="https://email.bankhum.ac.th" rel="noopener noreferrer" target="_blank">
-<i class="app-btn-icon" data-lucide="mail"></i><span>เปิดระบบอีเมล์</span><i data-lucide="arrow-up-right"></i>
-</a>
-</article>
-<article class="system-card" data-category="student" data-search="ออมทรัพย์โรงเรียน เงินออม นักเรียน savings bank" data-system-id="savings" id="savings">
-<div class="card-head"><div class="icon-tile amber"><i data-lucide="piggy-bank"></i></div><span class="tag">Savings</span></div>
-<div class="card-body"><h3>ระบบออมทรัพย์โรงเรียน</h3><p>บันทึกและจัดการข้อมูลการออมทรัพย์ของนักเรียนอย่างเป็นระบบ</p></div>
-<a class="card-link" href="https://script.google.com/macros/s/AKfycbzGwx_eA0a3ZBd0cTcPUXVU11mYOgXmjRJI-UHZVFyeKdKRwF7GQfPVCwiE2jh5mO1YGw/exec" rel="noopener noreferrer" target="_blank"><i class="app-btn-icon" data-lucide="piggy-bank"></i><span>เปิดระบบออมทรัพย์</span><i data-lucide="arrow-up-right"></i></a>
-</article>
-<article class="system-card" data-category="student" data-search="สะสมความดี นักเรียน good student คะแนนความดี พฤติกรรม" data-system-id="goodstudent">
-<div class="card-head"><div class="icon-tile green"><i data-lucide="medal"></i></div><span class="tag">Good Student</span></div>
-<div class="card-body"><h3>ระบบสะสมความดีนักเรียน</h3><p>บันทึกกิจกรรมและคะแนนความดี เพื่อส่งเสริมพฤติกรรมเชิงบวกของนักเรียน</p></div>
-<a class="card-link" href="https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbzgHjgJodLd6Cd-3xsqg2_vKnZYNS-p7EVS-MYQWcsKqPolVuSfl862zKsJqllfLf1QFg/exec" rel="noopener noreferrer" target="_blank"><i class="app-btn-icon" data-lucide="medal"></i><span>เปิดระบบสะสมความดี</span><i data-lucide="arrow-up-right"></i></a>
-</article>
-<article class="system-card" data-category="student" data-search="วัดผล ประเมินผล นักเรียน ผลการเรียน คะแนน เกรด school assessment student" data-system-id="assessment-system">
-<div class="card-head"><div class="icon-tile violet"><i data-lucide="clipboard-list"></i></div><span class="tag">วัดผล</span></div>
-<div class="card-body"><h3>ระบบวัดผลและประเมินผลโรงเรียน</h3><p>ช่องทางเข้าระบบวัดผลและประเมินผล สำหรับนักเรียนและผู้เกี่ยวข้อง</p></div>
-<a class="card-link" href="https://bankhum.krusarawut.com/login.php" rel="noopener noreferrer" target="_blank"><i class="app-btn-icon" data-lucide="clipboard-list"></i><span>เข้าสู่ระบบวัดผล</span><i data-lucide="arrow-up-right"></i></a>
-</article>
-</div>
-</section>
-<section class="system-section" data-section="assessment" id="assessment">
-<div class="section-heading">
-<div>
-<span class="section-kicker">QUALITY &amp; EVALUATION</span>
-<h2><i data-lucide="clipboard-check"></i> งานประเมินต่างๆ</h2>
-<p>รวมเว็บไซต์และระบบสำหรับการประเมินคุณภาพของสถานศึกษา</p>
-</div>
-</div>
-<div class="card-grid">
-<article class="system-card" data-category="assessment" data-search="โรงเรียนคุณภาพ คุณภาพสถานศึกษา quality school onesqa" data-system-id="quality-school">
-<div class="card-head"><div class="icon-tile green"><i data-lucide="school"></i></div><span class="tag">Quality School</span></div>
-<div class="card-body"><h3>โรงเรียนคุณภาพ</h3><p>ข้อมูลและเอกสารที่เกี่ยวข้องกับการดำเนินงานโรงเรียนคุณภาพ</p></div>
-<a class="card-link" href="https://sites.google.com/bankhum.ac.th/onesqa5/ONESQA" rel="noopener noreferrer" target="_blank"><i class="app-btn-icon" data-lucide="school"></i><span>เปิดเว็บไซต์โรงเรียนคุณภาพ</span><i data-lucide="arrow-up-right"></i></a>
-</article>
-<article class="system-card" data-category="assessment" data-search="สมศ รอบ 5 ประเมิน สมศ. ONESQA การประกันคุณภาพภายนอก" data-system-id="onesqa5">
-<div class="card-head"><div class="icon-tile amber"><i data-lucide="badge-check"></i></div><span class="tag">สมศ. รอบ 5</span></div>
-<div class="card-body"><h3>ประเมิน สมศ. รอบ 5</h3><p>ข้อมูล เอกสาร และหลักฐานประกอบการประเมินคุณภาพภายนอก สมศ. รอบ 5</p></div>
-<a class="card-link" href="https://sites.google.com/bankhum.ac.th/oneqa2568/ONESQA" rel="noopener noreferrer" target="_blank"><i class="app-btn-icon" data-lucide="badge-check"></i><span>เปิดเว็บไซต์ประเมิน สมศ.</span><i data-lucide="arrow-up-right"></i></a>
-</article>
-</div>
-</section>
-</div>
+<div class="systems-wrap modules-grid" id="systems"></div>
 <section class="empty-state" hidden="" id="emptyState">
 <div class="empty-icon"><i data-lucide="search-x"></i></div>
 <h3>ไม่พบระบบที่ค้นหา</h3>
@@ -413,7 +134,8 @@
 <img alt="โลโก้โรงเรียนบ้านคุ้ม" src="logo-bankhum.png"/>
 <div>
 <strong>โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)</strong>
-<span>Bankhum School Portal · ศูนย์รวมระบบและบริการออนไลน์ของโรงเรียน</span>
+<span>Bankhum School Portal · ศูนย์รวมระบบบริหารสถานศึกษา</span>
+<em class="footer-slogan">“บริหารดี ครูมีความสุข นักเรียนคุณภาพ โรงเรียนพัฒนาอย่างยั่งยืน”</em>
 </div>
 </div>
 <div aria-label="ช่องทางโซเชียลมีเดียของโรงเรียน" class="footer-social">
@@ -448,13 +170,10 @@
 </footer>
 </div>
 <nav aria-label="เมนูมือถือ" class="mobile-nav">
-<a class="mobile-nav-item active" href="#home"><i data-lucide="home"></i><span>หน้าหลัก</span></a>
-<a class="mobile-nav-item" href="#management"><i data-lucide="building-2"></i><span>บริหาร</span></a>
-<a class="mobile-nav-item" href="#document"><i data-lucide="file-text"></i><span>สารบรรณ</span></a>
-<a class="mobile-nav-item" href="#academic"><i data-lucide="book-open"></i><span>วิชาการ</span></a>
-<a class="mobile-nav-item" href="#student"><i data-lucide="graduation-cap"></i><span>นักเรียน</span></a><a class="mobile-nav-item" href="#sis"><i data-lucide="id-card"></i><span>SIS</span></a>
-<a class="mobile-nav-item" href="#savings"><i data-lucide="piggy-bank"></i><span>ออมทรัพย์</span></a>
-<a class="mobile-nav-item" href="#assessment"><i data-lucide="clipboard-check"></i><span>ประเมิน</span></a>
+<a class="mobile-nav-item active" href="#home"><i data-lucide="house"></i><span>หน้าหลัก</span></a>
+<a class="mobile-nav-item" href="#systems"><i data-lucide="layout-grid"></i><span>ระบบงาน</span></a>
+<a class="mobile-nav-item" href="#mod-sarabun"><i data-lucide="file-text"></i><span>สารบรรณ</span></a>
+<a class="mobile-nav-item" href="#mod-student"><i data-lucide="backpack"></i><span>นักเรียน</span></a>
 <a class="mobile-nav-item" href="#dashboard"><i data-lucide="chart-no-axes-combined"></i><span>สถิติ</span></a>
 </nav>
 <!-- สายด่วนโรงเรียน -->
@@ -499,18 +218,19 @@
 (function(){
   try {
     const KEY='bankhumPortalBuild';
-    const BUILD='19';
+    const BUILD='22';
     const old=localStorage.getItem(KEY);
     if(old!==BUILD){
       localStorage.setItem(KEY,BUILD);
-      if('caches' in window){caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('bankhum-portal-')&&k!=='bankhum-portal-v19').map(k=>caches.delete(k))));}
+      if('caches' in window){caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('bankhum-portal-')&&k!=='bankhum-portal-v22').map(k=>caches.delete(k))));}
       if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.update()));}
     }
   } catch(e){}
 })();
 </script>
 <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
-<script src="config.js?v=21"></script>
-<script src="app.js?v=21"></script>
+<script src="config.js?v=22"></script>
+<script src="menu.js?v=22"></script>
+<script src="app.js?v=22"></script>
 </body>
 </html>
