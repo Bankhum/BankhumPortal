@@ -598,3 +598,12 @@ html[data-theme="dark"] .quick-tile{background:rgba(16,32,26,.92);color:#eef8f4}
   .hotline-fab svg{width:22px!important;height:22px!important}
 }
 @media (max-width:380px){.hero-copy h1{font-size:16px!important}.hero-logo{width:54px!important;height:54px!important}}
+
+/* ===== V27 hide upcoming menus on every screen size ===== */
+.modules-grid:not(.reveal-soon) .module:not(.show-soon) .menu-item[data-status="soon"]{display:none}
+.soon-toggle{display:flex;align-items:center;justify-content:center;gap:7px;margin:0 14px 12px;min-height:40px;border:1px dashed #cdd9d3;border-radius:12px;background:transparent;color:#6b7d74;font:500 12px "Kanit",sans-serif;cursor:pointer;transition:.18s}
+.soon-toggle:hover{border-style:solid;border-color:var(--c);color:var(--c-ink)}
+.soon-toggle svg{width:16px;height:16px}
+.modules-grid.reveal-soon .soon-toggle{display:none}
+.systems-wrap.modules-grid{align-items:start}
+html[data-theme="dark"] .soon-toggle{border-color:#2f463d;color:#a9bbb3}
