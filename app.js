@@ -67,14 +67,22 @@ function renderItem(item, mod, lang) {
   </li>`;
 }
 
+const openSoonModules = new Set();
+
 function renderModules(lang) {
   if (!modulesRoot) return;
   modulesRoot.innerHTML = MENU.map(mod => {
     const ready = mod.items.filter(i => i.url).length;
+    const soonN = mod.items.length - ready;
+    const open = openSoonModules.has(mod.id);
+    const soonToggle = soonN ? `<button class="soon-toggle" type="button" data-soon-toggle="${mod.id}" aria-expanded="${open}">
+        <i data-lucide="${open ? 'chevron-up' : 'hourglass'}"></i><span>${open
+          ? (lang === 'en' ? 'Hide upcoming menus' : 'ซ่อนเมนูที่กำลังพัฒนา')
+          : (lang === 'en' ? `Upcoming menus (${soonN})` : `เมนูที่กำลังพัฒนา (${soonN})`)}</span></button>` : '';
     const mains = [].concat(mod.main || []);
     const main = mains.map((m, i) => `<a class="module-main${i ? ' is-secondary' : ''}" href="${escapeAttr(m.url)}" target="_blank" rel="noopener noreferrer" data-system-id="${escapeAttr(m.statId || '')}" data-label="${escapeAttr(lang === 'en' ? m.en : m.th)}">
         ${m.icon ? `<i data-lucide="${escapeAttr(m.icon)}"></i>` : ''}<span>${escapeAttr(lang === 'en' ? m.en : m.th)}</span><i data-lucide="arrow-up-right"></i></a>`).join('');
-    return `<section class="module c-${mod.color}" id="${mod.id}" data-module="${mod.id}" aria-labelledby="${mod.id}-title">
+    return `<section class="module c-${mod.color}${open ? ' show-soon' : ''}" id="${mod.id}" data-module="${mod.id}" aria-labelledby="${mod.id}-title">
       <header class="module-head">
         <span class="module-no">${escapeAttr(mod.no)}</span>
         <div class="module-title">
@@ -84,13 +92,51 @@ function renderModules(lang) {
         <span class="module-ready">${ready}/${mod.items.length} ${lang === 'en' ? 'ready' : 'พร้อมใช้'}</span>
       </header>
       <ul class="menu-list">${mod.items.map(item => renderItem(item, mod, lang)).join('')}</ul>
+      ${soonToggle}
       ${main ? `<div class="module-foot">${main}</div>` : ''}
     </section>`;
   }).join('');
 }
 
+const quickRoot = document.getElementById('quickGrid');
+const QUICK_DEFAULT = ['school-email', 'document', 'savings', 'salary', 'sis', 'information'];
+
+function renderQuick(lang) {
+  if (!quickRoot) return;
+  let order = [];
+  try {
+    const data = (typeof lastStats !== 'undefined' && lastStats?.data) || JSON.parse(localStorage.getItem('bankhumPortalStatsV23_0') || 'null');
+    if (data?.items) order = data.items.filter(i => i.count > 0).map(i => i.id);
+  } catch (_) {}
+  order = [...order, ...QUICK_DEFAULT];
+  const seen = new Set();
+  const picks = [];
+  for (const id of order) {
+    if (seen.has(id)) continue;
+    seen.add(id);
+    for (const mod of MENU) {
+      const item = mod.items.find(i => i.statId === id && i.url && !i.internal);
+      if (item) { picks.push({ item, mod }); break; }
+    }
+    if (picks.length === 6) break;
+  }
+  quickRoot.innerHTML = picks.map(({ item, mod }) => {
+    const label = escapeAttr(itemLabel(item, lang));
+    return `<a class="quick-tile c-${mod.color}" href="${escapeAttr(item.url)}" target="_blank" rel="noopener noreferrer" data-system-id="${escapeAttr(item.statId)}" data-label="${label}">
+      <span class="quick-icon"><i data-lucide="${escapeAttr(item.icon)}"></i></span><span class="quick-label">${label}</span></a>`;
+  }).join('');
+}
+
+quickRoot?.addEventListener('click', event => {
+  const link = event.target.closest('a[data-system-id]');
+  if (!link) return;
+  recordUsage(link.dataset.systemId);
+  showToast(currentLang() === 'en' ? `Opening ${link.dataset.label}…` : `กำลังเปิด ${link.dataset.label}...`);
+});
+
 function renderMenu() {
   const lang = currentLang();
+  renderQuick(lang);
   renderLauncher(lang);
   renderModules(lang);
   updateCounts();
@@ -126,6 +172,7 @@ function applyFilters() {
     mod.hidden = modVisible === 0;
     visible += modVisible;
   });
+  modulesRoot.classList.toggle('reveal-soon', !!q || currentFilter === 'soon');
   if (emptyState) emptyState.hidden = visible !== 0;
   if (clearSearch) clearSearch.hidden = !q;
 }
@@ -157,6 +204,15 @@ resetFilter?.addEventListener('click', () => {
 
 // Clicks on menu buttons: count usage for real systems, explain "coming soon" ones.
 modulesRoot?.addEventListener('click', event => {
+  const toggle = event.target.closest('[data-soon-toggle]');
+  if (toggle) {
+    const id = toggle.dataset.soonToggle;
+    openSoonModules.has(id) ? openSoonModules.delete(id) : openSoonModules.add(id);
+    renderModules(currentLang());
+    applyFilters();
+    refreshIcons();
+    return;
+  }
   const soon = event.target.closest('.menu-tile.is-soon');
   if (soon) {
     showToast(currentLang() === 'en'
@@ -280,6 +336,7 @@ function paintDashboard() {
   if (!box || !lastStats) return;
   const lang = currentLang();
   box.innerHTML = rankingHtml(lastStats.data, lang);
+  if (statsDays === 0) renderQuick(lang);
   const badge = document.getElementById('statsSourceBadge');
   if (badge) {
     const time = new Date(lastStats.data.updated).toLocaleTimeString(lang === 'en' ? 'en-GB' : 'th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
@@ -376,7 +433,7 @@ window.addEventListener('appinstalled', () => showToast('ติดตั้ง B
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('./sw.js?v=25', { updateViaCache: 'none' });
+      const reg = await navigator.serviceWorker.register('./sw.js?v=26', { updateViaCache: 'none' });
       await reg.update();
     } catch (_) {}
   });
@@ -511,6 +568,7 @@ const thToEn = new Map([
   ['โรงเรียนคุณภาพ','Quality School'],['ข้อมูลและเอกสารที่เกี่ยวข้องกับการดำเนินงานโรงเรียนคุณภาพ','Quality School information and supporting documents.'],['เปิดเว็บไซต์โรงเรียนคุณภาพ','Open Quality School'],
   ['ประเมิน สมศ. รอบ 5','ONESQA Round 5'],['ข้อมูล เอกสาร และหลักฐานประกอบการประเมินคุณภาพภายนอก สมศ. รอบ 5','Documents and evidence for ONESQA external quality assessment Round 5.'],['เปิดเว็บไซต์ประเมิน สมศ.','Open ONESQA'],
   ['อันดับระบบที่ใช้งานมากที่สุด','Most used systems'],['เรียงจากจำนวนครั้งที่เปิดใช้งานจริงของผู้ใช้ทุกคน','Ranked by how often everyone opens each system.'],['จัดอันดับระบบที่ถูกเปิดใช้งานมากที่สุด อัปเดตอัตโนมัติทุก 1 นาที','Systems ranked by usage, refreshed every minute.'],['30 วัน','30 days'],['7 วัน','7 days'],
+  ['ใช้บ่อย','Frequently used'],['เรียงตามสถิติการใช้งานจริง','Based on real usage'],
   ['ไม่พบระบบที่ค้นหา','No systems found'],['ลองเปลี่ยนคำค้น หรือเลือกหมวดหมู่อื่น','Try another search term or category.'],['แสดงระบบทั้งหมด','Show all systems'],
   ['การใช้งานแต่ละระบบ','Usage by system'],['กราฟเส้นแสดงจำนวนครั้งการใช้งานของแต่ละระบบ','Line chart showing total usage for each system.'],['สถิติรวมทุกผู้ใช้','All-user statistics'],
   ['พัฒนาโดย','Developed by'],['นายดีลาภ ปราบสงบ','Mr. Deelarp Prabsangob'],['ครูชำนาญการพิเศษ','Senior Professional Level Teacher'],['© 2026 โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา) · All rights reserved.','© 2026 Bankhum School · All rights reserved.'],
