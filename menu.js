@@ -41,6 +41,7 @@ window.BANKHUM_MENU = [
       { th: 'โครงการและกิจกรรม', en: 'Projects & activities', icon: 'folder-kanban', keywords: 'project' },
       { th: 'งบประมาณ', en: 'Budget', icon: 'wallet', keywords: 'budget' },
       { th: 'การเงินและพัสดุ', en: 'Finance & supplies', icon: 'banknote', url: 'https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbwUz9mm1SC5LS2wpQPMDblnGBcJ2s4Y4-A073e42ZGrT_bIGuBLIc1nBylaj56LS_HiRw/exec', statId: 'finance', statName: 'ระบบบริหารการเงินและพัสดุโรงเรียน', keywords: 'การเงิน พัสดุ finance' },
+      { th: 'สั่งซื้ออุปกรณ์การเรียน (เรียนฟรี)', en: 'School supplies (free education)', icon: 'pencil-ruler', url: 'https://class-card-tracker.lovable.app/', statId: 'supply', statName: 'BK School Supply สั่งซื้ออุปกรณ์การศึกษา', keywords: 'อุปกรณ์การเรียน เรียนฟรี school supply สั่งซื้อ ห้องเรียน เครื่องเขียน' },
       { th: 'จัดซื้อจัดจ้าง (e-GP)', en: 'Procurement (e-GP)', icon: 'package-check', keywords: 'จัดซื้อ จัดจ้าง egp procurement' }
     ]
   },
@@ -102,6 +103,7 @@ window.BANKHUM_MENU = [
     items: [
       { th: 'ข้อมูลของฉัน', en: 'My profile', icon: 'circle-user' },
       { th: 'ผลการเรียนและตารางเรียน', en: 'Grades & timetable', icon: 'award', url: 'https://bankhum.krusarawut.com/login.php', statId: 'assessment-system', statName: 'ระบบวัดผลและประเมินผลโรงเรียน', keywords: 'เกรด คะแนน ผลการเรียน grade' },
+      { th: 'สั่งซื้ออุปกรณ์การเรียน (เรียนฟรี)', en: 'School supplies (free education)', icon: 'pencil-ruler', url: 'https://class-card-tracker.lovable.app/', statId: 'supply', statName: 'BK School Supply สั่งซื้ออุปกรณ์การศึกษา', keywords: 'อุปกรณ์การเรียน เรียนฟรี school supply สั่งซื้อ ห้องเรียน เครื่องเขียน' },
       { th: 'ประวัติการมาเรียน', en: 'Attendance history', icon: 'calendar-check' },
       { th: 'ออมทรัพย์นักเรียน', en: 'Student savings', icon: 'piggy-bank', url: 'https://script.google.com/macros/s/AKfycbzGwx_eA0a3ZBd0cTcPUXVU11mYOgXmjRJI-UHZVFyeKdKRwF7GQfPVCwiE2jh5mO1YGw/exec', statId: 'savings', statName: 'ระบบออมทรัพย์โรงเรียน', keywords: 'ออม เงินออม savings' },
       { th: 'สะสมความดี', en: 'Good deeds points', icon: 'medal', url: 'https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbzgHjgJodLd6Cd-3xsqg2_vKnZYNS-p7EVS-MYQWcsKqPolVuSfl862zKsJqllfLf1QFg/exec', statId: 'goodstudent', statName: 'ระบบสะสมความดีนักเรียน', keywords: 'ความดี คะแนนความดี good student' },
