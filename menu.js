@@ -129,7 +129,7 @@ window.BANKHUM_MENU = [
     items: [
       { th: 'เว็บไซต์โรงเรียน', en: 'School website', icon: 'globe', url: 'https://www.bankhum.ac.th', statId: 'website', statName: 'เว็บไซต์โรงเรียน', keywords: 'website เว็บไซต์ official' },
       { th: 'ศูนย์เผยแพร่นวัตกรรม (INNO)', en: 'Teaching innovations (INNO)', icon: 'lightbulb', url: 'https://inno.bankhum.ac.th/', statId: 'inno', statName: 'INNO BANKHUM นวัตกรรมการเรียนการสอน', keywords: 'inno นวัตกรรม ผลงานครู เผยแพร่' },
-      { th: 'ข่าวสารและกิจกรรม', en: 'News & activities', icon: 'newspaper', keywords: 'ข่าว news' },
+      { th: 'จดหมายข่าวโรงเรียน', en: 'School newsletters', icon: 'newspaper', url: 'https://new.bankhum.ac.th/', statId: 'newsletter', statName: 'คลังจดหมายข่าวโรงเรียน', keywords: 'จดหมายข่าว ข่าวสาร ข่าว กิจกรรม newsletter news ประชาสัมพันธ์' },
       { th: 'ประกาศจากโรงเรียน', en: 'School announcements', icon: 'megaphone', keywords: 'ประกาศ announcement' },
       { th: 'แกลเลอรีรูปภาพและวิดีโอ', en: 'Photo & video gallery', icon: 'images', keywords: 'รูป วิดีโอ gallery' },
       { th: 'เชื่อมต่อ Facebook / LINE', en: 'Facebook / LINE', icon: 'share-2', keywords: 'facebook line' },
