@@ -171,16 +171,21 @@ const TEACHERS = TNAMES.map((name,i)=>({no:i+1, name, scan: 405 + Math.round(rnd
 /* ---------- การเดินทาง (สัดส่วนประมาณ ปรับได้) ---------- */
 const MODES = {truck:['รถ 6 ล้อของโรงเรียน','🚚'], van:['รถตู้รับจ้าง','🚐'], car:['ผู้ปกครองขับรถยนต์มาส่ง','🚗'], moto:['ผู้ปกครองขี่มอเตอร์ไซค์มาส่ง','🛵'], bike:['ปั่นจักรยานมาเอง','🚲']};
 const ROAD_IN = -72, ROAD_OUT = -68, NORTH_Z = 56, V = 85;  // V = ความเร็วรถในฉาก (ม./นาทีจำลอง)
-// รถวิ่งเข้าในโรงเรียน: ประตู → ถนนในโรงเรียนด้านใต้สนาม → จุดรับส่งหน้าอาคารเฉลิมพระเกียรติ (ทางเดินรถทางเดียว)
-const LANE_IN = -18.5, LANE_OUT = -15.5, DROP_X = 19.5, BACK_X = 16.5;
+// เส้นทางเดินรถทางเดียว (ตามที่ครูวาดให้): เข้าประตูข้างศาล/โซลาร์เซลล์ → ถนนระหว่างอาคาร ป.1 ป.2 กับแถวต้นไม้
+// → จุดรับส่งหน้าอาคารเฉลิมพระเกียรติ → วนอ้อมหลังลานเสาธง/สนามฟุตบอล → ออกประตูหน้า (ป้ายโรงเรียน)
+const LANE = -21.5, DROP_X = 19.5;
 const SCAN_PT = [21.6, -11];   // จุดสแกนหน้า หน้าอาคารเฉลิมพระเกียรติ
-let slot = 0; const stopZ = () => -9 + (slot++ % 6) * 5;
+let slot = 0; const stopZ = () => -9 + (slot++ % 6) * 4.8;
 const VEH = [];
 const timed = (pts, t0, back) => { // ใส่เวลาให้จุดตามระยะทาง: back=true → จุดสุดท้ายถึงเวลา t0
   const d = [0]; for (let i = 1; i < pts.length; i++) d.push(d[i-1] + Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]));
   const s = back ? t0 - d[d.length-1]/V : t0; return pts.map((q, i) => [s + d[i]/V, q[0], q[1]]); };
-const IN_TO = (x, z) => [[ROAD_IN,-64],[ROAD_IN,-4],[-66,-.5],[-58,-.5],[-48,LANE_IN],[x === DROP_X ? DROP_X : x, LANE_IN],[x, z]];
-const OUT_FROM = (x, z) => [[x, z], ...(x === DROP_X ? [[DROP_X, 20],[BACK_X, 20]] : []), [x === DROP_X ? BACK_X : x, LANE_OUT],[-44,LANE_OUT],[-58,2.5],[-66,2.5],[ROAD_OUT,NORTH_Z-4],[ROAD_OUT+2,NORTH_Z],[75,NORTH_Z]];
+const ENTRY = [[ROAD_IN,-64],[ROAD_IN,-28],[-63,-26.5],[-54,-18],[-44,LANE]];
+const TO_DROP = [[10,LANE],[DROP_X,-13]];
+const LOOP_OUT = [[DROP_X,17],[8,17],[7,25],[-15,25.5],[-20,27.5],[-42,27.5],[-52,26],[-59.5,18],[-59.5,7],[-66,5],[ROAD_OUT,8],[ROAD_OUT,NORTH_Z-4],[ROAD_OUT+2,NORTH_Z],[75,NORTH_Z]];
+const IN_TO = (x, z) => x === DROP_X ? [...ENTRY, ...TO_DROP, [x, z]] : [...ENTRY, [x, LANE], [x, z]];
+const OUT_FROM = (x, z) => x === DROP_X ? [[x, z], ...LOOP_OUT]
+  : z < LANE ? [[x, z], [x + 1.5, LANE], ...TO_DROP, ...LOOP_OUT] : [[x, z], [DROP_X, z + 3], ...LOOP_OUT];
 const route = (arr, dep, x, z) => { const tr = [...timed(IN_TO(x, z), arr, true), ...timed(OUT_FROM(x, z), dep)]; tr.x = x; tr.z = z; tr.arr = arr; tr.dep = dep; return tr; };
 const dropTrip = (arr, dep, sz = stopZ()) => route(arr, dep, DROP_X, sz);
 function addVeh(type, color, trips, label){ const v = {type, color, trips, label, riders: 0}; VEH.push(v); return v; }
@@ -217,7 +222,7 @@ TEACHERS.forEach((t, i) => {
   t.mode = i % 7 === 3 || i % 7 === 6 ? 'moto' : 'car';
   const arr = 404 + rnd()*48, dep = 948 + rnd()*36;
   const nCar = TEACHERS.slice(0, i).filter(x => x.mode === t.mode).length;
-  t.spot = t.mode === 'car' ? (nCar < 10 ? [-9.5 + (nCar%5)*2.8, nCar < 5 ? -31.5 : -27.5] : [-9.5 + (nCar-10)*2.8, -22.5]) : [5.2, -32.5 + nCar*1.3];
+  t.spot = t.mode === 'car' ? (nCar < 10 ? [-9.5 + (nCar%5)*2.8, nCar < 5 ? -31.5 : -27.5] : [-9.5 + (nCar-10)*2.8, -24.8]) : [5.2, -32.5 + nCar*1.3];
   t.veh = addVeh(t.mode, t.mode === 'car' ? pick(CAR_COLS) : '#111827', [route(arr, dep, ...t.spot)]);
   t.veh.riders = 1; t.arr = arr + .3; t.leave = dep; t.drop = [t.spot[0] + 1.6, t.spot[1]];
   t.scan = Math.round(t.arr + walk(t.drop));
