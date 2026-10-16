@@ -660,21 +660,3 @@ html:not([data-theme="dark"]) .section-kicker{color:#5f574b}
 html:not([data-theme="dark"]) .launcher-section .section-heading p,
 html:not([data-theme="dark"]) .quick-head span{color:#4f483e}
 @media (prefers-reduced-motion:no-preference){html:not([data-theme="dark"]) body::before{animation:none}}
-
-/* ===== V32 white backlight glow behind cards & buttons (both themes) ===== */
-:root{--backlight:0 0 34px 4px rgba(255,252,240,.65);--backlight-sm:0 0 22px 2px rgba(255,252,240,.6)}
-html[data-theme="dark"]{--backlight:0 0 38px 4px rgba(255,255,255,.14);--backlight-sm:0 0 22px 2px rgba(255,255,255,.12)}
-html:not([data-theme="dark"]) .topbar,
-html:not([data-theme="dark"]) .hero,
-html:not([data-theme="dark"]) .module,
-html:not([data-theme="dark"]) .analytics-section,
-html:not([data-theme="dark"]) .footer{box-shadow:var(--backlight),0 14px 30px rgba(52,44,32,.14)!important}
-html[data-theme="dark"] .topbar,
-html[data-theme="dark"] .hero,
-html[data-theme="dark"] .module,
-html[data-theme="dark"] .analytics-section,
-html[data-theme="dark"] .footer{box-shadow:var(--backlight),0 15px 34px rgba(0,0,0,.3)!important}
-.launcher-tile,.quick-tile{box-shadow:var(--backlight-sm),0 6px 16px rgba(25,68,49,.06)}
-.launcher-tile:hover,.quick-tile:hover{box-shadow:0 0 30px 6px rgba(255,252,240,.85),0 10px 22px rgba(25,68,49,.1)}
-html[data-theme="dark"] .launcher-tile:hover,html[data-theme="dark"] .quick-tile:hover{box-shadow:0 0 30px 6px rgba(255,255,255,.2),0 10px 22px rgba(0,0,0,.3)}
-.mobile-nav{box-shadow:var(--backlight-sm),0 15px 40px rgba(24,60,43,.15)!important}
