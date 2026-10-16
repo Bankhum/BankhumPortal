@@ -607,3 +607,56 @@ html[data-theme="dark"] .quick-tile{background:rgba(16,32,26,.92);color:#eef8f4}
 .modules-grid.reveal-soon .soon-toggle{display:none}
 .systems-wrap.modules-grid{align-items:start}
 html[data-theme="dark"] .soon-toggle{border-color:#2f463d;color:#a9bbb3}
+
+
+/* ===== V31 light mode: vintage bare-concrete (ปูนเปลือย) wall ===== */
+html:not([data-theme="dark"]) body{background:#c9c3b8}
+html:not([data-theme="dark"]) body::before{
+  animation:none;opacity:1;filter:none;
+  background:
+    /* formwork tie holes: two rows of dots on a 4-panel grid */
+    radial-gradient(circle at 12% 18%,rgba(70,64,55,.28) 0 5px,rgba(255,255,255,.18) 6px 7px,transparent 8px) 0 0/360px 240px,
+    radial-gradient(circle at 88% 18%,rgba(70,64,55,.28) 0 5px,rgba(255,255,255,.18) 6px 7px,transparent 8px) 0 0/360px 240px,
+    /* formwork panel seams */
+    linear-gradient(90deg,rgba(90,82,70,.13) 1px,transparent 1px) 0 0/360px 240px,
+    linear-gradient(0deg,rgba(90,82,70,.10) 1px,transparent 1px) 0 0/360px 240px,
+    /* fine grain */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .32  0 0 0 0 .30  0 0 0 0 .27  0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url%28%23n%29'/%3E%3C/svg%3E") 0 0/300px 300px,
+    /* large damp / patina blotches */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='900'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.006' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .36  0 0 0 0 .34  0 0 0 0 .31  0 0 0 -1.4 .95'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url%28%23b%29'/%3E%3C/svg%3E") 0 0/900px 900px,
+    linear-gradient(160deg,#d6d0c5 0%,#c7c0b4 45%,#bdb6a9 100%)}
+html:not([data-theme="dark"]) body::after{
+  /* warm vintage wash + soft vignette */
+  background:
+    radial-gradient(ellipse at 50% 35%,rgba(255,248,232,.30) 0%,rgba(255,248,232,0) 60%),
+    radial-gradient(ellipse at 50% 50%,transparent 55%,rgba(60,50,38,.22) 100%),
+    linear-gradient(180deg,rgba(244,232,206,.14),rgba(214,198,170,.12))}
+
+/* cards: cream paper on concrete */
+html:not([data-theme="dark"]) .topbar,
+html:not([data-theme="dark"]) .hero,
+html:not([data-theme="dark"]) .module,
+html:not([data-theme="dark"]) .analytics-section,
+html:not([data-theme="dark"]) .footer,
+html:not([data-theme="dark"]) .mobile-nav{
+  background:rgba(251,248,241,.93)!important;border-color:rgba(120,108,90,.22)!important;
+  box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 14px 30px rgba(52,44,32,.16)!important}
+html:not([data-theme="dark"]) .analytics-panel,
+html:not([data-theme="dark"]) .rank-row,
+html:not([data-theme="dark"]) .rank-summary>div,
+html:not([data-theme="dark"]) .menu-tile.is-ready,
+html:not([data-theme="dark"]) .quick-tile,
+html:not([data-theme="dark"]) .metric,
+html:not([data-theme="dark"]) .search-box input,
+html:not([data-theme="dark"]) .chip:not(.active){background:#fffdf8!important}
+html:not([data-theme="dark"]) .launcher-tile{background:linear-gradient(135deg,#fffdf8 0%,var(--c-soft) 100%)}
+html:not([data-theme="dark"]) .analytics-section:before,
+html:not([data-theme="dark"]) .analytics-section:after,
+html:not([data-theme="dark"]) .hero-glow{display:none}
+/* headings sitting directly on the wall need a bit more contrast */
+html:not([data-theme="dark"]) .launcher-section .section-heading,
+html:not([data-theme="dark"]) .quick-head{text-shadow:0 1px 0 rgba(255,255,255,.55)}
+html:not([data-theme="dark"]) .section-kicker{color:#5f574b}
+html:not([data-theme="dark"]) .launcher-section .section-heading p,
+html:not([data-theme="dark"]) .quick-head span{color:#4f483e}
+@media (prefers-reduced-motion:no-preference){html:not([data-theme="dark"]) body::before{animation:none}}

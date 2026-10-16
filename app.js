@@ -433,7 +433,7 @@ window.addEventListener('appinstalled', () => showToast('ติดตั้ง B
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('./sw.js?v=30', { updateViaCache: 'none' });
+      const reg = await navigator.serviceWorker.register('./sw.js?v=31', { updateViaCache: 'none' });
       await reg.update();
     } catch (_) {}
   });
@@ -525,7 +525,7 @@ function applyTheme(theme) {
   localStorage.setItem(THEME_KEY, next);
   themeToggle?.setAttribute('aria-label', next === 'dark' ? 'เปลี่ยนเป็นธีมสว่าง' : 'เปลี่ยนเป็นธีมมืด');
   themeToggle?.setAttribute('title', next === 'dark' ? 'ธีมสว่าง' : 'ธีมมืด');
-  if (themeColorMeta) themeColorMeta.setAttribute('content', next === 'dark' ? '#0b1712' : '#0f7a5a');
+  if (themeColorMeta) themeColorMeta.setAttribute('content', next === 'dark' ? '#0b1712' : '#c9c3b8');
   refreshIcons();
 }
 
