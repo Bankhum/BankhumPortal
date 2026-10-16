@@ -376,15 +376,54 @@ const GATE = new THREE.Vector3(-58,0,1);
 const CLS_COL = {'อ.1':'#fbbf24','อ.2':'#f59e0b','ป.1':'#f97316','ป.2':'#ef4444','ป.3':'#ec4899','ป.4':'#8b5cf6','ป.5':'#3b82f6','ป.6':'#06b6d4'};
 const AGENTS = [];
 let bodies;
+// ชุดนักเรียนตามระเบียบการแต่งกายของโรงเรียน (ประถม / อนุบาล / ลูกเสือ-ยุวกาชาด / พละอนุบาล)
+const UNI = {white:'#f8fafc', navy:'#1e2a5a', skin:'#e9b48a', hair:'#1f1a17', aprn:'#159a6c', peGreen:'#5ee05a', black:'#18181b',
+  scoutPink:'#ec4899', scoutYellow:'#facc15', scoutHat:'#9c8a3c', kCap:'#1e3a8a'};
+// วันใส่ชุด (สมมติ ปรับได้): พฤหัส = ลูกเสือ-ยุวกาชาดทุกชั้น, พุธ = ชุดพละของอนุบาล, วันอื่น = ชุดนักเรียน
+const UNIFORM_DAY = {scout: 3, kPE: 2};
+function uniformOf(a){
+  if (a.kind === 't') return {shirt:'#cbd5e1', bottom:'#334155', scarf:null, hat:null, skirt:false};
+  const k = a.cls.startsWith('อ'), girl = a.ref.no % 2 === 0;
+  if (day === UNIFORM_DAY.scout) return k ? {shirt:UNI.white, bottom:UNI.navy, scarf:UNI.scoutYellow, hat:UNI.kCap, skirt:girl}
+                                         : {shirt:UNI.white, bottom:UNI.navy, scarf:UNI.scoutPink, hat: girl ? null : UNI.scoutHat, skirt:girl};
+  if (k && day === UNIFORM_DAY.kPE) return {shirt:UNI.peGreen, bottom:UNI.black, scarf:null, hat:null, skirt:false};
+  if (k) return {shirt:UNI.aprn, bottom:UNI.navy, scarf:null, hat:null, skirt:girl};
+  return {shirt:UNI.white, bottom:UNI.navy, scarf: girl && /ป\.[456]/.test(a.cls) ? UNI.navy : null, hat:null, skirt:girl};
+}
+const PARTS = {};
+let uniDay = -1;
 function initAgents(){
-  const geo = new THREE.CapsuleGeometry(0.32, 0.7, 3, 8); geo.translate(0, 0.67, 0);
   const n = STUDENTS.length + TEACHERS.length;
-  bodies = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial(), n);
-  bodies.castShadow = true; scene.add(bodies);
-  const col = new THREE.Color();
-  STUDENTS.forEach((s,i) => AGENTS.push({kind:'s', ref:s, i, cls:s.cls, scale: s.cls.startsWith('อ') ? 1.0 : 1.25, color: CLS_COL[s.cls], ox: rnd(), oz: rnd(), pos: GATE.clone(), shown:false}));
-  TEACHERS.forEach((t,j) => AGENTS.push({kind:'t', ref:t, i: STUDENTS.length+j, scale: 1.6, color:'#1f2937', ox: rnd(), oz: rnd(), pos: GATE.clone(), shown:false}));
-  for (const a of AGENTS) bodies.setColorAt(a.i, col.set(a.color));
+  const mk = (geo, color) => { const m = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial(color ? {color} : {}), n); m.castShadow = true; m.frustumCulled = false; scene.add(m); return m; };
+  PARTS.legs = mk(new THREE.CylinderGeometry(.2, .2, .42, 8).translate(0, .21, 0), UNI.skin);
+  PARTS.shorts = mk(new THREE.CylinderGeometry(.28, .3, .3, 10).translate(0, .52, 0));
+  PARTS.skirt = mk(new THREE.CylinderGeometry(.27, .42, .4, 10).translate(0, .5, 0));
+  PARTS.torso = mk(new THREE.CylinderGeometry(.27, .3, .55, 10).translate(0, .94, 0));
+  PARTS.head = mk(new THREE.SphereGeometry(.25, 12, 10).translate(0, 1.44, 0), UNI.skin);
+  PARTS.hair = mk(new THREE.SphereGeometry(.265, 12, 8, 0, Math.PI*2, 0, Math.PI*.42).translate(0, 1.47, 0), UNI.hair);
+  PARTS.scarf = mk(new THREE.ConeGeometry(.2, .36, 3).rotateX(Math.PI).translate(0, 1.04, .26));
+  PARTS.hat = mk(new THREE.CylinderGeometry(.42, .44, .06, 14).translate(0, 1.6, 0));
+  PARTS.crown = mk(new THREE.CylinderGeometry(.2, .26, .2, 12).translate(0, 1.7, 0));
+  bodies = PARTS.torso;
+  STUDENTS.forEach((s,i) => AGENTS.push({kind:'s', ref:s, i, cls:s.cls, scale: s.cls.startsWith('อ') ? .85 : 1.05, color: CLS_COL[s.cls], ox: rnd(), oz: rnd(), pos: GATE.clone(), shown:false}));
+  TEACHERS.forEach((t,j) => AGENTS.push({kind:'t', ref:t, i: STUDENTS.length+j, scale: 1.35, color:'#1f2937', ox: rnd(), oz: rnd(), pos: GATE.clone(), shown:false}));
+}
+function applyUniforms(){
+  uniDay = day; const col = new THREE.Color();
+  for (const a of AGENTS) {
+    const u = a.uni = uniformOf(a);
+    PARTS.torso.setColorAt(a.i, col.set(u.shirt)); PARTS.shorts.setColorAt(a.i, col.set(u.bottom)); PARTS.skirt.setColorAt(a.i, col.set(u.bottom));
+    PARTS.scarf.setColorAt(a.i, col.set(u.scarf || '#000')); PARTS.hat.setColorAt(a.i, col.set(u.hat || '#000')); PARTS.crown.setColorAt(a.i, col.set(u.hat || '#000'));
+  }
+  for (const k of ['torso','shorts','skirt','scarf','hat','crown']) PARTS[k].instanceColor.needsUpdate = true;
+}
+const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
+function setParts(a, m){
+  const u = a.uni, show = k => PARTS[k].setMatrixAt(a.i, m), hide = k => PARTS[k].setMatrixAt(a.i, ZERO);
+  show('legs'); show('torso'); show('head');
+  if (u.skirt) { show('skirt'); hide('shorts'); } else { show('shorts'); hide('skirt'); }
+  u.hat ? (hide('hair'), show('hat'), show('crown')) : (show('hair'), hide('hat'), hide('crown'));
+  u.scarf ? show('scarf') : hide('scarf');
 }
 function inZone(name, ox, oz){
   const z = zones[name]; if (!z) return GATE.clone();
@@ -547,6 +586,7 @@ const dummy = new THREE.Object3D();
 let desks;
 function moveAgents(dt){
   if (!bodies) return;
+  if (uniDay !== day) applyUniforms();
   const t = performance.now()/1000;
   if (!desks) { desks = new THREE.InstancedMesh(new THREE.BoxGeometry(.95,.08,.6).translate(0,.62,0), new THREE.MeshLambertMaterial({color:'#b45309'}), STUDENTS.length); desks.castShadow = true; scene.add(desks); }
   for (const a of AGENTS) {
@@ -567,13 +607,13 @@ function moveAgents(dt){
     if (pose === 'circle') dummy.position.y += Math.max(0, Math.sin(t*4 + a.i*.3))*.15;
     if (T && T.teach) dummy.rotation.z = Math.sin(t*1.5)*.12;              // ครูกำลังสอน
     const s = a.shown ? a.scale : 0;
-    dummy.scale.set(s, s*sy, s); dummy.updateMatrix(); bodies.setMatrixAt(a.i, dummy.matrix);
+    dummy.scale.set(s, s*sy, s); dummy.updateMatrix(); setParts(a, dummy.matrix);
     if (a.kind === 's') {
       dummy.rotation.set(0,0,0); dummy.position.copy(a.pos).add(new THREE.Vector3(0,0,-.55));
       dummy.scale.setScalar(a.shown && pose === 'sit' ? 1 : 0); dummy.updateMatrix(); desks.setMatrixAt(a.i, dummy.matrix);
     }
   }
-  bodies.instanceMatrix.needsUpdate = true; desks.instanceMatrix.needsUpdate = true;
+  for (const k in PARTS) PARTS[k].instanceMatrix.needsUpdate = true; desks.instanceMatrix.needsUpdate = true;
 }
 
 /* ---------- คลิกดูอาคาร ---------- */
