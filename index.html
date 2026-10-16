@@ -112,7 +112,7 @@ canvas{cursor:pointer}
 </div>
 <div id="title">จำลองหนึ่งวันที่โรงเรียนบ้านคุ้ม</div>
 <div id="hint">คลิกอาคารเพื่อดูว่าใครอยู่ข้างใน</div>
-<div id="note">ตารางเรียน ป.1–ป.6: ของจริง ภาคเรียนที่ 1/2569 · อนุบาลและผลสแกนหน้า: ข้อมูลตัวอย่าง</div>
+<div id="note">ตารางเรียน ป.1–ป.6: ของจริง ภาคเรียนที่ 1/2569 · กิจวัตรอนุบาล: ตามที่ครูแจ้ง · ผลสแกนหน้า: ข้อมูลตัวอย่าง</div>
 <div class="panel" id="bar">
   <div class="r1"><button id="play" aria-label="เล่น/หยุด">⏸</button>
   <input id="time" type="range" min="355" max="990" step="1" value="420" aria-label="เวลา">
@@ -131,11 +131,18 @@ const CLASSES = [['อ.1',14],['อ.2',15],['ป.1',24],['ป.2',23],['ป.3',27
 const HOMEROOM = {'อ.1':'Kindergarten','อ.2':'Kindergarten','ป.1':'P1P2_Classroom','ป.2':'P1P2_Classroom','ป.3':'Wooden_Building','ป.4':'Wooden_Building','ป.5':'Chalerm_Building','ป.6':'Chalerm_Building'};
 // ตารางเรียนจริง ภาคเรียนที่ 1/2569 (ป.1–ป.6) · "วิชา|ครู" ต่อคาบ, จันทร์–ศุกร์
 const REAL = {"ป.1": [["กิจกรรมส่องโลก ส่องใจ|", "ภาษาไทย|ราตรี", "ภาษาอังกฤษ|กมลวรรณ", "คณิตศาสตร์|สุทิสา", "กิจกรรมทักษะทางน้ำและการเอาตัวรอด|พลกฤต", "เทคโนโลยีเพื่อการเรียนรู้|ดีลาภ"], ["คณิตศาสตร์|สุทิสา", "ภาษาไทย|ราตรี", "ความเป็นพลเมือง|ราตรี", "วิถีธรรมวิถีไทย|สุทิสา", "ศิลปะและวัฒนธรรมเพื่อสุนทรียภาพ|ณัชลักษมณ์", "กิจกรรมอ่านสร้างสรรค์ แบ่งปันแรงบันดาลใจ|ราตรี"], ["คณิตศาสตร์|สุทิสา", "ภาษาอังกฤษ|กมลวรรณ", "ภาษาไทย|ราตรี", "สุขภาพกายและจิต|พลกฤต", "กิจกรรมปลุกพลังคิดไว|สุทิสา", "เศรษฐกิจและการเงิน|รัตติกาล"], ["ภาษาไทย|ราตรี", "คณิตศาสตร์|สุทิสา", "ภาษาอังกฤษ|กมลวรรณ", "ภาษาจีนเพื่อการสื่อสาร|อรวรรณ", "การเรียนรู้เพื่อชีวิต|รัตติกาล", "กิจกรรมพัฒนาผู้เรียน|"], ["ภาษาอังกฤษ|กมลวรรณ", "คณิตศาสตร์|สุทิสา", "ภาษาไทย|ราตรี", "นักวิทยาศาสตร์น้อย|วิไลวรรณ", "การป้องกันการทุจริต|ราตรี", "กิจกรรม Word Power World Power|สุทิสา"]], "ป.2": [["กิจกรรมส่องโลก ส่องใจ|", "คณิตศาสตร์|สุทิสา", "ภาษาไทย|ราตรี", "ภาษาอังกฤษ|กมลวรรณ", "ความเป็นพลเมือง|ดีลาภ", "กิจกรรมทักษะทางน้ำและการเอาตัวรอด|พลกฤต"], ["ภาษาไทย|ราตรี", "คณิตศาสตร์|สุทิสา", "ภาษาจีนเพื่อการสื่อสาร|อรวรรณ", "วิถีธรรมวิถีไทย|ดีลาภ", "กิจกรรม Word Power World Power|กมลวรรณ", "ศิลปะและวัฒนธรรมเพื่อสุนทรียภาพ|ณัชลักษมณ์"], ["ภาษาไทย|ราตรี", "คณิตศาสตร์|สุทิสา", "ภาษาอังกฤษ|กมลวรรณ", "เทคโนโลยีเพื่อการเรียนรู้|ดีลาภ", "การเรียนรู้เพื่อชีวิต|รัตติกาล", "กิจกรรมปลุกพลังคิดไว|ดีลาภ"], ["คณิตศาสตร์|สุทิสา", "ภาษาไทย|ราตรี", "นักวิทยาศาสตร์น้อย|วิไลวรรณ", "ภาษาอังกฤษ|กมลวรรณ", "การป้องกันการทุจริต|ดีลาภ", "กิจกรรมพัฒนาผู้เรียน|"], ["ภาษาจีนเพื่อการสื่อสาร|อรวรรณ", "ภาษาอังกฤษ|กมลวรรณ", "สุขภาพกายและจิต|พลกฤต", "เศรษฐกิจและการเงิน|รัตติกาล", "นักวิทยาศาสตร์น้อย|วิไลวรรณ", "กิจกรรมอ่านสร้างสรรค์ แบ่งปันแรงบันดาลใจ|กมลวรรณ"]], "ป.3": [["กิจกรรมส่องโลก ส่องใจ|", "ภาษาไทย|นิภา", "คณิตศาสตร์|นิภา", "นักวิทยาศาสตร์น้อย|วิไลวรรณ", "นักวิทยาศาสตร์น้อย|วิไลวรรณ", "การเรียนรู้เพื่อชีวิต|รัตติกาล"], ["ภาษาไทย|นิภา", "ภาษาอังกฤษ|กมลวรรณ", "เศรษฐกิจและการเงิน|รัตติกาล", "สุขภาพกายและจิต|พลกฤต", "กิจกรรมอ่านสร้างสรรค์ แบ่งปันแรงบันดาลใจ|นิภา", "กิจกรรมทักษะทางน้ำและการเอาตัวรอด|พลกฤต"], ["ภาษาอังกฤษ|กมลวรรณ", "ภาษาไทย|นิภา", "คณิตศาสตร์|นิภา", "เศรษฐกิจและการเงิน|รัตติกาล", "เทคโนโลยีเพื่อการเรียนรู้|ดีลาภ", "กิจกรรมปลุกพลังคิดไว|นิภา"], ["คณิตศาสตร์|นิภา", "ภาษาไทย|นิภา", "ภาษาจีนเพื่อการสื่อสาร|อรวรรณ", "ความเป็นพลเมือง|นิภา", "ศิลปะและวัฒนธรรมเพื่อสุนทรียภาพ|ณัชลักษมณ์", "กิจกรรมพัฒนาผู้เรียน|"], ["คณิตศาสตร์|นิภา", "ภาษาจีนเพื่อการสื่อสาร|อรวรรณ", "วิถีธรรมวิถีไทย|นิภา", "เทคโนโลยีเพื่อการเรียนรู้|ดีลาภ", "การป้องกันการทุจริต|นิภา", "กิจกรรม Word Power World Power|นิภา"]], "ป.4": [["กิจกรรมส่องโลก ส่องใจ|", "สังคมศึกษา|รัตติกาล", "ภาษาอังกฤษ|ทรงวุฒิ", "ภาษาไทย|ภัทรวดี", "คณิตศาสตร์|วริทธิ์นันท์", "การงานอาชีพ|ยุรนันท์"], ["พลศึกษา|พลกฤต", "สังคมศึกษา|รัตติกาล", "คณิตศาสตร์|วริทธิ์นันท์", "ประวัติศาสตร์|ทรงวุฒิ", "ว่ายน้ำ|พลกฤต", "ชุมนุม|"], ["วิทยาศาสตร์|วิไลวรรณ", "วิทยาศาสตร์|วิไลวรรณ", "ภาษาอังกฤษ|ทรงวุฒิ", "ศิลปะ|ณัชลักษมณ์", "แนะแนว|ยุรนันท์", "ภาษาไทย|ภัทรวดี"], ["คณิตศาสตร์|วริทธิ์นันท์", "สุขศึกษา|พลกฤต", "วิทยาการคำนวณ|ดีลาภ", "ภาษาไทย|ภัทรวดี", "ภาษาจีน|อรวรรณ", "ลูกเสือ ยุวกาชาด|"], ["ต้านทุจริต|ทรงวุฒิ", "ภาษาไทย|ภัทรวดี", "คณิตศาสตร์|วริทธิ์นันท์", "ศิลปะ|ณัชลักษมณ์", "หน้าที่พลเมือง|ทรงวุฒิ", "ภาษาจีน|อรวรรณ"]], "ป.5": [["กิจกรรมส่องโลก ส่องใจ|", "ภาษาไทย|ภัทรวดี", "ประวัติศาสตร์|วริทธิ์นันท์", "คณิตศาสตร์|วริทธิ์นันท์", "สังคมศึกษา|รัตติกาล", "ต้านทุจริต|ทรงวุฒิ"], ["ภาษาไทย|ภัทรวดี", "ภาษาอังกฤษ|ทรงวุฒิ", "ศิลปะ|ณัชลักษมณ์", "คณิตศาสตร์|วริทธิ์นันท์", "การงานอาชีพ|ยุรนันท์", "ชุมนุม|"], ["ภาษาไทย|ภัทรวดี", "พลศึกษา|พลกฤต", "สังคมศึกษา|รัตติกาล", "ภาษาจีน|อรวรรณ", "ว่ายน้ำ|พลกฤต", "ภาษาอังกฤษ|ทรงวุฒิ"], ["วิทยาศาสตร์|วิไลวรรณ", "วิทยาศาสตร์|วิไลวรรณ", "แนะแนว|ภัทรวดี", "ศิลปะ|ณัชลักษมณ์", "สุขศึกษา|พลกฤต", "ลูกเสือ ยุวกาชาด|"], ["ภาษาไทย|ภัทรวดี", "คณิตศาสตร์|วริทธิ์นันท์", "หน้าที่พลเมือง|ทรงวุฒิ", "ภาษาจีน|อรวรรณ", "วิทยาการคำนวณ|ดีลาภ", "คณิตศาสตร์|วริทธิ์นันท์"]], "ป.6": [["กิจกรรมส่องโลก ส่องใจ|", "คณิตศาสตร์|วริทธิ์นันท์", "การงานอาชีพ|ดีลาภ", "ภาษาอังกฤษ|ทรงวุฒิ", "ภาษาไทย|ภัทรวดี", "ภาษาจีน|อรวรรณ"], ["คณิตศาสตร์|วริทธิ์นันท์", "ภาษาไทย|ภัทรวดี", "แนะแนว|วิไลวรรณ", "วิทยาศาสตร์|วิไลวรรณ", "วิทยาศาสตร์|วิไลวรรณ", "ชุมนุม|"], ["พลศึกษา|พลกฤต", "ภาษาไทย|ภัทรวดี", "ศิลปะ|ณัชลักษมณ์", "คณิตศาสตร์|วริทธิ์นันท์", "ภาษาจีน|อรวรรณ", "ว่ายน้ำ|พลกฤต"], ["สังคมศึกษา|รัตติกาล", "ภาษาไทย|ภัทรวดี", "ศิลปะ|ณัชลักษมณ์", "วิทยาการคำนวณ|ดีลาภ", "หน้าที่พลเมือง|ทรงวุฒิ", "ลูกเสือ ยุวกาชาด|"], ["คณิตศาสตร์|วริทธิ์นันท์", "สังคมศึกษา|รัตติกาล", "ประวัติศาสตร์|วิไลวรรณ", "ภาษาอังกฤษ|ทรงวุฒิ", "สุขศึกษา|พลกฤต", "ต้านทุจริต|ทรงวุฒิ"]]};
-const KG = ['เตรียมความพร้อม','ศิลปะ','นิทาน','นอนกลางวัน','เล่นอิสระ','เตรียมความพร้อม']; // อนุบาล: ยังเป็นข้อมูลตัวอย่าง
+const KG = ['เตรียมความพร้อม','ศิลปะ','นิทาน','นอนกลางวัน','เล่นอิสระ','เตรียมความพร้อม']; // ใช้เฉพาะชื่อในตาราง
+// กิจวัตรอนุบาล (ตามที่ครูบอก: เรียน 08:30–10:30 → กินข้าวโรงอาหาร → แปรงฟัน → เข้าห้อง ~13:30 นอน → กลับบ้าน)
+// ช่วงที่ไม่ได้ระบุ (เล่นอิสระ 11:45–13:30, ตื่นนอน 14:45) เป็นค่าสมมติ
+const KG_DAY = [[510,'กิจกรรมเตรียมความพร้อม','Kindergarten','sit'],[570,'กิจกรรมสร้างสรรค์ ศิลปะ นิทาน','Kindergarten','sit'],
+  [630,'รับประทานอาหารกลางวัน','Canteen','sit'],[675,'แปรงฟัน','BRUSH','stand'],[705,'เล่นอิสระ สนามเด็กเล่น','PLAY','play'],
+  [810,'นอนกลางวัน','Kindergarten','sleep'],[885,'ตื่นนอน ดื่มนม เตรียมกลับบ้าน','Kindergarten','sit']];
+const kgAt = m => { if (m < 510 || m >= 930) return null; let k = null; for (const r of KG_DAY) if (m >= r[0]) k = r; return k; };
+const isKG = c => c.startsWith('อ');
 const DAYS = ['จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์'];
 let day = (() => { const d = new Date().getDay(); return d >= 1 && d <= 5 ? d-1 : 0; })();
 const lesson = (c, p) => {
-  if (!REAL[c]) return {sub: KG[p], tea: 'ตัวอย่าง', where: 'Kindergarten'};
+  if (!REAL[c]) { const k = kgAt([510,570,630,750,810,870][p]); return {sub: k[1], tea: 'ครูอนุบาล', where: k[2] === 'Canteen' ? 'Canteen' : 'Kindergarten'}; }
   const [sub, tea] = REAL[c][day][p].split('|');
   return {sub, tea: tea || 'ครูทุกคน', where: placeOf(sub) || HOMEROOM[c]};
 };
@@ -151,9 +158,17 @@ function placeOf(s){
 }
 // กิจวัตรประจำวัน (นาทีนับจากเที่ยงคืน)
 const ROUTINE = [
-  [355,'ก่อนเปิดประตู',null],[360,'มาโรงเรียน (สแกนหน้า)','gate'],[470,'เข้าแถวหน้าเสาธง','Flagpole'],
-  [510,'คาบ 1',0],[570,'คาบ 2',1],[630,'คาบ 3',2],[690,'พักกลางวัน','Canteen'],
+  [355,'ก่อนเปิดประตู',null],[360,'มาโรงเรียน สแกนหน้า เก็บกระเป๋า','gate'],[460,'ทำเวรทำความสะอาดตามกลุ่มสี','duty'],
+  [480,'เข้าแถว เคารพธงชาติ สวดมนต์ ครูเวรอบรม','Flagpole'],[500,'โฮมรูม ออมทรัพย์','homeroom'],[510,'คาบ 1',0],[570,'คาบ 2',1],[630,'คาบ 3',2],[690,'พักกลางวัน','Canteen'],
   [750,'คาบ 4',3],[810,'คาบ 5',4],[870,'คาบ 6',5],[930,'เลิกเรียน กลับบ้าน','gate'],[960,'ครูทยอยกลับบ้าน','gate'],[990,'',null]];
+// กลุ่มสีทำเวรตอนเช้า (สมมติ 4 สี คละชั้น ป.1–6) และพื้นที่รับผิดชอบ
+const COLOR_GROUPS = [['แดง','#ef4444','Canteen','กวาดโรงอาหาร'],['เหลือง','#eab308','Flagpole','กวาดลานเสาธง'],
+  ['เขียว','#22c55e','Field','เก็บขยะรอบสนาม'],['ฟ้า','#3b82f6','Multipurpose_Hall','ทำความสะอาดอาคารเอนกประสงค์']];
+// ครูประจำชั้น (โฮมรูม): ครูที่สอนห้องนั้นบ่อยที่สุดในตาราง (สมมติ)
+const HR_TEACHER = (() => { const out = {}, used = new Set();
+  for (const c of Object.keys(REAL)) { const cnt = {}; for (const d of REAL[c]) for (const x of d) { const t = x.split('|')[1]; if (t) cnt[t] = (cnt[t]||0) + 1; }
+    const best = Object.entries(cnt).sort((a,b) => b[1]-a[1]).find(([t]) => !used.has(t)); if (best) { used.add(best[0]); out['ครู'+best[0]] = c; } }
+  return out; })();
 const LATE = 470; // สแกนหลัง 07:50 = สาย
 
 // สร้างผลสแกนหน้าจำลอง (ของจริง: ไฟล์ CSV / API จากเครื่องสแกน)
@@ -297,12 +312,10 @@ const phaseAt = m => { let p = ROUTINE[0]; for (const r of ROUTINE) if (m >= r[0
 const present = (m) => STUDENTS.filter(s => s.scan != null && s.scan <= m);
 
 function occupancy(m){
-  const [,name,where] = phaseAt(m); const occ = {};
-  const add = (z,n,txt) => { if(!z) return; (occ[z] ??= {n:0,txt:new Set()}); occ[z].n += n; occ[z].txt.add(txt); };
-  const by = {}; for (const s of present(m)) by[s.cls] = (by[s.cls]||0)+1;
-  if (typeof where === 'number') for (const c in by) { const l = lesson(c, where); add(l.where, by[c], `${c} ${l.sub}`); }
-  else if (where === 'Flagpole' || where === 'Canteen') for (const c in by) add(where, by[c], name);
-  else if (where === 'gate' && m < 930) for (const c in by) add('Flagpole', by[c], 'รอเข้าแถว');
+  const occ = {};
+  for (const a of AGENTS) { if (a.kind !== 's') continue; const [z, txt] = placeOfAgent(a, m); if (!z || !zones[z]) continue;
+    const o = occ[z] ??= {n:0, txt:new Set(), cnt:{}}; o.n++; const k = `${a.cls} ${txt}`; o.cnt[k] = (o.cnt[k]||0) + 1; }
+  for (const o of Object.values(occ)) o.txt = new Set(Object.entries(o.cnt).sort((x,y) => y[1]-x[1]).map(([k]) => k));
   return occ;
 }
 
@@ -352,6 +365,7 @@ function onModel(g) {
     mesh.userData.zone = name;
   }
   root.children.forEach(o => { if (/^(Student|Teacher)_/.test(o.name)) o.visible = false; });
+  const tent = root.getObjectByName('Museum_Walk'); if (tent) tent.removeFromParent();   // เอาเต็นท์หลังคาโค้งสีน้ำเงินออก (ตามที่ครูขอ)
   const sign = root.getObjectByName('School_Sign'); if (sign) GATE.copy(new THREE.Box3().setFromObject(sign).getCenter(new THREE.Vector3())).setY(0).add(new THREE.Vector3(-4,0,0));
   initAgents(root); applyXrayAll();
   $('info').onclick = () => document.body.classList.toggle('sheet');
@@ -382,6 +396,10 @@ const UNI = {white:'#f8fafc', navy:'#1e2a5a', skin:'#e9b48a', hair:'#1f1a17', ap
 // วันใส่ชุด (สมมติ ปรับได้): พฤหัส = ลูกเสือ-ยุวกาชาดทุกชั้น, พุธ = ชุดพละของอนุบาล, วันอื่น = ชุดนักเรียน
 const UNIFORM_DAY = {scout: 3, kPE: 2};
 function uniformOf(a){
+  if (a.kind === 's' && uniDuty && !isKG(a.cls)) { const u = uniformBase(a); return {...u, scarf: COLOR_GROUPS[a.ref.grp ?? ((a.ref.no + CLASSES.findIndex(([c]) => c === a.cls)) % 4)][1]}; }
+  return uniformBase(a);
+}
+function uniformBase(a){
   if (a.kind === 't') return {shirt:'#cbd5e1', bottom:'#334155', scarf:null, hat:null, skirt:false};
   const k = a.cls.startsWith('อ'), girl = a.ref.no % 2 === 0;
   if (day === UNIFORM_DAY.scout) return k ? {shirt:UNI.white, bottom:UNI.navy, scarf:UNI.scoutYellow, hat:UNI.kCap, skirt:girl}
@@ -391,7 +409,7 @@ function uniformOf(a){
   return {shirt:UNI.white, bottom:UNI.navy, scarf: girl && /ป\.[456]/.test(a.cls) ? UNI.navy : null, hat:null, skirt:girl};
 }
 const PARTS = {};
-let uniDay = -1;
+let uniDay = -1, uniDuty = false;
 function initAgents(){
   const n = STUDENTS.length + TEACHERS.length;
   const mk = (geo, color) => { const m = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial(color ? {color} : {}), n); m.castShadow = true; m.frustumCulled = false; scene.add(m); return m; };
@@ -443,9 +461,26 @@ function placeOfAgent(a, m){
   if (a.kind === 't' && m >= 930) return m >= r.leave - 5 ? ['PARK','เดินไปที่รถ'] : ['Chalerm_Building','ห้องพักครู'];
   if (a.kind === 's' && m >= 930 && r.pickAt != null && m >= r.pickAt) return ['PICK','ขึ้นรถกลับบ้าน'];
   if (a.kind === 's' && m >= 930) return ['GATE', r.mode === 'bike' ? 'ไปเอาจักรยาน' : `รอ${MODES[r.mode][0]} หน้าอาคารเฉลิมฯ`];
+  const kg = kgAt(m);
+  if (kg && (a.kind === 's' ? isKG(a.cls) : r.name.startsWith('ครูอนุบาล'))) return [kg[2], kg[1]];
   const [, name, where] = phaseAt(m);
   if (where === 'gate' && m >= 930) return ['GATE','กลับบ้าน'];
-  if (where === 'gate' || where === 'Flagpole') return ['Flagpole', where === 'gate' ? 'รอเข้าแถว' : 'เข้าแถว'];
+  if (where === 'Flagpole') return ['Flagpole', a.kind === 't' ? 'ร่วมกิจกรรมหน้าเสาธง' : 'เข้าแถว เคารพธงชาติ สวดมนต์'];
+  if (where === 'gate') {
+    if (a.kind === 't') return ['Chalerm_Building','ห้องพักครู เตรียมการสอน'];
+    if (m < r.scan + 4) return [HOMEROOM[a.cls], 'เอากระเป๋าไปเก็บที่ห้อง'];
+    if (isKG(a.cls)) return ['PLAY','วิ่งเล่นสนามเด็กเล่น'];
+    return (r.no + a.cls.length) % 5 < 2 ? ['Canteen','ซื้อขนมที่โรงอาหาร'] : ['FREE','วิ่งเล่นรอบลาน'];
+  }
+  if (where === 'duty') {
+    if (a.kind === 't') { if (r.name.startsWith('ครูอนุบาล')) return ['Kindergarten','ดูแลเด็กอนุบาล']; const g = COLOR_GROUPS[r.no % 4]; return [g[2], `ดูแลเวรกลุ่มสี${g[0]}`]; }
+    if (isKG(a.cls)) return ['Kindergarten','ครูอนุบาลดูแลในห้อง'];
+    const g = COLOR_GROUPS[r.grp ??= (r.no + CLASSES.findIndex(([c]) => c === a.cls)) % 4]; return [g[2], `กลุ่มสี${g[0]} ${g[3]}`];
+  }
+  if (where === 'homeroom') {
+    if (a.kind === 't') { const c = r.name.startsWith('ครูอนุบาล') ? 'อ.' + r.name.slice(-1) : HR_TEACHER[r.name]; return c ? [HOMEROOM[c], `โฮมรูม ${c}`] : ['Chalerm_Building','ห้องพักครู']; }
+    return [HOMEROOM[a.cls], 'โฮมรูม ออมทรัพย์'];
+  }
   if (where === 'Canteen') return ['Canteen','กินข้าวกลางวัน'];
   if (where == null) return ['GATE',''];
   if (a.kind === 't') return teacherPlace(r, where);
@@ -493,9 +528,40 @@ function slotOf(r, pose, idx, cnt, ox, oz){
 const teacherFront = (r, pose) => pose === 'sit' ? new THREE.Vector3(r.cx, r.y, r.cz - r.d*.48)
   : pose === 'run' || pose === 'circle' ? new THREE.Vector3(r.cx, r.y, r.cz) : new THREE.Vector3(r.cx, r.y, r.cz - r.d*.55);
 // ตำแหน่ง + ท่าทาง ณ เวลา m
+function kgTarget(a, m, kg){
+  const z = kg[2], pose = kg[3], mates = a.kgMates ??= STUDENTS.filter(s => isKG(s.cls) && s.scan != null);
+  if (a.kind === 't') {
+    const k = +a.ref.name.slice(-1) - 1;
+    if (z === 'Kindergarten') return {p: teacherFront(subRect('Kindergarten', k, 2), 'sit'), pose:'stand', teach: pose !== 'sleep'};
+    if (z === 'BRUSH') return {p: new THREE.Vector3(-51 + k*4, 0, 28.6), pose:'stand'};
+    if (z === 'PLAY') return {p: new THREE.Vector3(-50 + k*6, 0, 15), pose:'stand'};
+    return {p: inZone(z, .3 + k*.4, .15), pose:'stand'};
+  }
+  const idx = mates.indexOf(a.ref);
+  if (z === 'Kindergarten') { const cl = a.cls === 'อ.1' ? 0 : 1, cm = mates.filter(s => s.cls === a.cls); return {p: slotOf(subRect('Kindergarten', cl, 2), 'sit', cm.indexOf(a.ref), cm.length, a.ox, a.oz), pose}; }
+  if (z === 'Canteen') return {p: slotOf(subRect('Canteen', 0, 1), 'sit', idx, mates.length, a.ox, a.oz), pose:'sit'};
+  if (z === 'BRUSH') return {p: new THREE.Vector3(-55 + (idx % 15)*.62, 0, 30 + Math.floor(idx/15)*1.1), pose:'brush'};
+  const w = m*1.7 + a.i*2.1;   // วิ่งเล่นรอบ ๆ โดมสนามเด็กเล่น
+  return {p: new THREE.Vector3(-47 + (a.ox-.5)*15 + Math.sin(w)*2.5, 0, 18 + (a.oz-.5)*8 + Math.cos(w*.8)*2), pose:'run'};
+}
 function targetOf(a, m){
   const [z] = placeOfAgent(a, m);
   if (!z) return null;
+  const kg = kgAt(m);
+  if (kg && z === kg[2] && (a.kind === 's' ? isKG(a.cls) : a.ref.name.startsWith('ครูอนุบาล'))) return kgTarget(a, m, kg);
+  const ph = phaseAt(m)[2];
+  if (ph === 'gate' || ph === 'homeroom') {
+    if (z === 'PLAY') return kgTarget(a, m, [0, '', 'PLAY', 'run']);
+    if (z === 'FREE') { const w = m*1.3 + a.i*1.7; return {p: new THREE.Vector3(-8 + (a.ox-.5)*14 + Math.sin(w)*2.5, 0, 4 + (a.oz-.5)*16 + Math.cos(w*.9)*2.5), pose:'run'}; }
+    const hrC = a.kind === 's' ? a.cls : (a.ref.name.startsWith('ครูอนุบาล') ? 'อ.' + a.ref.name.slice(-1) : HR_TEACHER[a.ref.name]);
+    if (hrC && z === HOMEROOM[hrC]) {
+      const share = CLASSES.filter(([c]) => HOMEROOM[c] === z).map(([c]) => c), r = subRect(z, share.indexOf(hrC), share.length);
+      if (a.kind === 't') return {p: teacherFront(r, 'sit'), pose:'stand', teach: true};
+      const cm = a.cohort ??= STUDENTS.filter(s => s.cls === a.cls && s.scan != null);
+      return {p: slotOf(r, 'sit', cm.indexOf(a.ref), cm.length, a.ox, a.oz), pose: ph === 'homeroom' ? 'sit' : 'stand'};
+    }
+  }
+  if (ph === 'duty' && a.kind === 's' && !isKG(a.cls)) { const w = m*.9 + a.i; return {p: inZone(z, a.ox, a.oz).add(new THREE.Vector3(Math.sin(w)*.8, 0, Math.cos(w)*.8)), pose:'sweep'}; }
   const where = phaseAt(m)[2];
   if (z === 'PARK') return {p: new THREE.Vector3(a.ref.spot[0] + 1.6, 0, a.ref.spot[1]), pose:'stand'};
   if (z === 'SCAN') return {p: new THREE.Vector3(SCAN_PT[0] - .9 - a.ox*1.4, 0, SCAN_PT[1] + (a.oz-.5)*3.5), pose:'stand'};
@@ -586,7 +652,7 @@ const dummy = new THREE.Object3D();
 let desks;
 function moveAgents(dt){
   if (!bodies) return;
-  if (uniDay !== day) applyUniforms();
+  const duty = phaseAt(simMin)[2] === 'duty'; if (uniDay !== day || uniDuty !== duty) { uniDuty = duty; applyUniforms(); }
   const t = performance.now()/1000;
   if (!desks) { desks = new THREE.InstancedMesh(new THREE.BoxGeometry(.95,.08,.6).translate(0,.62,0), new THREE.MeshLambertMaterial({color:'#b45309'}), STUDENTS.length); desks.castShadow = true; scene.add(desks); }
   for (const a of AGENTS) {
@@ -602,6 +668,9 @@ function moveAgents(dt){
     let sy = 1;
     if (pose === 'walk' || pose === 'run') dummy.position.y += Math.abs(Math.sin(t*11 + a.i))*.25;
     if (pose === 'sit') sy = .62;
+    if (pose === 'sleep') { dummy.rotation.x = -Math.PI/2; dummy.position.y += .3; }
+    if (pose === 'sweep') dummy.rotation.x = .35 + Math.sin(t*6 + a.i)*.18;
+    if (pose === 'brush') dummy.rotation.z = Math.sin(t*9 + a.i)*.06;
     if (pose === 'swim') { dummy.position.y -= .75; dummy.position.y += Math.sin(t*3 + a.i)*.12; }
     if (pose === 'farm') dummy.rotation.x = .5 + Math.sin(t*2 + a.i)*.3;
     if (pose === 'circle') dummy.position.y += Math.max(0, Math.sin(t*4 + a.i*.3))*.15;
@@ -689,7 +758,7 @@ const $ = id => document.getElementById(id);
 const slider = $('time'); let playing = true, simMin = +slider.value, lastKey = '', speed = 3;
 $('play').onclick = () => { playing = !playing; $('play').textContent = playing ? '⏸' : '▶'; };
 slider.oninput = () => { simMin = +slider.value; update(); };
-for (const [lab,m] of [['รถมาส่ง',440],['เข้าแถว',480],['คาบ 1',515],['พักเที่ยง',700],['คาบ 5',815],['รถมารับ',932]]) {
+for (const [lab,m] of [['รถมาส่ง',440],['ทำเวร',462],['เข้าแถว',480],['คาบ 1',515],['พักเที่ยง',700],['คาบ 5',815],['รถมารับ',932]]) {
   const b = document.createElement('button'); b.textContent = lab; b.onclick = () => { simMin = m; slider.value = m; if (lab.startsWith('รถ')) { setSpeed(.1); playing = true; $('play').textContent='⏸'; } else { playing = false; $('play').textContent='▶'; } update(); };
   $('jumps').appendChild(b);
 }
