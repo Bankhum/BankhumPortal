@@ -115,7 +115,7 @@ canvas{cursor:pointer}
 <div id="note">ตารางเรียน ป.1–ป.6: ของจริง ภาคเรียนที่ 1/2569 · อนุบาลและผลสแกนหน้า: ข้อมูลตัวอย่าง</div>
 <div class="panel" id="bar">
   <div class="r1"><button id="play" aria-label="เล่น/หยุด">⏸</button>
-  <input id="time" type="range" min="390" max="990" step="1" value="420" aria-label="เวลา">
+  <input id="time" type="range" min="355" max="990" step="1" value="420" aria-label="เวลา">
   <button id="info" class="mob" aria-label="รายละเอียด">☰ ข้อมูล</button></div>
   <div class="r2"><div class="sp" id="days"></div>
   <div class="sp" id="jumps"></div>
@@ -151,7 +151,7 @@ function placeOf(s){
 }
 // กิจวัตรประจำวัน (นาทีนับจากเที่ยงคืน)
 const ROUTINE = [
-  [390,'ก่อนเปิดประตู',null],[420,'มาโรงเรียน (สแกนหน้า)','gate'],[470,'เข้าแถวหน้าเสาธง','Flagpole'],
+  [355,'ก่อนเปิดประตู',null],[360,'มาโรงเรียน (สแกนหน้า)','gate'],[470,'เข้าแถวหน้าเสาธง','Flagpole'],
   [510,'คาบ 1',0],[570,'คาบ 2',1],[630,'คาบ 3',2],[690,'พักกลางวัน','Canteen'],
   [750,'คาบ 4',3],[810,'คาบ 5',4],[870,'คาบ 6',5],[930,'เลิกเรียน กลับบ้าน','gate'],[960,'ครูทยอยกลับบ้าน','gate'],[990,'',null]];
 const LATE = 470; // สแกนหลัง 07:50 = สาย
@@ -170,27 +170,35 @@ const TNAMES = [...NAMED.map(n=>'ครู'+n), 'ครูอนุบาล 1',
 const TEACHERS = TNAMES.map((name,i)=>({no:i+1, name, scan: 405 + Math.round(rnd()*55)}));
 /* ---------- การเดินทาง (สัดส่วนประมาณ ปรับได้) ---------- */
 const MODES = {truck:['รถ 6 ล้อของโรงเรียน','🚚'], van:['รถตู้รับจ้าง','🚐'], car:['ผู้ปกครองขับรถยนต์มาส่ง','🚗'], moto:['ผู้ปกครองขี่มอเตอร์ไซค์มาส่ง','🛵'], bike:['ปั่นจักรยานมาเอง','🚲']};
-const ROAD_IN = -72, ROAD_OUT = -68, NORTH_Z = 56, V = 85;  // V = ความเร็วรถในฉาก (ม./นาทีจำลอง)
+const ROAD_IN = -72, ROAD_OUT = -68, NORTH_Z = 56;
 // เส้นทางเดินรถทางเดียว (ตามที่ครูวาดให้): เข้าประตูข้างศาล/โซลาร์เซลล์ → ถนนระหว่างอาคาร ป.1 ป.2 กับแถวต้นไม้
 // → จุดรับส่งหน้าอาคารเฉลิมพระเกียรติ → วนอ้อมหลังลานเสาธง/สนามฟุตบอล → ออกประตูหน้า (ป้ายโรงเรียน)
+// รถทุกคันวิ่งเรียงแถวทีละคันบนเส้นเดียวกัน ไม่แซง เว้นระยะ และขับช้าในเขตโรงเรียน
 const LANE = -21.5, DROP_X = 19.5;
 const SCAN_PT = [21.6, -11];   // จุดสแกนหน้า หน้าอาคารเฉลิมพระเกียรติ
-let slot = 0; const stopZ = () => -9 + (slot++ % 6) * 4.8;
+const V_SCHOOL = 130, V_ROAD = 450, V_BIKE = 180, GAP = 1.8;   // ม./นาที (≈ 8 กม./ชม. ในโรงเรียน)
 const VEH = [];
-const timed = (pts, t0, back) => { // ใส่เวลาให้จุดตามระยะทาง: back=true → จุดสุดท้ายถึงเวลา t0
-  const d = [0]; for (let i = 1; i < pts.length; i++) d.push(d[i-1] + Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]));
-  const s = back ? t0 - d[d.length-1]/V : t0; return pts.map((q, i) => [s + d[i]/V, q[0], q[1]]); };
-const ENTRY = [[ROAD_IN,-64],[ROAD_IN,-28],[-63,-26.5],[-54,-18],[-44,LANE]];
-const TO_DROP = [[10,LANE],[DROP_X,-13]];
-const LOOP_OUT = [[DROP_X,17],[8,17],[7,25],[-15,25.5],[-20,27.5],[-42,27.5],[-52,26],[-59.5,18],[-59.5,7],[-66,5],[ROAD_OUT,8],[ROAD_OUT,NORTH_Z-4],[ROAD_OUT+2,NORTH_Z],[75,NORTH_Z]];
-const IN_TO = (x, z) => x === DROP_X ? [...ENTRY, ...TO_DROP, [x, z]] : [...ENTRY, [x, LANE], [x, z]];
-const OUT_FROM = (x, z) => x === DROP_X ? [[x, z], ...LOOP_OUT]
-  : z < LANE ? [[x, z], [x + 1.5, LANE], ...TO_DROP, ...LOOP_OUT] : [[x, z], [DROP_X, z + 3], ...LOOP_OUT];
-const route = (arr, dep, x, z) => { const tr = [...timed(IN_TO(x, z), arr, true), ...timed(OUT_FROM(x, z), dep)]; tr.x = x; tr.z = z; tr.arr = arr; tr.dep = dep; return tr; };
-const dropTrip = (arr, dep, sz = stopZ()) => route(arr, dep, DROP_X, sz);
-function addVeh(type, color, trips, label){ const v = {type, color, trips, label, riders: 0}; VEH.push(v); return v; }
-const truck = addVeh('truck', '#2563eb', [dropTrip(438, 444), dropTrip(458, 464), dropTrip(926, 936), dropTrip(944, 952)], 'รถ 6 ล้อโรงเรียน');
-const vans = [0,1,2].map(i => addVeh('van', '#f8fafc', [dropTrip(432 + i*11, 436 + i*11), dropTrip(927 + i, 939 + i*3)], 'รถตู้ ' + (i+1)));
+const MAIN = [[ROAD_IN,-64],[ROAD_IN,-28],[-63,-26.5],[-54,-18],[-44,LANE],[10,LANE],[DROP_X,-13],[DROP_X,17],[8,17],[7,25],[-15,25.5],[-20,27.5],[-42,27.5],[-52,26],[-59.5,18],[-59.5,7],[-66,5],[ROAD_OUT,8],[ROAD_OUT,NORTH_Z-4],[ROAD_OUT+2,NORTH_Z],[75,NORTH_Z]];
+const CUM = [0]; for (let i = 1; i < MAIN.length; i++) CUM.push(CUM[i-1] + Math.hypot(MAIN[i][0]-MAIN[i-1][0], MAIN[i][1]-MAIN[i-1][1]));
+const TOTAL = CUM[CUM.length-1], sOf = i => CUM[i];
+const S_GATE_IN = sOf(2), S_GATE_OUT = sOf(16), S_ZONE0 = sOf(6) + 3, S_ZONE1 = sOf(6) + 28;
+const S_LANE0 = sOf(4);
+function posAt(s){
+  let i = 1; while (i < CUM.length - 1 && CUM[i] < s) i++;
+  const f = Math.min(1, Math.max(0, (s - CUM[i-1]) / (CUM[i] - CUM[i-1])));
+  return [MAIN[i-1][0] + (MAIN[i][0]-MAIN[i-1][0])*f, MAIN[i-1][1] + (MAIN[i][1]-MAIN[i-1][1])*f];
+}
+const LEN = {truck: 8.6, van: 6.6, car: 5.6, moto: 2.4};
+function addVeh(type, color, trips, label){ const v = {type, color, trips, label, riders: 0, runs: []}; VEH.push(v); return v; }
+// run = หนึ่งเที่ยวบนเส้นทางหลัก: 'drop' (ส่ง/รับหน้าอาคาร), 'park' (ครูเข้าจอด), 'leave' (ครูออกจากที่จอด)
+const RUNS = [];
+const addRun = (v, kind, t, extra = {}) => { const r = {v, kind, t, len: LEN[v.type], s: null, done: false, ...extra}; RUNS.push(r); v.runs.push(r); return r; };
+const truck = addVeh('truck', '#2563eb', [], 'รถ 6 ล้อโรงเรียน');
+const vans = [0,1,2].map(i => addVeh('van', '#f8fafc', [], 'รถตู้ ' + (i+1)));
+const truckAM = [392, 422, 452].map(t => addRun(truck, 'drop', t, {dwell: 1.6}));
+const truckPM = [931, 960].map(t => addRun(truck, 'drop', t, {dwell: 2}));
+const vanAM = vans.map((v, i) => addRun(v, 'drop', 382 + i*24, {dwell: 1.2}));
+const vanPM = vans.map((v, i) => addRun(v, 'drop', 929 + i*3, {dwell: 1.5}));
 addVeh('kiosk', '#14b8a6', [[[0, ...SCAN_PT], [2000, ...SCAN_PT]]], 'จุดสแกนหน้า');
 const CAR_COLS = ['#dc2626','#f8fafc','#9ca3af','#1f2937','#0ea5e9','#a16207','#16a34a','#e5e7eb'];
 const pick = a => a[Math.floor(rnd()*a.length)];
@@ -200,33 +208,74 @@ for (const s of STUDENTS) {
   if (s.scan == null) continue;
   const r = rnd(), big = /ป\.[456]/.test(s.cls);
   s.mode = r < .30 ? 'truck' : r < .50 ? 'van' : r < .65 ? 'car' : (r < .80 || !big) ? 'moto' : 'bike';
-  let tr;
-  if (s.mode === 'truck') { const k = rnd() < .5 ? 0 : 1; s.veh = truck; tr = truck.trips[k]; s.arr = tr.arr + rnd()*1.5; s.leave = truck.trips[k+2].dep; }
-  else if (s.mode === 'van') { const v = pick(vans); s.veh = v; tr = v.trips[0]; s.arr = tr.arr + rnd()*1; s.leave = v.trips[1].dep; }
+  if (s.mode === 'truck') { s.veh = truck; s.am = pick(truckAM); s.pm = pick(truckPM); }
+  else if (s.mode === 'van') { const k = Math.floor(rnd()*3); s.veh = vans[k]; s.am = vanAM[k]; s.pm = vanPM[k]; }
   else if (s.mode === 'bike') {
-    const i = bikeN++, arr = 425 + rnd()*42, dep = 934 + rnd()*8, rack = [1 + i*.75, -12.3];
-    s.veh = addVeh('bike', '#0f766e', [route(arr, dep, rack[0], rack[1])]);
-    s.veh.rider = CLS_COL_EARLY[s.cls]; s.rack = rack; s.arr = arr; s.leave = dep;
+    // จักรยานปั่นชิดขอบทาง ไม่ต้องต่อคิวรถ
+    const i = bikeN++, arr = 360 + Math.pow(rnd(), .6)*110, dep = 934 + rnd()*8, rack = [1 + i*.75, -12.3];
+    const path = [...MAIN.slice(0, 5), [rack[0], LANE], rack], back = [rack, [DROP_X, -9], ...MAIN.slice(7)];
+    const timed = (pts, t0, end) => { const d = [0]; for (let k = 1; k < pts.length; k++) d.push(d[k-1] + Math.hypot(pts[k][0]-pts[k-1][0], pts[k][1]-pts[k-1][1]));
+      const st = end ? t0 - d[d.length-1]/V_BIKE : t0; return pts.map((q, k) => [st + d[k]/V_BIKE, q[0], q[1]]); };
+    s.veh = addVeh('bike', '#0f766e', [[...timed(path, arr, true), ...timed(back, dep)]]);
+    s.veh.rider = CLS_COL_EARLY[s.cls]; s.rack = rack; s.arr = arr; s.leave = dep; s.drop = [rack[0], rack[1] + .8];
   } else {
-    const late = rnd() < .08, arr = late ? 470 + rnd()*20 : 425 + Math.pow(rnd(), .8)*42, dwell = s.mode === 'car' ? 2 : 1.2;
-    const pm = 930 + rnd()*14;
-    s.veh = addVeh(s.mode, s.mode === 'car' ? pick(CAR_COLS) : pick(['#111827','#b91c1c','#1d4ed8','#6b7280']), [dropTrip(arr, arr+dwell), dropTrip(pm, pm+dwell)]);
-    tr = s.veh.trips[0]; s.arr = arr; s.leave = pm + dwell;
+    // ผู้ปกครองมาส่ง 06:00–08:00 (ส่วนใหญ่ 07:00–07:50) และมารับหลัง 15:30
+    const arr = 358 + Math.pow(rnd(), .55)*118, pm = 929 + Math.pow(rnd(), 1.3)*28, dwell = s.mode === 'car' ? .9 : .6;
+    s.veh = addVeh(s.mode, s.mode === 'car' ? pick(CAR_COLS) : pick(['#111827','#b91c1c','#1d4ed8','#6b7280']), []);
+    s.am = addRun(s.veh, 'drop', arr, {dwell}); s.pm = addRun(s.veh, 'drop', pm, {dwell});
   }
-  s.drop = s.rack ? [s.rack[0], s.rack[1] + .8] : [DROP_X + 1.3, tr.z];
-  s.scan = Math.round(s.arr + walk(s.drop));
   s.veh.riders++;
 }
-// ครู: ส่วนใหญ่ขับรถยนต์ บางส่วนขี่มอเตอร์ไซค์ จอดใต้หลังคาโรงจอดรถ แล้วเดินไปสแกนหน้าที่อาคารเฉลิมพระเกียรติ
+// ครู: ส่วนใหญ่ขับรถยนต์ บางส่วนขี่มอเตอร์ไซค์ จอดใต้หลังคาโรงจอดรถ (บางคนมาสายหลัง 08:00 ได้)
 TEACHERS.forEach((t, i) => {
   t.mode = i % 7 === 3 || i % 7 === 6 ? 'moto' : 'car';
-  const arr = 404 + rnd()*48, dep = 948 + rnd()*36;
+  const arr = rnd() < .2 ? 480 + rnd()*40 : 385 + rnd()*90, dep = 945 + rnd()*38;
   const nCar = TEACHERS.slice(0, i).filter(x => x.mode === t.mode).length;
   t.spot = t.mode === 'car' ? (nCar < 10 ? [-9.5 + (nCar%5)*2.8, nCar < 5 ? -31.5 : -27.5] : [-9.5 + (nCar-10)*2.8, -24.8]) : [5.2, -32.5 + nCar*1.3];
-  t.veh = addVeh(t.mode, t.mode === 'car' ? pick(CAR_COLS) : '#111827', [route(arr, dep, ...t.spot)]);
-  t.veh.riders = 1; t.arr = arr + .3; t.leave = dep; t.drop = [t.spot[0] + 1.6, t.spot[1]];
-  t.scan = Math.round(t.arr + walk(t.drop));
+  t.veh = addVeh(t.mode, t.mode === 'car' ? pick(CAR_COLS) : '#111827', []);
+  const sB = S_LANE0 + (t.spot[0] - MAIN[4][0]);
+  t.runIn = addRun(t.veh, 'park', arr, {sB, spot: t.spot}); t.runOut = addRun(t.veh, 'leave', dep, {sB, spot: t.spot});
+  t.veh.riders = 1; t.leave = dep; t.drop = [t.spot[0] + 1.6, t.spot[1]];
 });
+// จำลองการจราจรทีละวินาที: รถตามกันเป็นแถว ไม่แซง ไม่ซ้อนกัน ส่ง/รับนักเรียนได้ในช่วงหน้าอาคาร (ประมาณ 4 คัน)
+(function simulateTraffic(){
+  const dt = 1/60, active = [], pending = [...RUNS].sort((a,b) => a.t - b.t);
+  const rec = (r, t, x, z) => { const tr = r.tr, L = tr[tr.length-1]; if (!L || t - L[0] >= 3/60 - 1e-9) tr.push([t, x, z]); };
+  const clear = (s, len) => active.every(o => Math.abs(o.s - s) > (o.len + len)/2 + GAP);
+  for (let t = 350; t < 1010 && (pending.length || active.length); t += dt) {
+    for (let k = 0; k < pending.length; k++) {
+      const r = pending[k]; if (r.t > t) break;
+      const s0 = r.kind === 'leave' ? r.sB : 0;
+      if (!clear(s0, r.len) || r.v.runs.some(o => o !== r && o.s != null && !o.done)) continue;
+      pending.splice(k--, 1); r.s = s0; r.tr = []; r.v.trips.push(r.tr); active.push(r);
+      if (r.kind === 'leave') { r.tr.push([t - .3, ...r.spot], [t - .1, r.spot[0], LANE - 2.5]); r.depart = t; }
+      if (r.kind === 'drop') r.stop = Infinity;
+    }
+    active.sort((a, b) => b.s - a.s);
+    for (let k = 0; k < active.length; k++) {
+      const r = active[k], ahead = active[k-1];
+      const v = r.s < S_GATE_IN || r.s > S_GATE_OUT ? V_ROAD : V_SCHOOL;
+      let lim = ahead ? ahead.s - (ahead.len + r.len)/2 - GAP : Infinity;
+      if (r.kind === 'park') lim = Math.min(lim, r.sB);
+      if (r.kind === 'drop' && r.dwellEnd == null) lim = Math.min(lim, S_ZONE1);
+      if (r.dwellEnd != null && t < r.dwellEnd) lim = r.s;
+      const ns = Math.max(r.s, Math.min(r.s + v*dt, lim));
+      if (r.kind === 'drop' && r.dwellEnd == null && r.s >= S_ZONE0 && ns - r.s < 1e-3) { r.dwellStart = t; r.dwellEnd = t + r.dwell; r.at = posAt(r.s); }
+      r.s = ns; const [x, z] = posAt(r.s); rec(r, t, x, z);
+      if (r.kind === 'park' && r.s >= r.sB - .01) { r.tr.push([t + .15, r.spot[0], LANE - 2.5], [t + .35, ...r.spot]); r.arrive = t + .35; r.done = true; }
+      if (r.s >= TOTAL - .01) r.done = true;
+    }
+    for (let k = active.length - 1; k >= 0; k--) if (active[k].done) { const r = active[k]; if (r.kind !== 'park') { const [x, z] = posAt(r.s); r.tr.push([t, x, z]); } active.splice(k, 1); }
+  }
+  for (const v of VEH) if (v.runs.length) v.trips.sort((a, b) => a[0][0] - b[0][0]);
+  for (const t of TEACHERS) t.veh.trips = [[...t.runIn.tr, ...t.runOut.tr]];  // จอดนิ่งที่โรงจอดระหว่างวัน
+})();
+for (const s of STUDENTS) {
+  if (s.scan == null) continue;
+  if (s.am) { s.arr = s.am.dwellStart + rnd()*.3; s.drop = [DROP_X + 1.5, s.am.at[1] + (rnd()-.5)*2]; s.pickAt = s.pm.dwellStart; s.pickPos = [DROP_X + 1.5, s.pm.at[1]]; s.leave = s.pm.dwellEnd - .05; }
+  s.scan = Math.round(s.arr + walk(s.drop));
+}
+TEACHERS.forEach(t => { t.arr = t.runIn.arrive; t.scan = Math.round(t.arr + walk(t.drop)); t.leave = t.runOut.depart - .3; });
 const SCANS = [...STUDENTS.filter(s=>s.scan!=null).map(s=>({t:s.scan, who:`${s.cls} เลขที่ ${s.no}`, cls:s.cls})),
                ...TEACHERS.map(s=>({t:s.scan, who:s.name, cls:'ครู'}))].sort((a,b)=>a.t-b.t);
 
@@ -350,6 +399,7 @@ function placeOfAgent(a, m){
   if (r.leave != null && m >= r.leave) return [null,'กลับบ้านแล้ว'];
   if (m < r.scan + .4) return ['SCAN','เดินไปสแกนหน้าที่อาคารเฉลิมพระเกียรติ'];
   if (a.kind === 't' && m >= 930) return m >= r.leave - 5 ? ['PARK','เดินไปที่รถ'] : ['Chalerm_Building','ห้องพักครู'];
+  if (a.kind === 's' && m >= 930 && r.pickAt != null && m >= r.pickAt) return ['PICK','ขึ้นรถกลับบ้าน'];
   if (a.kind === 's' && m >= 930) return ['GATE', r.mode === 'bike' ? 'ไปเอาจักรยาน' : `รอ${MODES[r.mode][0]} หน้าอาคารเฉลิมฯ`];
   const [, name, where] = phaseAt(m);
   if (where === 'gate' && m >= 930) return ['GATE','กลับบ้าน'];
@@ -407,6 +457,7 @@ function targetOf(a, m){
   const where = phaseAt(m)[2];
   if (z === 'PARK') return {p: new THREE.Vector3(a.ref.spot[0] + 1.6, 0, a.ref.spot[1]), pose:'stand'};
   if (z === 'SCAN') return {p: new THREE.Vector3(SCAN_PT[0] - .9 - a.ox*1.4, 0, SCAN_PT[1] + (a.oz-.5)*3.5), pose:'stand'};
+  if (z === 'PICK') return {p: new THREE.Vector3(a.ref.pickPos[0], 0, a.ref.pickPos[1] + (a.oz-.5)*2), pose:'stand'};
   if (z === 'GATE') {
     if (a.ref.rack) return {p: new THREE.Vector3(a.ref.rack[0], 0, a.ref.rack[1] + .8), pose:'stand'};
     return {p: new THREE.Vector3(DROP_X + 1.5 + a.ox*1.4, 0, -10 + a.oz*29), pose:'stand'};
@@ -575,8 +626,8 @@ const $ = id => document.getElementById(id);
 const slider = $('time'); let playing = true, simMin = +slider.value, lastKey = '', speed = 3;
 $('play').onclick = () => { playing = !playing; $('play').textContent = playing ? '⏸' : '▶'; };
 slider.oninput = () => { simMin = +slider.value; update(); };
-for (const [lab,m] of [['รถมาส่ง',437],['เข้าแถว',480],['คาบ 1',515],['พักเที่ยง',700],['คาบ 5',815],['รถมารับ',927]]) {
-  const b = document.createElement('button'); b.textContent = lab; b.onclick = () => { simMin = m; slider.value = m; playing = false; $('play').textContent='▶'; update(); };
+for (const [lab,m] of [['รถมาส่ง',440],['เข้าแถว',480],['คาบ 1',515],['พักเที่ยง',700],['คาบ 5',815],['รถมารับ',932]]) {
+  const b = document.createElement('button'); b.textContent = lab; b.onclick = () => { simMin = m; slider.value = m; if (lab.startsWith('รถ')) { setSpeed(.1); playing = true; $('play').textContent='⏸'; } else { playing = false; $('play').textContent='▶'; } update(); };
   $('jumps').appendChild(b);
 }
 
@@ -585,11 +636,12 @@ for (const [i,d] of DAYS.entries()) {
   b.onclick = () => { day = i; [...$('days').children].forEach((x,j)=>x.className = j===i?'on':''); update(true); };
   $('days').appendChild(b);
 }
-for (const [lab,s] of [['×1',1],['×3',3],['×10',10]]) {
-  const b = document.createElement('button'); b.textContent = lab; b.className = s===speed?'on':'';
-  b.onclick = () => { speed = s; [...$('speed').children].forEach(x=>x.className = x===b?'on':''); };
+for (const [lab,s] of [['ช้า',.1],['×1',1],['×3',3],['×10',10]]) {
+  const b = document.createElement('button'); b.textContent = lab; b.className = s===speed?'on':''; b.dataset.s = s;
+  b.onclick = () => setSpeed(s);
   $('speed').appendChild(b);
 }
+function setSpeed(s){ speed = s; [...$('speed').children].forEach(x=>x.className = +x.dataset.s===s?'on':''); }
 function update(force){
   const m = simMin, key = Math.floor(m) + '';
   if (!force && key === lastKey) return; lastKey = key;
@@ -630,7 +682,7 @@ function update(force){
 const clock = new THREE.Clock(); const v = new THREE.Vector3();
 function frame(){
   const dt = clock.getDelta(), t = (performance.now()-t0)/1000;
-  if (playing) { simMin += dt * speed; if (simMin > 990) simMin = 390; slider.value = simMin; update(); }
+  if (playing) { simMin += dt * speed; if (simMin > 990) simMin = 355; slider.value = simMin; update(); }
   const ang = view.touched ? view.yaw : (view.yaw = Math.PI/4 + Math.sin(t*0.08)*0.25);
   cam.position.set(target.x+Math.sin(ang)*150, 120, target.z+Math.cos(ang)*150); cam.lookAt(target);
   moveAgents(Math.min(dt,.3)); moveVehicles(Math.min(dt,.3));
