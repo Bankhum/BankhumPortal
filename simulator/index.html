@@ -102,6 +102,7 @@ canvas{cursor:pointer}
     <div>มาสาย<b id="kLate" style="color:var(--late)">0</b></div><div>ครูมาแล้ว<b id="kT">0/21</b></div>
   </div>
   <div class="cls" id="cls"></div>
+  <div class="cls" id="travel"></div>
 </div>
 <div class="panel" id="right">
   <div id="sel" hidden></div>
@@ -114,7 +115,7 @@ canvas{cursor:pointer}
 <div id="note">ตารางเรียน ป.1–ป.6: ของจริง ภาคเรียนที่ 1/2569 · อนุบาลและผลสแกนหน้า: ข้อมูลตัวอย่าง</div>
 <div class="panel" id="bar">
   <div class="r1"><button id="play" aria-label="เล่น/หยุด">⏸</button>
-  <input id="time" type="range" min="390" max="960" step="1" value="420" aria-label="เวลา">
+  <input id="time" type="range" min="390" max="990" step="1" value="420" aria-label="เวลา">
   <button id="info" class="mob" aria-label="รายละเอียด">☰ ข้อมูล</button></div>
   <div class="r2"><div class="sp" id="days"></div>
   <div class="sp" id="jumps"></div>
@@ -152,12 +153,13 @@ function placeOf(s){
 const ROUTINE = [
   [390,'ก่อนเปิดประตู',null],[420,'มาโรงเรียน (สแกนหน้า)','gate'],[470,'เข้าแถวหน้าเสาธง','Flagpole'],
   [510,'คาบ 1',0],[570,'คาบ 2',1],[630,'คาบ 3',2],[690,'พักกลางวัน','Canteen'],
-  [750,'คาบ 4',3],[810,'คาบ 5',4],[870,'คาบ 6',5],[930,'เลิกเรียน กลับบ้าน','gate'],[960,'',null]];
+  [750,'คาบ 4',3],[810,'คาบ 5',4],[870,'คาบ 6',5],[930,'เลิกเรียน กลับบ้าน','gate'],[960,'ครูทยอยกลับบ้าน','gate'],[990,'',null]];
 const LATE = 470; // สแกนหลัง 07:50 = สาย
 
 // สร้างผลสแกนหน้าจำลอง (ของจริง: ไฟล์ CSV / API จากเครื่องสแกน)
 let seed = 7; const rnd = () => (seed = (seed*16807) % 2147483647) / 2147483647;
 const STUDENTS = [];
+const CLS_COL_EARLY = {'อ.1':'#fbbf24','อ.2':'#f59e0b','ป.1':'#f97316','ป.2':'#ef4444','ป.3':'#ec4899','ป.4':'#8b5cf6','ป.5':'#3b82f6','ป.6':'#06b6d4'};
 for (const [c,n] of CLASSES) for (let i=1;i<=n;i++) {
   const r = rnd(); const absent = r < .03;
   const t = r > .95 ? 470 + rnd()*40 : 420 + Math.pow(rnd(),.8)*48;
@@ -166,6 +168,47 @@ for (const [c,n] of CLASSES) for (let i=1;i<=n;i++) {
 const NAMED = ['ราตรี','กมลวรรณ','สุทิสา','พลกฤต','ดีลาภ','ณัชลักษมณ์','รัตติกาล','อรวรรณ','วิไลวรรณ','นิภา','ทรงวุฒิ','ภัทรวดี','วริทธิ์นันท์','ยุรนันท์'];
 const TNAMES = [...NAMED.map(n=>'ครู'+n), 'ครูอนุบาล 1','ครูอนุบาล 2', ...[17,18,19,20,21].map(i=>'ครู คนที่ '+i)];
 const TEACHERS = TNAMES.map((name,i)=>({no:i+1, name, scan: 405 + Math.round(rnd()*55)}));
+/* ---------- การเดินทาง (สัดส่วนประมาณ ปรับได้) ---------- */
+const MODES = {truck:['รถ 6 ล้อของโรงเรียน','🚚'], van:['รถตู้รับจ้าง','🚐'], car:['ผู้ปกครองขับรถยนต์มาส่ง','🚗'], moto:['ผู้ปกครองขี่มอเตอร์ไซค์มาส่ง','🛵'], bike:['ปั่นจักรยานมาเอง','🚲']};
+const ROAD_IN = -72, ROAD_OUT = -68, STOP_X = -66, NORTH_Z = 56, MID = [-30,-16];
+let slot = 0; const stopZ = () => 1 + ((slot++ % 7) - 3) * 4.5;
+const VEH = [];
+const outPath = (t, sz) => [[t, STOP_X, sz], [t+.7, ROAD_OUT, NORTH_Z-4], [t+1, ROAD_OUT+2, NORTH_Z], [t+2.3, 75, NORTH_Z]];
+const dropTrip = (arr, dep, sz = stopZ()) => [[arr-1.6, ROAD_IN, -64], [arr-.2, STOP_X, sz], ...outPath(dep, sz)];
+function addVeh(type, color, trips, label){ const v = {type, color, trips, label, riders: 0}; VEH.push(v); return v; }
+const truck = addVeh('truck', '#2563eb', [dropTrip(438, 444), dropTrip(458, 464), dropTrip(926, 936), dropTrip(944, 952)], 'รถ 6 ล้อโรงเรียน');
+const vans = [0,1,2].map(i => addVeh('van', '#f8fafc', [dropTrip(432 + i*11, 436 + i*11), dropTrip(927 + i, 939 + i*3)], 'รถตู้ ' + (i+1)));
+const CAR_COLS = ['#dc2626','#f8fafc','#9ca3af','#1f2937','#0ea5e9','#a16207','#16a34a','#e5e7eb'];
+const pick = a => a[Math.floor(rnd()*a.length)];
+let bikeN = 0;
+for (const s of STUDENTS) {
+  if (s.scan == null) continue;
+  const r = rnd(), big = /ป\.[456]/.test(s.cls);
+  s.mode = r < .30 ? 'truck' : r < .50 ? 'van' : r < .65 ? 'car' : (r < .80 || !big) ? 'moto' : 'bike';
+  if (s.mode === 'truck') { const k = rnd() < .5 ? 0 : 1; s.veh = truck; s.scan = Math.round(truck.trips[k][1][0] + 1 + rnd()*3); s.leave = truck.trips[k+2][3][0]; }
+  else if (s.mode === 'van') { const v = pick(vans); s.veh = v; s.scan = Math.round(v.trips[0][1][0] + 1 + rnd()*2); s.leave = v.trips[1][3][0]; }
+  else if (s.mode === 'bike') {
+    const i = bikeN++, arr = 425 + rnd()*42, dep = 934 + rnd()*8, rack = [-59, 5 + i*.7];
+    s.veh = addVeh('bike', '#0f766e', [[[arr-1.6, ROAD_IN, -64], [arr-.3, STOP_X, 3], [arr, -60, 3], [arr+.5, ...rack], [dep, ...rack], [dep+.5, -60, 3], [dep+.8, STOP_X, 3], ...outPath(dep+.9, 3).slice(1)]]);
+    s.veh.rider = CLS_COL_EARLY[s.cls]; s.rack = rack; s.scan = Math.round(arr + 1); s.leave = dep;
+  } else {
+    const late = rnd() < .08, arr = late ? 470 + rnd()*20 : 425 + Math.pow(rnd(), .8)*42, dwell = s.mode === 'car' ? 2.5 : 1.5;
+    const pm = 928 + rnd()*16;
+    s.veh = addVeh(s.mode, s.mode === 'car' ? pick(CAR_COLS) : pick(['#111827','#b91c1c','#1d4ed8','#6b7280']), [dropTrip(arr, arr+dwell), dropTrip(pm, pm+dwell)]);
+    s.scan = Math.round(arr + .6); s.leave = pm + dwell;
+  }
+  s.veh.riders++;
+}
+// ครู: ส่วนใหญ่ขับรถยนต์ บางส่วนขี่มอเตอร์ไซค์ จอดที่โรงจอดรถ
+TEACHERS.forEach((t, i) => {
+  t.mode = i % 7 === 3 || i % 7 === 6 ? 'moto' : 'car';
+  const arr = 404 + rnd()*48, dep = 948 + rnd()*36, sz = stopZ(), sz2 = stopZ();
+  const nCar = TEACHERS.slice(0, i).filter(x => x.mode === t.mode).length;
+  t.spot = t.mode === 'car' ? (nCar < 10 ? [-9.5 + (nCar%5)*2.8, nCar < 5 ? -31.5 : -27.5] : [-9.5 + (nCar-10)*2.8, -22]) : [5.2, -32.5 + nCar*1.3];
+  t.veh = addVeh(t.mode, t.mode === 'car' ? pick(CAR_COLS) : '#111827', [[[arr-1.6, ROAD_IN, -64], [arr-.3, STOP_X, sz], [arr+.3, -60, 1], [arr+.9, ...MID], [arr+1.4, ...t.spot],
+    [dep, ...t.spot], [dep+.5, ...MID], [dep+1.1, -60, 1], ...outPath(dep+1.6, sz2)]]);
+  t.veh.riders = 1; t.scan = Math.round(arr + 2); t.leave = dep;
+});
 const SCANS = [...STUDENTS.filter(s=>s.scan!=null).map(s=>({t:s.scan, who:`${s.cls} เลขที่ ${s.no}`, cls:s.cls})),
                ...TEACHERS.map(s=>({t:s.scan, who:s.name, cls:'ครู'}))].sort((a,b)=>a.t-b.t);
 
@@ -189,7 +232,7 @@ function occupancy(m){
   const by = {}; for (const s of present(m)) by[s.cls] = (by[s.cls]||0)+1;
   if (typeof where === 'number') for (const c in by) { const l = lesson(c, where); add(l.where, by[c], `${c} ${l.sub}`); }
   else if (where === 'Flagpole' || where === 'Canteen') for (const c in by) add(where, by[c], name);
-  else if (where === 'gate') for (const c in by) add('Flagpole', by[c], 'รอเข้าแถว');
+  else if (where === 'gate' && m < 930) for (const c in by) add('Flagpole', by[c], 'รอเข้าแถว');
   return occ;
 }
 
@@ -286,6 +329,9 @@ function teacherPlace(t, p){
 // ตอนนี้แต่ละคนควรอยู่ที่ไหน → [zone|null, ข้อความ]
 function placeOfAgent(a, m){
   const r = a.ref; if (r.scan == null || m < r.scan) return [null,'ยังไม่มา'];
+  if (r.leave != null && m >= r.leave) return [null,'กลับบ้านแล้ว'];
+  if (a.kind === 't' && m >= 930) return m >= r.leave - 5 ? ['PARK','เดินไปที่รถ'] : ['Chalerm_Building','ห้องพักครู'];
+  if (a.kind === 's' && m >= 930) return ['GATE', `รอ${MODES[r.mode][0].replace(/^ผู้ปกครอง/,'ผู้ปกครอง')}`];
   const [, name, where] = phaseAt(m);
   if (where === 'gate' && m >= 930) return ['GATE','กลับบ้าน'];
   if (where === 'gate' || where === 'Flagpole') return ['Flagpole', where === 'gate' ? 'รอเข้าแถว' : 'เข้าแถว'];
@@ -340,7 +386,11 @@ function targetOf(a, m){
   const [z] = placeOfAgent(a, m);
   if (!z) return null;
   const where = phaseAt(m)[2];
-  if (z === 'GATE') return {p: GATE.clone().add(new THREE.Vector3(-a.ox*4, 0, (a.oz-.5)*6)), pose:'stand'};
+  if (z === 'PARK') return {p: new THREE.Vector3(a.ref.spot[0] + 1.6, 0, a.ref.spot[1]), pose:'stand'};
+  if (z === 'GATE') {
+    if (a.ref.rack) return {p: new THREE.Vector3(a.ref.rack[0] + .8, 0, a.ref.rack[1]), pose:'stand'};
+    return {p: new THREE.Vector3(-60 + a.ox*4, 0, 1 + (a.oz-.5)*14), pose:'stand'};
+  }
   if (where === 'Flagpole' && a.kind === 's') {
     const ci = CLASSES.findIndex(([c]) => c === a.cls), f = zones.Flagpole;
     return {p: new THREE.Vector3(f.c.x + (ci-3.5)*1.7, f.y, f.c.z - 2 + (a.ref.no % 15)*0.55), pose:'stand'};
@@ -361,6 +411,44 @@ function targetOf(a, m){
   }
   return {p: inZone(z, a.ox, a.oz), pose:'stand'};
 }
+const spawnOf = a => a.kind === 't' ? new THREE.Vector3(a.ref.spot[0] + 1.6, 0, a.ref.spot[1])
+  : a.ref.rack ? new THREE.Vector3(a.ref.rack[0] + .8, 0, a.ref.rack[1]) : new THREE.Vector3(-61, 0, a.ref.veh.trips[0][1][2]);
+
+/* ---------- รถ ---------- */
+const box = (w, h, d, col, y = h/2, z = 0, x = 0) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({color: col})); m.position.set(x, y, z); m.castShadow = true; return m; };
+function buildVeh(v){
+  const g = new THREE.Group(), K = 1.3;
+  const wheels = (n, w, len, r = .45) => { for (let i = 0; i < n; i++) for (const sx of [-1,1]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(r, r, .3, 10), new THREE.MeshLambertMaterial({color:'#111'})); c.rotation.z = Math.PI/2; c.position.set(sx*w/2, r, (i/(n-1) - .5)*len); g.add(c); } };
+  if (v.type === 'truck') { g.add(box(2.4,1.9,2,'#e5e7eb',1.6,3.2)); g.add(box(2.2,.6,1.9,'#1e3a8a',2.1,3.25)); g.add(box(2.5,.5,5.2,v.color,.95,-.6)); g.add(box(2.5,1.1,.12,v.color,1.75,-3.15)); for (const sx of [-1,1]) g.add(box(.1,1.1,5.2,v.color,1.75,-.6,sx*1.2)); wheels(3, 2.4, 6); }
+  else if (v.type === 'van') { g.add(box(2,1.9,5,v.color,1.25)); g.add(box(2.05,.55,3.6,'#334155',1.75,-.3)); wheels(2, 2, 3.4, .38); }
+  else if (v.type === 'car') { g.add(box(1.8,.7,4.2,v.color,.65)); g.add(box(1.6,.6,2.2,'#334155',1.3,-.2)); wheels(2, 1.8, 2.8, .35); }
+  else { g.add(box(.35, .55, 1.7, v.color, .6)); const c = new THREE.Mesh(new THREE.CapsuleGeometry(.3,.6,3,8), new THREE.MeshLambertMaterial({color: v.rider || (v.type === 'moto' ? '#475569' : '#0f766e')})); c.position.y = 1.35; g.add(c); }
+  g.scale.setScalar(K); g.visible = false; scene.add(g); v.g = g;
+  if (v.label) { v.el = document.createElement('div'); v.el.className = 'lab'; v.el.style.setProperty('--c', v.type === 'truck' ? '#2563eb' : '#64748b'); v.el.innerHTML = `<b>${v.type === 'truck' ? '🚚' : '🚐'} ${v.label}</b>`; $('labels').appendChild(v.el); }
+}
+function vehAt(v, m){
+  for (const tr of v.trips) {
+    if (m < tr[0][0] || m > tr[tr.length-1][0]) continue;
+    for (let i = 1; i < tr.length; i++) if (m <= tr[i][0]) {
+      const [t0,x0,z0] = tr[i-1], [t1,x1,z1] = tr[i], f = t1 > t0 ? (m - t0)/(t1 - t0) : 1;
+      return {x: x0 + (x1-x0)*f, z: z0 + (z1-z0)*f, dx: x1-x0, dz: z1-z0};
+    }
+  }
+  return null;
+}
+function moveVehicles(dt){
+  for (const v of VEH) {
+    if (!v.g) buildVeh(v);
+    const s = vehAt(v, simMin), g = v.g;
+    if (!s) { g.visible = false; if (v.el) v.el.style.display = 'none'; continue; }
+    const tgt = new THREE.Vector3(s.x, 0, s.z);
+    if (!g.visible || g.position.distanceTo(tgt) > 40) g.position.copy(tgt);
+    else { const d = tgt.clone().sub(g.position), len = d.length(), step = Math.max(30*dt, len*Math.min(1, dt*2)); if (len > step) g.position.addScaledVector(d, step/len); else g.position.copy(tgt); }
+    if (Math.hypot(s.dx, s.dz) > .01) { const yaw = Math.atan2(s.dx, s.dz); let d = yaw - g.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); g.rotation.y += d * Math.min(1, dt*8); }
+    g.visible = true;
+    if (v.el) { v.el.style.display = ''; const p = g.position.clone().setY(4.5).project(cam); v.el.style.left = (p.x*.5+.5)*innerWidth+'px'; v.el.style.top = (-p.y*.5+.5)*innerHeight+'px'; }
+  }
+}
 const dummy = new THREE.Object3D();
 let desks;
 function moveAgents(dt){
@@ -369,12 +457,11 @@ function moveAgents(dt){
   if (!desks) { desks = new THREE.InstancedMesh(new THREE.BoxGeometry(.95,.08,.6).translate(0,.62,0), new THREE.MeshLambertMaterial({color:'#b45309'}), STUDENTS.length); desks.castShadow = true; scene.add(desks); }
   for (const a of AGENTS) {
     const T = targetOf(a, simMin), tgt = T && T.p;
-    if (!tgt) { a.shown = false; a.pos.copy(GATE); }
+    if (!tgt) { a.shown = false; }
     else {
-      if (!a.shown) { a.shown = true; a.pos.copy(GATE); }
+      if (!a.shown) { a.shown = true; a.pos.copy(spawnOf(a)); }
       const d = tgt.clone().sub(a.pos); const len = d.length(), step = Math.max(16*dt, len*Math.min(1, dt*.9));
       if (len > step) a.pos.addScaledVector(d, step/len); else a.pos.copy(tgt);
-      if (simMin >= 940 && a.pos.distanceTo(GATE) < 5) a.shown = false;
     }
     const arrived = T && a.pos.distanceTo(tgt) < .4, pose = arrived ? T.pose : 'walk';
     dummy.position.copy(a.pos); dummy.rotation.set(0,0,0);
@@ -468,7 +555,7 @@ const $ = id => document.getElementById(id);
 const slider = $('time'); let playing = true, simMin = +slider.value, lastKey = '', speed = 3;
 $('play').onclick = () => { playing = !playing; $('play').textContent = playing ? '⏸' : '▶'; };
 slider.oninput = () => { simMin = +slider.value; update(); };
-for (const [lab,m] of [['07:30',450],['เข้าแถว',480],['คาบ 1',515],['พักเที่ยง',700],['คาบ 5',815],['เลิก',935]]) {
+for (const [lab,m] of [['รถมาส่ง',437],['เข้าแถว',480],['คาบ 1',515],['พักเที่ยง',700],['คาบ 5',815],['รถมารับ',927]]) {
   const b = document.createElement('button'); b.textContent = lab; b.onclick = () => { simMin = m; slider.value = m; playing = false; $('play').textContent='▶'; update(); };
   $('jumps').appendChild(b);
 }
@@ -495,6 +582,9 @@ function update(force){
     const p = pres.filter(s=>s.cls===c), l = p.filter(s=>s.scan>LATE).length;
     return `<div class="row"><span>${c}</span><div class="track"><i style="width:${(p.length-l)/n*100}%;background:var(--ok)"></i><i style="width:${l/n*100}%;background:var(--late)"></i></div><span>${p.length}/${n}</span></div>`;
   }).join('');
+  const cnt = {}; for (const s of STUDENTS) if (s.mode) cnt[s.mode] = (cnt[s.mode]||0) + 1;
+  const tc = TEACHERS.filter(t=>t.mode==='car').length;
+  $('travel').innerHTML = `<div style="margin-top:6px;font-weight:700">การเดินทางของนักเรียน</div>` + Object.entries(MODES).map(([k,[th,ic]]) => `<div class="row" style="grid-template-columns:22px 1fr 30px"><span>${ic}</span><span>${th}</span><span>${cnt[k]||0}</span></div>`).join('') + `<div style="color:var(--mute);font-size:10.5px;margin-top:2px">ครู: 🚗 ${tc} · 🛵 ${TEACHERS.length - tc}</div>`;
   const seen = SCANS.filter(s => s.t <= m);
   $('scanN').textContent = `${seen.length} ครั้ง`;
   $('feed').innerHTML = seen.slice(-5).reverse().map(s => {
@@ -520,10 +610,10 @@ function update(force){
 const clock = new THREE.Clock(); const v = new THREE.Vector3();
 function frame(){
   const dt = clock.getDelta(), t = (performance.now()-t0)/1000;
-  if (playing) { simMin += dt * speed; if (simMin > 960) simMin = 390; slider.value = simMin; update(); }
+  if (playing) { simMin += dt * speed; if (simMin > 990) simMin = 390; slider.value = simMin; update(); }
   const ang = view.touched ? view.yaw : (view.yaw = Math.PI/4 + Math.sin(t*0.08)*0.25);
   cam.position.set(target.x+Math.sin(ang)*150, 120, target.z+Math.cos(ang)*150); cam.lookAt(target);
-  moveAgents(Math.min(dt,.3));
+  moveAgents(Math.min(dt,.3)); moveVehicles(Math.min(dt,.3));
   renderer.render(scene,cam);
   for (const z of Object.values(zones)) { v.copy(z.p).project(cam); z.el.style.left = (v.x*.5+.5)*innerWidth+'px'; z.el.style.top = (-v.y*.5+.5)*innerHeight+'px'; }
   requestAnimationFrame(frame);
