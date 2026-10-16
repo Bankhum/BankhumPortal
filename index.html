@@ -173,11 +173,11 @@ const HR_TEACHER = (() => { const out = {}, used = new Set();
 const LUNCH_START = {'ป.1':680,'ป.2':680,'ป.3':687,'ป.4':691,'ป.5':695,'ป.6':699};
 function lunchAt(cls, m){
   const s = LUNCH_START[cls]; if (s == null || m < s || m >= 750) return null;
-  const eat = cls === 'ป.1' || cls === 'ป.2' ? 20 : 15;
+  const eat = cls === 'ป.1' || cls === 'ป.2' ? 24 : 15;   // ป.1–2 ออกจากโรงอาหาร ~11:50
   if (m < s + eat) return ['Canteen','กินข้าวกลางวัน','sit'];
   if (m < s + eat + 2.5) return ['TRAY','ล้างถาด','stand'];
   if (m < s + eat + 6) return ['COOP','ซื้อขนมที่สหกรณ์','stand'];
-  if (m < 738) return ['FREE','วิ่งเล่น','run'];
+  if (m < 735) return ['FREE','วิ่งเล่นกลางสนาม','run'];   // ทุกชั้นแปรงฟันพร้อมกัน 12:15
   return ['BRUSHP','แปรงฟัน','brush'];
 }
 const LATE = 470; // สแกนหลัง 07:50 = สาย
@@ -590,7 +590,7 @@ function targetOf(a, m){
     const cz = zones.Canteen;
     if (L[0] === 'TRAY') return {p: new THREE.Vector3(cz.c.x - cz.sx/2 - .8, 0, cz.c.z - 8 + (k % 16)*1), pose:'stand'};
     if (L[0] === 'COOP') return {p: new THREE.Vector3(cz.c.x - cz.sx/2 - 2.5 - a.ox*2, 0, cz.c.z + 6 + a.oz*5), pose:'stand'};
-    if (L[0] === 'FREE') { const w = m*1.3 + a.i*1.7; return {p: new THREE.Vector3(-8 + (a.ox-.5)*14 + Math.sin(w)*2.5, 0, 4 + (a.oz-.5)*16 + Math.cos(w*.9)*2.5), pose:'run'}; }
+    if (L[0] === 'FREE') { const w = m*1.3 + a.i*1.7, f = zones.Field; return {p: new THREE.Vector3(f.c.x + (a.ox-.5)*f.sx*.8 + Math.sin(w)*2.5, 0, f.c.z + (a.oz-.5)*f.sz*.8 + Math.cos(w*.9)*2.5), pose:'run'}; }
     // แปรงฟัน: ป.1–2 หน้าอาคาร ป.1 ป.2, ป.3–6 ที่ห้องน้ำ ป.3–6
     if (ci < 2) return {p: new THREE.Vector3(-47 + (k % 30)*.65 + ci*0, 0, -22.7 - ci*.9), pose:'brush'};
     return {p: new THREE.Vector3(40.5 - (ci-2)*.9, 0, -48 + (k % 14)*.75), pose:'brush'};
