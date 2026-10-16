@@ -159,7 +159,7 @@ function placeOf(s){
 // กิจวัตรประจำวัน (นาทีนับจากเที่ยงคืน)
 const ROUTINE = [
   [355,'ก่อนเปิดประตู',null],[360,'มาโรงเรียน สแกนหน้า เก็บกระเป๋า','gate'],[460,'ทำเวรทำความสะอาดตามกลุ่มสี','duty'],
-  [480,'เข้าแถว เคารพธงชาติ สวดมนต์ ครูเวรอบรม','Flagpole'],[500,'โฮมรูม ออมทรัพย์','homeroom'],[510,'คาบ 1',0],[570,'คาบ 2',1],[630,'คาบ 3',2],[690,'พักกลางวัน','Canteen'],
+  [480,'เข้าแถว เคารพธงชาติ สวดมนต์ ครูเวรอบรม','Flagpole'],[500,'โฮมรูม ออมทรัพย์','homeroom'],[510,'คาบ 1',0],[570,'คาบ 2',1],[630,'คาบ 3',2],[680,'พักกลางวัน (ทยอยตามชั้น)','lunch'],
   [750,'คาบ 4',3],[810,'คาบ 5',4],[870,'คาบ 6',5],[930,'เลิกเรียน กลับบ้าน','gate'],[960,'ครูทยอยกลับบ้าน','gate'],[990,'',null]];
 // กลุ่มสีทำเวรตอนเช้า (สมมติ 4 สี คละชั้น ป.1–6) และพื้นที่รับผิดชอบ
 const COLOR_GROUPS = [['แดง','#ef4444','Canteen','กวาดโรงอาหาร'],['เหลือง','#eab308','Flagpole','กวาดลานเสาธง'],
@@ -169,6 +169,17 @@ const HR_TEACHER = (() => { const out = {}, used = new Set();
   for (const c of Object.keys(REAL)) { const cnt = {}; for (const d of REAL[c]) for (const x of d) { const t = x.split('|')[1]; if (t) cnt[t] = (cnt[t]||0) + 1; }
     const best = Object.entries(cnt).sort((a,b) => b[1]-a[1]).find(([t]) => !used.has(t)); if (best) { used.add(best[0]); out['ครู'+best[0]] = c; } }
   return out; })();
+// พักกลางวันตามลำดับชั้น: ป.1–2 มา 11:20 แล้ว ป.3 ป.4 ป.5 ป.6 → กินข้าว → ล้างถาด → ซื้อขนมสหกรณ์ → ออกก่อนเที่ยง → วิ่งเล่น → แปรงฟัน → เข้าเรียน 12:30
+const LUNCH_START = {'ป.1':680,'ป.2':680,'ป.3':687,'ป.4':691,'ป.5':695,'ป.6':699};
+function lunchAt(cls, m){
+  const s = LUNCH_START[cls]; if (s == null || m < s || m >= 750) return null;
+  const eat = cls === 'ป.1' || cls === 'ป.2' ? 20 : 15;
+  if (m < s + eat) return ['Canteen','กินข้าวกลางวัน','sit'];
+  if (m < s + eat + 2.5) return ['TRAY','ล้างถาด','stand'];
+  if (m < s + eat + 6) return ['COOP','ซื้อขนมที่สหกรณ์','stand'];
+  if (m < 738) return ['FREE','วิ่งเล่น','run'];
+  return ['BRUSHP','แปรงฟัน','brush'];
+}
 const LATE = 470; // สแกนหลัง 07:50 = สาย
 
 // สร้างผลสแกนหน้าจำลอง (ของจริง: ไฟล์ CSV / API จากเครื่องสแกน)
@@ -194,11 +205,16 @@ const SCAN_PT = [21.6, -11];   // จุดสแกนหน้า หน้า
 const V_SCHOOL = 130, V_ROAD = 450, V_BIKE = 180, GAP = 1.8;   // ม./นาที (≈ 8 กม./ชม. ในโรงเรียน)
 const VEH = [];
 const GATE_IN_Z = 5.5, GATE_OUT_Z = -26.8, FENCE = {x0: -64, x1: 63, z0: -49.5, z1: 48.5};
-const MAIN = [[ROAD_IN,-64],[ROAD_IN,3],[-66,5],[-59.5,7],[-59.5,18],[-52,26],[-42,27.5],[-20,27.5],[-15,25.5],[7,25],[8,17],[DROP_X,17],[DROP_X,-13],[10,LANE],[-44,LANE],[-54,-18],[-63,-26.5],[ROAD_OUT,-28],[ROAD_OUT,-66]];
+// จุดรับส่ง 2 จุด: A หน้าอาคารเฉลิมพระเกียรติ, B หน้าห้องคอมพิวเตอร์
+const MAIN = [[ROAD_IN,-64],[ROAD_IN,3],[-66,5],[-59.5,7],[-59.5,18],[-52,26],[-42,27.5],[-20,27.5],[-15,25.5],[7,25],[8,17],[DROP_X,17],[DROP_X,-13],
+  [18,-16],[18,-34.5],[4.5,-34.5],[4.5,LANE],[-44,LANE],[-54,-18],[-63,-26.5],[ROAD_OUT,-28],[ROAD_OUT,-66]];
+const GARAGE = [-50, -42];   // โรงรถ 6 ล้อ (สมมติตำแหน่ง)
+const GATE_CLOSE = 510, GATE_OPEN = 930;   // ประตูปิดอัตโนมัติ 08:30 เปิด 15:30
+const gateClosed = m => m >= GATE_CLOSE && m < GATE_OPEN;
 const CUM = [0]; for (let i = 1; i < MAIN.length; i++) CUM.push(CUM[i-1] + Math.hypot(MAIN[i][0]-MAIN[i-1][0], MAIN[i][1]-MAIN[i-1][1]));
 const TOTAL = CUM[CUM.length-1], sOf = i => CUM[i];
-const S_GATE_IN = sOf(2), S_GATE_OUT = sOf(16), S_ZONE0 = sOf(11) + 3, S_ZONE1 = sOf(11) + 28;
-const S_LANE0 = sOf(13);
+const S_GATE_IN = sOf(2), S_GATE_OUT = sOf(19), S_LANE0 = sOf(16);
+const ZONE = {A: [sOf(11) + 3, sOf(11) + 28], B: [sOf(14) + 1.5, sOf(14) + 12.5]};
 function posAt(s){
   let i = 1; while (i < CUM.length - 1 && CUM[i] < s) i++;
   const f = Math.min(1, Math.max(0, (s - CUM[i-1]) / (CUM[i] - CUM[i-1])));
@@ -211,10 +227,14 @@ const RUNS = [];
 const addRun = (v, kind, t, extra = {}) => { const r = {v, kind, t, len: LEN[v.type], s: null, done: false, ...extra}; RUNS.push(r); v.runs.push(r); return r; };
 const truck = addVeh('truck', '#2563eb', [], 'รถ 6 ล้อโรงเรียน');
 const vans = [0,1,2].map(i => addVeh('van', '#f8fafc', [], 'รถตู้ ' + (i+1)));
-const truckAM = [392, 422, 452].map(t => addRun(truck, 'drop', t, {dwell: 1.6}));
-const truckPM = [931, 960].map(t => addRun(truck, 'drop', t, {dwell: 2}));
-const vanAM = vans.map((v, i) => addRun(v, 'drop', 382 + i*24, {dwell: 1.2}));
-const vanPM = vans.map((v, i) => addRun(v, 'drop', 929 + i*3, {dwell: 1.5}));
+const truckAM = [392, 422, 452].map(t => addRun(truck, 'drop', t, {dwell: 1.6, zone: 'A'}));
+const truckPM = [933, 962].map(t => addRun(truck, 'drop', t, {dwell: 2, zone: 'A'}));
+// รถ 6 ล้อกลับเข้าโรงรถหลังส่งเที่ยวสุดท้าย (เช้า/เย็น)
+const GARAGE_SPUR = [[-53, -28], [-50, -36], GARAGE];
+const truckHome = [470, 978].map(t => addRun(truck, 'park', t, {sB: sOf(18), spot: GARAGE, spur: GARAGE_SPUR}));
+const vanAM = vans.map((v, i) => addRun(v, 'drop', 382 + i*24, {dwell: 1.2, zone: 'A'}));
+const vanPM = vans.map((v, i) => addRun(v, 'drop', 931 + i*3, {dwell: 1.5, zone: 'A'}));
+addVeh('garage', '#94a3b8', [[[0, ...GARAGE], [2000, ...GARAGE]]], 'โรงรถ 6 ล้อ');
 addVeh('kiosk', '#14b8a6', [[[0, ...SCAN_PT], [2000, ...SCAN_PT]]], 'จุดสแกนหน้า');
 addVeh('gate', '#16a34a', [[[0, FENCE.x0, GATE_IN_Z], [2000, FENCE.x0, GATE_IN_Z]]], 'ประตูรถเข้า');
 addVeh('gate', '#dc2626', [[[0, FENCE.x0, GATE_OUT_Z], [2000, FENCE.x0, GATE_OUT_Z]]], 'ประตูรถออก');
@@ -231,7 +251,7 @@ for (const s of STUDENTS) {
   else if (s.mode === 'bike') {
     // จักรยานปั่นชิดขอบทาง ไม่ต้องต่อคิวรถ
     const i = bikeN++, arr = 360 + Math.pow(rnd(), .6)*110, dep = 934 + rnd()*8, rack = [1 + i*.75, -12.3];
-    const path = [...MAIN.slice(0, 11), [DROP_X-2.5, 15], [DROP_X-2.5, -9], [rack[0], -9], rack], back = [rack, [rack[0], -16], [rack[0], LANE], ...MAIN.slice(14)];
+    const path = [...MAIN.slice(0, 11), [DROP_X-2.5, 15], [DROP_X-2.5, -9], [rack[0], -9], rack], back = [rack, [rack[0], -16], [rack[0], LANE], ...MAIN.slice(17)];
     const timed = (pts, t0, end) => { const d = [0]; for (let k = 1; k < pts.length; k++) d.push(d[k-1] + Math.hypot(pts[k][0]-pts[k-1][0], pts[k][1]-pts[k-1][1]));
       const st = end ? t0 - d[d.length-1]/V_BIKE : t0; return pts.map((q, k) => [st + d[k]/V_BIKE, q[0], q[1]]); };
     s.veh = addVeh('bike', '#0f766e', [[...timed(path, arr, true), ...timed(back, dep)]]);
@@ -240,19 +260,21 @@ for (const s of STUDENTS) {
     // ผู้ปกครองมาส่ง 06:00–08:00 (ส่วนใหญ่ 07:00–07:50) และมารับหลัง 15:30
     const arr = 358 + Math.pow(rnd(), .55)*118, pm = 929 + Math.pow(rnd(), 1.3)*28, dwell = s.mode === 'car' ? .9 : .6;
     s.veh = addVeh(s.mode, s.mode === 'car' ? pick(CAR_COLS) : pick(['#111827','#b91c1c','#1d4ed8','#6b7280']), []);
-    s.am = addRun(s.veh, 'drop', arr, {dwell}); s.pm = addRun(s.veh, 'drop', pm, {dwell});
+    const zone = rnd() < .4 ? 'B' : 'A';
+    s.am = addRun(s.veh, 'drop', arr, {dwell, zone}); s.pm = addRun(s.veh, 'drop', pm, {dwell, zone});
   }
   s.veh.riders++;
 }
 // ครู: ส่วนใหญ่ขับรถยนต์ บางส่วนขี่มอเตอร์ไซค์ จอดใต้หลังคาโรงจอดรถ (บางคนมาสายหลัง 08:00 ได้)
 TEACHERS.forEach((t, i) => {
   t.mode = i % 7 === 3 || i % 7 === 6 ? 'moto' : 'car';
-  const arr = rnd() < .2 ? 480 + rnd()*40 : 385 + rnd()*90, dep = 945 + rnd()*38;
+  const arr = rnd() < .2 ? 478 + rnd()*22 : 385 + rnd()*90, dep = 945 + rnd()*38;  // ประตูปิด 08:30 ครูสายต้องมาก่อน
   const nCar = TEACHERS.slice(0, i).filter(x => x.mode === t.mode).length;
-  t.spot = t.mode === 'car' ? (nCar < 10 ? [-9.5 + (nCar%5)*2.8, nCar < 5 ? -31.5 : -27.5] : [-9.5 + (nCar-10)*2.8, -24.8]) : [5.2, -32.5 + nCar*1.3];
+  t.spot = t.mode === 'car' ? (nCar < 10 ? [-9.5 + (nCar%5)*2.8, nCar < 5 ? -31.5 : -27.5] : [-9.5 + (nCar-10)*2.8, -24.8]) : [6.6, -32.5 + nCar*1.3];
   t.veh = addVeh(t.mode, t.mode === 'car' ? pick(CAR_COLS) : '#111827', []);
-  const sB = S_LANE0 + (MAIN[13][0] - t.spot[0]);
-  t.runIn = addRun(t.veh, 'park', arr, {sB, spot: t.spot}); t.runOut = addRun(t.veh, 'leave', dep, {sB, spot: t.spot});
+  const moto = t.mode === 'moto', sB = moto ? sOf(15) + (t.spot[1] + 34.5) : S_LANE0 + (4.5 - t.spot[0]);
+  const spur = moto ? [t.spot] : [[t.spot[0], LANE - 2.5], t.spot];
+  t.runIn = addRun(t.veh, 'park', arr, {sB, spot: t.spot, spur}); t.runOut = addRun(t.veh, 'leave', dep, {sB, spot: t.spot, spur});
   t.veh.riders = 1; t.leave = dep; t.drop = [t.spot[0] + 1.6, t.spot[1]];
 });
 // จำลองการจราจรทีละวินาที: รถตามกันเป็นแถว ไม่แซง ไม่ซ้อนกัน ส่ง/รับนักเรียนได้ในช่วงหน้าอาคาร (ประมาณ 4 คัน)
@@ -266,7 +288,7 @@ TEACHERS.forEach((t, i) => {
       const s0 = r.kind === 'leave' ? r.sB : 0;
       if (!clear(s0, r.len) || r.v.runs.some(o => o !== r && o.s != null && !o.done)) continue;
       pending.splice(k--, 1); r.s = s0; r.tr = []; r.v.trips.push(r.tr); active.push(r);
-      if (r.kind === 'leave') { r.tr.push([t - .3, ...r.spot], [t - .1, r.spot[0], LANE - 2.5]); r.depart = t; }
+      if (r.kind === 'leave') { const sp = [...r.spur].reverse(); sp.forEach((q, j) => r.tr.push([t - .3 + .2*j/sp.length, ...q])); r.depart = t; }
       if (r.kind === 'drop') r.stop = Infinity;
     }
     active.sort((a, b) => b.s - a.s);
@@ -274,23 +296,30 @@ TEACHERS.forEach((t, i) => {
       const r = active[k], ahead = active[k-1];
       const v = r.s < S_GATE_IN || r.s > S_GATE_OUT ? V_ROAD : V_SCHOOL;
       let lim = ahead ? ahead.s - (ahead.len + r.len)/2 - GAP : Infinity;
+      if (gateClosed(t)) { if (r.s < S_GATE_IN) lim = Math.min(lim, S_GATE_IN - r.len/2 - 1); else if (r.s < S_GATE_OUT) lim = Math.min(lim, S_GATE_OUT - r.len/2 - 1); }
       if (r.kind === 'park') lim = Math.min(lim, r.sB);
-      if (r.kind === 'drop' && r.dwellEnd == null) lim = Math.min(lim, S_ZONE1);
+      if (r.kind === 'drop' && r.dwellEnd == null) lim = Math.min(lim, ZONE[r.zone][1]);
       if (r.dwellEnd != null && t < r.dwellEnd) lim = r.s;
       const ns = Math.max(r.s, Math.min(r.s + v*dt, lim));
-      if (r.kind === 'drop' && r.dwellEnd == null && r.s >= S_ZONE0 && ns - r.s < 1e-3) { r.dwellStart = t; r.dwellEnd = t + r.dwell; r.at = posAt(r.s); }
+      if (r.kind === 'drop' && r.dwellEnd == null && r.s >= ZONE[r.zone][0] && ns - r.s < 1e-3) { r.dwellStart = t; r.dwellEnd = t + r.dwell; r.at = posAt(r.s); }
       r.s = ns; const [x, z] = posAt(r.s); rec(r, t, x, z);
-      if (r.kind === 'park' && r.s >= r.sB - .01) { r.tr.push([t + .15, r.spot[0], LANE - 2.5], [t + .35, ...r.spot]); r.arrive = t + .35; r.done = true; }
+      if (r.kind === 'park' && r.s >= r.sB - .01) { r.spur.forEach((q, j) => r.tr.push([t + .35*(j+1)/r.spur.length, ...q])); r.arrive = t + .35; r.done = true; }
       if (r.s >= TOTAL - .01) r.done = true;
     }
     for (let k = active.length - 1; k >= 0; k--) if (active[k].done) { const r = active[k]; if (r.kind !== 'park') { const [x, z] = posAt(r.s); r.tr.push([t, x, z]); } active.splice(k, 1); }
   }
   for (const v of VEH) if (v.runs.length) v.trips.sort((a, b) => a[0][0] - b[0][0]);
   for (const t of TEACHERS) t.veh.trips = [[...t.runIn.tr, ...t.runOut.tr]];  // จอดนิ่งที่โรงจอดระหว่างวัน
+  // รถ 6 ล้อ: จอดในโรงรถตอนว่าง ออกจากโรงรถไปรับนักเรียนเช้า/เย็น
+  const outOf = t0 => { const pts = [GARAGE, [-50, -36], [-56, -30], [-63, -26.5], [ROAD_OUT, -28], [ROAD_OUT, -66]]; let tt = t0; return pts.map((q, j) => { if (j) tt += Math.hypot(q[0]-pts[j-1][0], q[1]-pts[j-1][1]) / (j > 3 ? V_ROAD : V_SCHOOL); return [tt, ...q]; }); };
+  const [h1, h2] = truckHome;
+  truck.trips.push([[355, ...GARAGE], ...outOf(380)], [[h1.arrive, ...GARAGE], ...outOf(GATE_OPEN)], [[h2.arrive, ...GARAGE], [2000, ...GARAGE]]);
+  truck.trips.sort((a, b) => a[0][0] - b[0][0]);
 })();
 for (const s of STUDENTS) {
   if (s.scan == null) continue;
-  if (s.am) { s.arr = s.am.dwellStart + rnd()*.3; s.drop = [DROP_X + 1.5, s.am.at[1] + (rnd()-.5)*2]; s.pickAt = s.pm.dwellStart; s.pickPos = [DROP_X + 1.5, s.pm.at[1]]; s.leave = s.pm.dwellEnd - .05; }
+  if (s.am) { const side = (r, d) => r.zone === 'B' ? [r.at[0] + d, r.at[1] - 1.5] : [r.at[0] + 1.5, r.at[1] + d];
+    s.arr = s.am.dwellStart + rnd()*.3; s.drop = side(s.am, (rnd()-.5)*2); s.pickAt = s.pm.dwellStart; s.pickPos = side(s.pm, 0); s.pmZone = s.pm.zone; s.leave = s.pm.dwellEnd - .05; }
   s.scan = Math.round(s.arr + walk(s.drop));
 }
 TEACHERS.forEach(t => { t.arr = t.runIn.arrive; t.scan = Math.round(t.arr + walk(t.drop)); t.leave = t.runOut.depart - .3; });
@@ -460,7 +489,7 @@ function placeOfAgent(a, m){
   if (m < r.scan + .4) return ['SCAN','เดินไปสแกนหน้าที่อาคารเฉลิมพระเกียรติ'];
   if (a.kind === 't' && m >= 930) return m >= r.leave - 5 ? ['PARK','เดินไปที่รถ'] : ['Chalerm_Building','ห้องพักครู'];
   if (a.kind === 's' && m >= 930 && r.pickAt != null && m >= r.pickAt) return ['PICK','ขึ้นรถกลับบ้าน'];
-  if (a.kind === 's' && m >= 930) return ['GATE', r.mode === 'bike' ? 'ไปเอาจักรยาน' : `รอ${MODES[r.mode][0]} หน้าอาคารเฉลิมฯ`];
+  if (a.kind === 's' && m >= 930) return ['GATE', r.mode === 'bike' ? 'ไปเอาจักรยาน' : `รอ${MODES[r.mode][0]} ${r.pmZone === 'B' ? 'หน้าห้องคอมพิวเตอร์' : 'หน้าอาคารเฉลิมฯ'}`];
   const kg = kgAt(m);
   if (kg && (a.kind === 's' ? isKG(a.cls) : r.name.startsWith('ครูอนุบาล'))) return [kg[2], kg[1]];
   const [, name, where] = phaseAt(m);
@@ -481,7 +510,11 @@ function placeOfAgent(a, m){
     if (a.kind === 't') { const c = r.name.startsWith('ครูอนุบาล') ? 'อ.' + r.name.slice(-1) : HR_TEACHER[r.name]; return c ? [HOMEROOM[c], `โฮมรูม ${c}`] : ['Chalerm_Building','ห้องพักครู']; }
     return [HOMEROOM[a.cls], 'โฮมรูม ออมทรัพย์'];
   }
-  if (where === 'Canteen') return ['Canteen','กินข้าวกลางวัน'];
+  if (where === 'lunch') {
+    if (a.kind === 't') return m < 715 ? ['Canteen','กินข้าวกลางวัน'] : ['Chalerm_Building','ห้องพักครู'];
+    const L = lunchAt(a.cls, m); if (!L) return placeOfAgent(a, 679.9);
+    return [L[0], L[1]];
+  }
   if (where == null) return ['GATE',''];
   if (a.kind === 't') return teacherPlace(r, where);
   const l = lesson(a.cls, where); return [l.where, `${l.sub} · ${l.tea}`];
@@ -550,6 +583,18 @@ function targetOf(a, m){
   const kg = kgAt(m);
   if (kg && z === kg[2] && (a.kind === 's' ? isKG(a.cls) : a.ref.name.startsWith('ครูอนุบาล'))) return kgTarget(a, m, kg);
   const ph = phaseAt(m)[2];
+  if (ph === 'lunch' && a.kind === 's' && !isKG(a.cls)) {
+    const L = lunchAt(a.cls, m); if (!L) return targetOf(a, 679.9);
+    const ci = CLASSES.findIndex(([c]) => c === a.cls) - 2, cm = a.cohort ??= STUDENTS.filter(s => s.cls === a.cls && s.scan != null), k = cm.indexOf(a.ref);
+    if (L[0] === 'Canteen') { const all = a.prim ??= STUDENTS.filter(s => !isKG(s.cls) && s.scan != null); return {p: slotOf(subRect('Canteen', 0, 1), 'sit', all.indexOf(a.ref), all.length, a.ox, a.oz), pose:'sit'}; }
+    const cz = zones.Canteen;
+    if (L[0] === 'TRAY') return {p: new THREE.Vector3(cz.c.x - cz.sx/2 - .8, 0, cz.c.z - 8 + (k % 16)*1), pose:'stand'};
+    if (L[0] === 'COOP') return {p: new THREE.Vector3(cz.c.x - cz.sx/2 - 2.5 - a.ox*2, 0, cz.c.z + 6 + a.oz*5), pose:'stand'};
+    if (L[0] === 'FREE') { const w = m*1.3 + a.i*1.7; return {p: new THREE.Vector3(-8 + (a.ox-.5)*14 + Math.sin(w)*2.5, 0, 4 + (a.oz-.5)*16 + Math.cos(w*.9)*2.5), pose:'run'}; }
+    // แปรงฟัน: ป.1–2 หน้าอาคาร ป.1 ป.2, ป.3–6 ที่ห้องน้ำ ป.3–6
+    if (ci < 2) return {p: new THREE.Vector3(-47 + (k % 30)*.65 + ci*0, 0, -22.7 - ci*.9), pose:'brush'};
+    return {p: new THREE.Vector3(40.5 - (ci-2)*.9, 0, -48 + (k % 14)*.75), pose:'brush'};
+  }
   if (ph === 'gate' || ph === 'homeroom') {
     if (z === 'PLAY') return kgTarget(a, m, [0, '', 'PLAY', 'run']);
     if (z === 'FREE') { const w = m*1.3 + a.i*1.7; return {p: new THREE.Vector3(-8 + (a.ox-.5)*14 + Math.sin(w)*2.5, 0, 4 + (a.oz-.5)*16 + Math.cos(w*.9)*2.5), pose:'run'}; }
@@ -568,6 +613,7 @@ function targetOf(a, m){
   if (z === 'PICK') return {p: new THREE.Vector3(a.ref.pickPos[0], 0, a.ref.pickPos[1] + (a.oz-.5)*2), pose:'stand'};
   if (z === 'GATE') {
     if (a.ref.rack) return {p: new THREE.Vector3(a.ref.rack[0], 0, a.ref.rack[1] + .8), pose:'stand'};
+    if (a.ref.pmZone === 'B') return {p: new THREE.Vector3(6 + a.ox*11, 0, -36.2 - a.oz*.6), pose:'stand'};
     return {p: new THREE.Vector3(DROP_X + 1.5 + a.ox*1.4, 0, -10 + a.oz*29), pose:'stand'};
   }
   if (where === 'Flagpole' && a.kind === 's') {
@@ -600,11 +646,13 @@ function buildVeh(v){
   if (v.type === 'truck') { g.add(box(2.4,1.9,2,'#e5e7eb',1.6,3.2)); g.add(box(2.2,.6,1.9,'#1e3a8a',2.1,3.25)); g.add(box(2.5,.5,5.2,v.color,.95,-.6)); g.add(box(2.5,1.1,.12,v.color,1.75,-3.15)); for (const sx of [-1,1]) g.add(box(.1,1.1,5.2,v.color,1.75,-.6,sx*1.2)); wheels(3, 2.4, 6); }
   else if (v.type === 'van') { g.add(box(2,1.9,5,v.color,1.25)); g.add(box(2.05,.55,3.6,'#334155',1.75,-.3)); wheels(2, 2, 3.4, .38); }
   else if (v.type === 'car') { g.add(box(1.8,.7,4.2,v.color,.65)); g.add(box(1.6,.6,2.2,'#334155',1.3,-.2)); wheels(2, 1.8, 2.8, .35); }
-  else if (v.type === 'gate') { for (const s of [-1, 1]) { g.add(box(.5, 2.2, .5, '#475569', 1.1, s*4.2)); g.add(box(3.6, 1.3, .08, '#334155', .85, s*4, 2)); g.add(box(.6, .25, .6, v.color, 2.3, s*4.2)); } }
+  else if (v.type === 'gate') { v.leaves = []; for (const s of [-1, 1]) { g.add(box(.5, 2.2, .5, '#475569', 1.1, s*4.2)); g.add(box(.6, .25, .6, v.color, 2.3, s*4.2));
+      const pv = new THREE.Group(); pv.position.set(0, 0, s*4); pv.add(box(3.9, 1.3, .08, '#334155', .85, 0, 1.95)); pv.userData.s = s; g.add(pv); v.leaves.push(pv); } }
+  else if (v.type === 'garage') { for (const [x, z] of [[-1.7,-3.9],[1.7,-3.9],[-1.7,3.9],[1.7,3.9]]) g.add(box(.2, 2.6, .2, '#64748b', 1.3, z, x)); g.add(box(4, .15, 8.6, v.color, 2.7)); }
   else if (v.type === 'kiosk') { g.add(box(.5, 1.5, .5, '#334155', .75)); g.add(box(.08, .5, .6, v.color, 1.45, 0, .27)); }
   else { g.add(box(.35, .55, 1.7, v.color, .6)); const c = new THREE.Mesh(new THREE.CapsuleGeometry(.3,.6,3,8), new THREE.MeshLambertMaterial({color: v.rider || (v.type === 'moto' ? '#475569' : '#0f766e')})); c.position.y = 1.35; g.add(c); }
   g.scale.setScalar(K); g.visible = false; scene.add(g); v.g = g;
-  if (v.label) { v.el = document.createElement('div'); v.el.className = 'lab'; v.el.style.setProperty('--c', v.type === 'truck' ? '#2563eb' : v.type === 'kiosk' || v.type === 'gate' ? v.color : '#64748b'); v.el.innerHTML = `<b>${({truck:'🚚', van:'🚐', kiosk:'📷', gate: v.color === '#16a34a' ? '⬇' : '⬆'})[v.type]} ${v.label}</b>`; $('labels').appendChild(v.el); }
+  if (v.label) { v.el = document.createElement('div'); v.el.className = 'lab'; v.el.style.setProperty('--c', v.type === 'truck' ? '#2563eb' : v.type === 'kiosk' || v.type === 'gate' ? v.color : v.type === 'garage' ? '#475569' : '#64748b'); v.el.innerHTML = `<b>${({truck:'🚚', van:'🚐', kiosk:'📷', garage:'🅿', gate: v.color === '#16a34a' ? '⬇' : '⬆'})[v.type]} ${v.label}</b>`; $('labels').appendChild(v.el); }
 }
 function vehAt(v, m){
   for (const tr of v.trips) {
@@ -643,9 +691,10 @@ function moveVehicles(dt){
     const tgt = new THREE.Vector3(s.x, 0, s.z);
     if (!g.visible || g.position.distanceTo(tgt) > 40) g.position.copy(tgt);
     else { const d = tgt.clone().sub(g.position), len = d.length(), step = Math.max(30*dt, len*Math.min(1, dt*2)); if (len > step) g.position.addScaledVector(d, step/len); else g.position.copy(tgt); }
-    if (v.type !== 'kiosk' && v.type !== 'gate' && Math.hypot(s.dx, s.dz) > .01) { const yaw = Math.atan2(s.dx, s.dz); let d = yaw - g.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); g.rotation.y += d * Math.min(1, dt*8); }
+    if (v.leaves) { const want = gateClosed(simMin) ? 1 : 0; for (const pv of v.leaves) { const a = pv.userData.s * want * Math.PI/2; pv.rotation.y += (a - pv.rotation.y) * Math.min(1, dt*3); } if (v.el && v.lastWant !== want) { v.lastWant = want; v.el.innerHTML = `<b>${v.color === '#16a34a' ? '⬇' : '⬆'} ${v.label}${want ? ' · ปิดอยู่' : ''}</b>`; } }
+    if (!['kiosk','gate','garage'].includes(v.type) && Math.hypot(s.dx, s.dz) > .01) { const yaw = Math.atan2(s.dx, s.dz); let d = yaw - g.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); g.rotation.y += d * Math.min(1, dt*8); }
     g.visible = true;
-    if (v.el) { v.el.style.display = ''; const p = g.position.clone().setY(v.type === 'kiosk' || v.type === 'gate' ? 7 : 4.5).project(cam); v.el.style.left = (p.x*.5+.5)*innerWidth+'px'; v.el.style.top = (-p.y*.5+.5)*innerHeight+'px'; }
+    if (v.el) { v.el.style.display = ''; const p = g.position.clone().setY(['kiosk','gate','garage'].includes(v.type) ? 7 : 4.5).project(cam); v.el.style.left = (p.x*.5+.5)*innerWidth+'px'; v.el.style.top = (-p.y*.5+.5)*innerHeight+'px'; }
   }
 }
 const dummy = new THREE.Object3D();
