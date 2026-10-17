@@ -360,12 +360,23 @@ const LATE = 470; // สแกนหลัง 07:50 = สาย
 
 // ผลสแกนหน้าจริงของวันนี้จาก BANKHUM SIS (ไม่ระบุตัวตน ผ่าน /sim-feed ของเว็บ) ใช้เฉพาะตอนดูวันนี้
 // ดึงไม่ได้ (เช่น ยังไม่เปิดใช้, เปิดใน Artifact, วันหยุด) → ใช้ผลสแกนจำลองเหมือนเดิม
-const FEED = await (async () => {
-  const wd = new Date().getDay(); if (wd < 1 || wd > 5 || day !== wd - 1) return null;
-  try { const c = new AbortController(); setTimeout(() => c.abort(), 2500);
-    const r = await fetch('/sim-feed', {signal: c.signal}); if (!r.ok) return null;
-    const d = await r.json(); return d.ok && d.rooms?.length ? d : null; } catch (e) { return null; }
-})();
+// Data Adapter: แยกการดึงข้อมูลออกจาก UI · เบราว์เซอร์ไม่ต่อฐานข้อมูลตรง ผ่าน /sim-feed ฝั่งเซิร์ฟเวอร์ที่ถือรหัสเอง
+// สถานะ: ok = ได้ข้อมูลจาก SIS · off = ไม่ใช่วันเรียนของวันนี้ · unconfigured = ยังไม่ได้เปิดใช้ · error = SIS ไม่พร้อม/ติดต่อไม่ได้
+const DataAdapter = {
+  status: 'off', message: '', updated: null,
+  async loadTodayScans(){
+    const wd = new Date().getDay(); if (wd < 1 || wd > 5 || day !== wd - 1) { this.message = 'ดูวันอื่นที่ไม่ใช่วันนี้ ใช้ข้อมูลจำลอง'; return null; }
+    try { const c = new AbortController(); setTimeout(() => c.abort(), 2500);
+      const r = await fetch('/sim-feed', {signal: c.signal}), d = await r.json().catch(() => ({}));
+      if (r.status === 503) { this.status = 'unconfigured'; this.message = 'ยังไม่ได้เปิดใช้การเชื่อม SIS'; return null; }
+      if (!r.ok || !d.ok) { this.status = 'error'; this.message = 'SIS ไม่พร้อมใช้งาน (' + (d.error || r.status) + ')'; return null; }
+      if (!d.rooms?.length) { this.status = 'error'; this.message = 'SIS ยังไม่มีข้อมูลห้องเรียนภาคนี้'; return null; }
+      this.status = 'ok'; this.updated = d.fetched_at ? new Date(d.fetched_at) : new Date(); this.message = 'ได้รับข้อมูลจาก BANKHUM SIS'; return d;
+    } catch (e) { this.status = 'error'; this.message = 'ติดต่อ SIS ไม่ได้'; return null; }
+  },
+};
+const FEED = await DataAdapter.loadTodayScans();
+if (FEED) FEED.fetched = DataAdapter.updated.toLocaleTimeString('th-TH', {hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'});
 const SCAN_REAL = new Map();   // 'ป.1#12' → {m: นาที, status, girl}
 if (FEED) {
   for (const row of CLASSES) { const n = FEED.rooms.filter(x => x.cls === row[0]).reduce((a, x) => a + x.enrolled, 0); if (n) row[1] = n; }
@@ -1794,7 +1805,7 @@ $('hdrLogo').src = $('topLogo').src = $('splashLogo').src;
 $('srcl').innerHTML = `ตัวเลขการมาเรียน: ${srcB(FEED ? 'ver' : 'sim')} · ครู: ${srcB('sim')}`;
 $('legend').innerHTML = Object.values(BSTAT).map(([t, c]) => `<span style="--s:${c}">${t}</span>`).join('');
 { const md = $('tMode'); md.classList.toggle('sis', !!FEED); md.querySelector('span').textContent = FEED ? 'SIS + ข้อมูลจำลอง' : 'ข้อมูลจำลอง';
-  md.title = FEED ? `เวลาสแกนหน้าจาก BANKHUM SIS (${FEED.date}) · ส่วนอื่นเป็นข้อมูลตามตาราง/จำลอง` : 'ทุกอย่างบนแผนที่เป็นข้อมูลจำลองหรือตามตารางเรียน ไม่ใช่ตำแหน่งจริงของบุคคล'; }
+  md.title = (FEED ? `เวลาสแกนหน้าจาก BANKHUM SIS (${FEED.date}) · อัปเดต ${FEED.fetched} · ส่วนอื่นเป็นข้อมูลตามตาราง/จำลอง` : 'ทุกอย่างบนแผนที่เป็นข้อมูลจำลองหรือตามตารางเรียน ไม่ใช่ตำแหน่งจริงของบุคคล') + (DataAdapter.message ? '\nสถานะ SIS: ' + DataAdapter.message : ''); }
 /* ---------- Dashboard: ภาพรวมที่เผยแพร่ได้ (ตามตารางเรียน) + ตัวกรอง ---------- */
 const PERIODS = ROUTINE.filter(r => typeof r[2] === 'number').map((r, k, a) => ({p: r[2], t0: r[0], t1: ROUTINE[ROUTINE.indexOf(r) + 1][0], th: r[1]}));
 const actType = sub => /ส่องโลก|กิจกรรม|ลูกเสือ|แนะแนว|ชุมนุม|บำเพ็ญ/.test(sub) ? 'act' : /พลศึกษา|สุขศึกษา|ว่ายน้ำ|ทางน้ำ/.test(sub) ? 'pe' : 'aca';
@@ -1834,7 +1845,7 @@ function renderDash(){
     <div>นักเรียน (จากแหล่งข้อมูลจริง)<b>${fed ?? '—'}</b><small>${fed != null ? `BANKHUM SIS ${FEED.date} ${srcB('ver')}` : `ยังไม่เชื่อม SIS ${srcB('unk')}`}</small></div>
     <div>ครูในตารางสอนวันนี้<b>${roster.size}</b><small>นับจากตารางสอน ${srcB('sch')}</small></div>
     <div>อาคารที่มีกิจกรรมตามตาราง<b>${isP ? bNow.length : '—'}</b><small>${isP ? when : 'ช่วงนี้ไม่ใช่คาบเรียน'} ${srcB('sch')}</small></div>
-    <div>สถานะข้อมูลล่าสุด<b style="font-size:15px">${FEED ? 'SIS + ตาราง' : 'ตาราง + จำลอง'}</b><small>${FEED ? 'อัปเดต ' + (FEED.fetched || FEED.date) : 'ไม่ได้รับข้อมูลจาก SIS'}</small></div>
+    <div>สถานะข้อมูลล่าสุด<b style="font-size:15px">${FEED ? 'SIS + ตาราง' : 'ตาราง + จำลอง'}</b><small>${FEED ? 'Last updated ' + FEED.fetched : DataAdapter.message || 'ไม่ได้รับข้อมูลจาก SIS'}</small></div>
   </div>
   <div class="two">
     <div><h4>กิจกรรมตามตาราง · ${when}</h4>${isP ? (now.length ? `<div class="scroll"><table><tr><th>ชั้น</th><th>กิจกรรม/วิชา</th><th>อาคาร · ห้อง</th><th>ครูผู้รับผิดชอบ</th></tr>${now.map(([c, l]) => `<tr><td><b>${c}</b></td><td>${l.sub}<br><small>${ACT_TH[actType(l.sub)]}</small></td><td>${ZONES[l.where][0]}${l.room && ROOMS[l.room] ? '<br><small>' + ROOMS[l.room].th + '</small>' : ''}</td><td>${tea(l)}</td></tr>`).join('')}</table></div>` : '<div class="lock">ไม่มีรายการที่ตรงกับตัวกรอง</div>') : `<div class="lock">${phaseAt(simMin)[1] || 'นอกเวลาเรียน'} · ไม่ใช่คาบเรียนตามตาราง</div>`}</div>
