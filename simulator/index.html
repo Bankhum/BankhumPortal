@@ -637,7 +637,11 @@ function slotOf(r, pose, idx, cnt, ox, oz){
   }
   if (pose === 'run') { const a = t*.35 + idx/cnt*Math.PI*2, R = Math.min(r.w, r.d)*.42; return new THREE.Vector3(r.cx + Math.cos(a)*R, r.y, r.cz + Math.sin(a)*R); }
   if (pose === 'circle') { const a = idx/cnt*Math.PI*2, R = Math.min(r.w, r.d)*.38; return new THREE.Vector3(r.cx + Math.cos(a)*R, r.y, r.cz + Math.sin(a)*R); }
-  if (pose === 'swim') return new THREE.Vector3(r.cx + (ox-.5)*r.w*.85 + Math.sin(t*.8+idx)*.6, r.y, r.cz + (oz-.5)*r.d*.85);
+  if (pose === 'swim') {   // ว่ายไป-กลับตามลู่ แต่ละคนเริ่มคนละจังหวะ
+    const long = r.w >= r.d, L = (long ? r.w : r.d)*.8, W = (long ? r.d : r.w)*.8, lanes = Math.max(3, Math.min(8, Math.round(W/1.3)));
+    const ph = (t*.055 + idx*.137) % 2, u = (ph < 1 ? ph : 2 - ph) - .5, w = ((idx % lanes) + .5)/lanes - .5;
+    return long ? new THREE.Vector3(r.cx + u*L, r.y, r.cz + w*W) : new THREE.Vector3(r.cx + w*W, r.y, r.cz + u*L);
+  }
   return new THREE.Vector3(r.cx + (ox-.5)*r.w, r.y, r.cz + (oz-.5)*r.d);           // farm
 }
 const teacherFront = (r, pose) => pose === 'sit' ? new THREE.Vector3(r.cx, r.y, r.cz - r.d*.48)
@@ -811,7 +815,7 @@ function moveVehicles(dt){
     if (v.el) { v.el.style.display = ''; const p = g.position.clone().setY(['kiosk','gate','garage'].includes(v.type) ? 7 : 4.5).project(cam); v.el.style.left = (p.x*.5+.5)*innerWidth+'px'; v.el.style.top = (-p.y*.5+.5)*innerHeight+'px'; }
   }
 }
-const dummy = new THREE.Object3D();
+const dummy = new THREE.Object3D(); dummy.rotation.order = 'YXZ';
 let desks;
 // เดินไปห้องชั้น 2 ต้องขึ้น/ลงบันไดของอาคารนั้น
 const bldAt = p => Object.keys(STAIR).find(b => { const z = zones[b]; return z && Math.abs(p.x - z.c.x) <= z.sx/2 + 1.5 && Math.abs(p.z - z.c.z) <= z.sz/2 + 1.5; });
@@ -838,7 +842,7 @@ function moveAgents(dt){
       if (a.stair) { if (stepTo(a, a.stair.dir > 0 ? STAIR[a.stair.b].top3 : STAIR[a.stair.b].bot3, dt * .5)) a.stair = null; }
       else { const w = waypoint(a, tgt); if (stepTo(a, w.p, dt) && w.start) a.stair = w.start; }
     }
-    const arrived = T && a.pos.distanceTo(tgt) < .4, pose = arrived ? T.pose : 'walk';
+    const arrived = T && a.pos.distanceTo(tgt) < (T.pose === 'swim' ? 1.5 : .4), pose = arrived ? T.pose : 'walk';
     a.walking = !!T && a.pos.distanceTo(tgt) > 1.5;
     dummy.position.copy(a.pos); dummy.rotation.set(0,0,0);
     let sy = 1;
@@ -847,10 +851,14 @@ function moveAgents(dt){
     if (pose === 'sleep') { dummy.rotation.x = -Math.PI/2; dummy.position.y += .3; }
     if (pose === 'sweep') dummy.rotation.x = .35 + Math.sin(t*6 + a.i)*.18;
     if (pose === 'brush') dummy.rotation.z = Math.sin(t*9 + a.i)*.06;
-    if (pose === 'swim') { dummy.position.y -= .75; dummy.position.y += Math.sin(t*3 + a.i)*.12; }
+    if (pose === 'swim') {   // นอนคว่ำว่ายไปตามทิศที่เคลื่อนที่ ตัวโยกตามจังหวะแขน
+      const vx = a.pos.x - (a.px ?? a.pos.x), vz = a.pos.z - (a.pz ?? a.pos.z); if (vx*vx + vz*vz > 1e-6) a.head = Math.atan2(vx, vz);
+      dummy.rotation.set(Math.PI/2 + Math.sin(t*6 + a.i)*.12, (a.head || 0) + Math.sin(t*3 + a.i)*.12, 0); dummy.position.y += -.05 + Math.sin(t*5 + a.i)*.06;
+    }
     if (pose === 'farm') dummy.rotation.x = .5 + Math.sin(t*2 + a.i)*.3;
     if (pose === 'circle') dummy.position.y += Math.max(0, Math.sin(t*4 + a.i*.3))*.15;
     if (T && T.teach) dummy.rotation.z = Math.sin(t*1.5)*.12;              // ครูกำลังสอน
+    a.px = a.pos.x; a.pz = a.pos.z;
     const s = a.shown ? a.scale : 0;
     dummy.scale.set(s, s*sy, s); dummy.updateMatrix(); setParts(a, dummy.matrix);
     if (a.kind === 's') {
