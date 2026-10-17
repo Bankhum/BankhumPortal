@@ -642,6 +642,7 @@ function placeOfAgent(a, m){
     const L = lunchAt(a.cls, m); if (!L) return placeOfAgent(a, 679.9);
     return [L[0], L[1]];
   }
+  if (where === 'homeroom' && a.kind === 's' && m < 516 && EXIT_ROUTE[HOMEROOM[a.cls]] && placeOfAgent(a, 499.9)[0] === 'Flagpole' && exitWalk(a, m)?.file) return [HOMEROOM[a.cls], 'เลิกแถว เดินแถวเรียงหนึ่งกลับห้อง (ไม่ลัดสนาม)'];
   if (where == null) return ['GATE',''];
   if (a.kind === 's') { const lu = lineUp(a, m, where); if (lu) return [lu.from, lu.walk ? `เดินแถวเรียงหนึ่งไป${ZONES[lu.to][0]}` : `เข้าแถว 2 แถว (ชาย/หญิง) หน้าห้อง เตรียมไป${ZONES[lu.to][0]}`]; }
   if (a.kind === 't') return teacherPlace(r, where);
@@ -756,9 +757,34 @@ function lineUp(a, m, p){
   if (d < 0) return {from, to, pos};
   return {from, to, walk: true, pos: S.clone().lerp(D, L ? d/L : 1)};
 }
+// เลิกแถวหน้าเสาธง: เดินแถวเรียงหนึ่งทีละชั้นไปห้องโฮมรูม ตามทางรอบสนาม (ห้ามเดินลัดสนาม)
+const EXIT_V = 13, EXIT_GAP = .75;
+const EXIT_ROUTE = {   // จุดเลี้ยวของแต่ละอาคาร (อยู่นอกสนามหญ้า x -40.6..-16.6, z -7.2..27.1)
+  Chalerm_Building: [[1.5, 2], [4, -9.5], [16, -11.5], [STAIR.Chalerm_Building.bot[0], STAIR.Chalerm_Building.bot[1]]],
+  P1P2_Classroom: [[-1.5, -8.5], [-12, -10], [-14.5, -17.5]],
+  Kindergarten: [[-1.5, 16], [-8, 16.5], [-12, 24], [-16, 29.6], [-24, 29.6]],
+};
+function exitWalk(a, m){
+  if (a.kind !== 's' || m < 500 || m >= 516) return null;
+  const hb = HOMEROOM[a.cls], R = EXIT_ROUTE[hb]; if (!R) return null;
+  const ci = CLASSES.findIndex(([c]) => c === a.cls), coh = a.cohort ??= STUDENTS.filter(s => s.cls === a.cls && s.scan != null), k = coh.indexOf(a.ref);
+  if (k < 0 || placeOfAgent(a, 499.9)[0] !== 'Flagpole') return null;
+  const grp = CLASSES.filter(([c]) => HOMEROOM[c] === hb).map(([c]) => c), gi = grp.indexOf(a.cls);   // ชั้นที่ไปอาคารเดียวกันออกต่อกัน
+  const S = new THREE.Vector3(ASSEMBLY.x1 - 1.2, 0, ASSEMBLY.z0 + 1.6 + ci*2.5 + .4);
+  const pts = [S, ...R.map(([x, z]) => new THREE.Vector3(x, 0, z))];
+  if (hb === 'P1P2_Classroom') { const T = keyRect(HOMEROOM_ROOM[a.cls] || hb); pts.push(new THREE.Vector3(T.c.x, 0, -17.5), new THREE.Vector3(T.c.x, 0, -22.8)); }
+  let L = 0; const seg = []; for (let i = 1; i < pts.length; i++) { const d = pts[i-1].distanceTo(pts[i]); seg.push(d); L += d; }
+  const wait = grp.slice(0, gi).reduce((t, c) => t + (STUDENTS.filter(s => s.cls === c && s.scan != null).length*EXIT_GAP + 3)/EXIT_V, 0);
+  let d = (m - 500 - wait)*EXIT_V - k*EXIT_GAP;
+  if (d >= L) return null;
+  if (d < 0) return {p: targetOf(a, 499.9).p, pose: 'stand', yaw: Math.PI/2};
+  for (let i = 0; i < seg.length; i++) { if (d <= seg[i]) return {p: pts[i].clone().lerp(pts[i+1], seg[i] ? d/seg[i] : 1), pose: 'walk', file: true}; d -= seg[i]; }
+  return null;
+}
 function targetOf(a, m){
   const [z] = placeOfAgent(a, m);
   if (!z) return null;
+  { const ex = exitWalk(a, m); if (ex) return ex; }
   if (a.kind === 's') { const ph = phaseAt(m)[2]; if (typeof ph === 'number') { const lu = lineUp(a, m, ph); if (lu) return {p: lu.pos, pose: lu.walk ? 'walk' : 'stand'}; } }
   const kg = kgAt(m);
   if (kg && z === kg[2] && (a.kind === 's' ? isKG(a.cls) : a.ref.name.startsWith('ครูอนุบาล'))) return kgTarget(a, m, kg);
