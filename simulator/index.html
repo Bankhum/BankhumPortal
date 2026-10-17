@@ -72,7 +72,7 @@ html,body{margin:0;height:100%;overflow:hidden;font-family:Sarabun,sans-serif;co
 #toasts{position:fixed;left:50%;top:40px;transform:translateX(-50%);width:min(440px,92vw);display:flex;flex-direction:column;gap:5px;pointer-events:none;z-index:5}
 #toasts div{background:rgba(255,255,255,.96);border:1px solid var(--line);border-left:5px solid var(--c);border-radius:10px;padding:6px 10px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.12);transition:opacity .5s,transform .5s}
 #toasts div b{margin-right:4px}#toasts div.out{opacity:0;transform:translateY(-6px)}
-.grp{position:absolute;transform:translate(-50%,-100%);white-space:nowrap;background:var(--c);color:#fff;border-radius:999px;padding:3px 9px;font-size:12px;font-weight:600;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.25);transition:opacity .4s}
+.grp{position:absolute;transform:translate(-50%,-100%);white-space:nowrap;background:var(--c);color:#fff;border-radius:999px;padding:2px 8px;font-size:11.5px;font-weight:600;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.25);transition:opacity .4s}
 #hint{position:fixed;left:50%;top:14px;transform:translateX(-50%);font-size:11px;color:var(--mute);background:var(--panel);border-radius:999px;padding:3px 10px;border:1px solid var(--line)}
 canvas{cursor:pointer}
 #bar{left:50%;bottom:16px;transform:translateX(-50%);width:min(1240px,calc(100vw - 32px));box-sizing:border-box;display:flex;gap:10px;align-items:center}
@@ -112,7 +112,7 @@ canvas{cursor:pointer}
  #toasts{top:auto;bottom:calc(var(--barH,112px) + 4px);width:calc(100vw - 16px);flex-direction:column-reverse}#toasts div{font-size:12.5px}
  #now{display:grid}
  body.sheet #now,body.sheet #toasts{display:none}
- .grp{font-size:11px}
+ .grp{font-size:10.5px;padding:1px 6px}
 }
 @media (max-height:520px){#right{max-height:calc(100vh - var(--barH,112px) - 70px)}}
 @media (max-height:520px) and (min-width:600px){#bar{flex-direction:row;align-items:center}#bar .r1{flex:0 0 42%}#bar .r2{flex:1}#left{padding:4px 10px}#left .clock{font-size:18px}}
@@ -263,7 +263,7 @@ function posAt(s){
   const f = Math.min(1, Math.max(0, (s - CUM[i-1]) / (CUM[i] - CUM[i-1])));
   return [MAIN[i-1][0] + (MAIN[i][0]-MAIN[i-1][0])*f, MAIN[i-1][1] + (MAIN[i][1]-MAIN[i-1][1])*f];
 }
-const LEN = {truck: 8.6, van: 6.6, car: 5.6, moto: 2.4};
+const LEN = {truck: 8.6, van: 6.6, car: 5.6, moto: 2.4, bike: 1.8};
 function addVeh(type, color, trips, label){ const v = {type, color, trips, label, riders: 0, runs: []}; VEH.push(v); return v; }
 // run = หนึ่งเที่ยวบนเส้นทางหลัก: 'drop' (ส่ง/รับหน้าอาคาร), 'park' (ครูเข้าจอด), 'leave' (ครูออกจากที่จอด)
 const RUNS = [];
@@ -275,6 +275,7 @@ const truckPM = [933, 962].map(t => addRun(truck, 'drop', t, {dwell: 2, zone: 'A
 // รถ 6 ล้อกลับเข้าโรงรถหลังส่งเที่ยวสุดท้าย (เช้า/เย็น)
 const GARAGE_SPUR = [[-53, -28], [-50, -36], GARAGE];
 const truckHome = [470, 978].map(t => addRun(truck, 'park', t, {sB: sOf(18), spot: GARAGE, spur: GARAGE_SPUR}));
+const truckOut = [380, GATE_OPEN].map(t => addRun(truck, 'leave', t, {sB: sOf(18), spot: GARAGE, spur: GARAGE_SPUR}));   // ออกจากโรงรถต้องรอคิวเหมือนกัน
 const vanAM = vans.map((v, i) => addRun(v, 'drop', 382 + i*24, {dwell: 1.2, zone: 'A'}));
 const vanPM = vans.map((v, i) => addRun(v, 'drop', 931 + i*3, {dwell: 1.5, zone: 'A'}));
 addVeh('garage', '#94a3b8', [[[0, ...GARAGE], [2000, ...GARAGE]]], 'โรงรถ 6 ล้อ');
@@ -293,11 +294,12 @@ for (const s of STUDENTS) {
   else if (s.mode === 'van') { const k = Math.floor(rnd()*3); s.veh = vans[k]; s.am = vanAM[k]; s.pm = vanPM[k]; }
   else if (s.mode === 'bike') {
     // จักรยานปั่นชิดขอบทาง ไม่ต้องต่อคิวรถ
-    const i = bikeN++, arr = 360 + Math.pow(rnd(), .6)*110, dep = 934 + rnd()*8, rack = [1 + i*.75, -12.3];
-    const path = [...MAIN.slice(0, 11), [DROP_X-2.5, 15], [DROP_X-2.5, -9], [rack[0], -9], rack], back = [rack, [rack[0], -16], [rack[0], LANE], ...MAIN.slice(17)];
-    const timed = (pts, t0, end) => { const d = [0]; for (let k = 1; k < pts.length; k++) d.push(d[k-1] + Math.hypot(pts[k][0]-pts[k-1][0], pts[k][1]-pts[k-1][1]));
-      const st = end ? t0 - d[d.length-1]/V_BIKE : t0; return pts.map((q, k) => [st + d[k]/V_BIKE, q[0], q[1]]); };
-    s.veh = addVeh('bike', '#0f766e', [[...timed(path, arr, true), ...timed(back, dep)]]);
+    // จักรยานต่อแถวไปกับรถคันอื่นบนถนนหลัก แล้วแยกเข้าที่จอดจักรยาน
+    const i = bikeN++, arr = 360 + Math.pow(rnd(), .6)*110, dep = 934 + rnd()*8, rack = [1 + i*.9, -12.3];
+    const lead = sOf(2)/V_ROAD + (sOf(11) - sOf(2))/V_SCHOOL + .35;
+    s.veh = addVeh('bike', '#0f766e', []);
+    s.bin = addRun(s.veh, 'park', arr - lead, {sB: sOf(11), spot: rack, spur: [[DROP_X-2.5, 15], [DROP_X-2.5, -9], [rack[0], -9], rack]});
+    s.bout = addRun(s.veh, 'leave', dep, {sB: S_LANE0 + Math.max(0, 4.5 - rack[0]), spot: rack, spur: [[Math.min(rack[0], 4.5), LANE], [rack[0], -16], rack]});
     s.veh.rider = CLS_COL_EARLY[s.cls]; s.rack = rack; s.arr = arr; s.leave = dep; s.drop = [rack[0], rack[1] + .8];
   } else {
     // ผู้ปกครองมาส่ง 06:00–08:00 (ส่วนใหญ่ 07:00–07:50) และมารับหลัง 15:30
@@ -309,11 +311,15 @@ for (const s of STUDENTS) {
   s.veh.riders++;
 }
 // ครู: ส่วนใหญ่ขับรถยนต์ บางส่วนขี่มอเตอร์ไซค์ จอดใต้หลังคาโรงจอดรถ (บางคนมาสายหลัง 08:00 ได้)
+TEACHERS.forEach((t, i) => { t.mode = i % 7 === 3 || i % 7 === 6 ? 'moto' : 'car'; t.arr0 = rnd() < .2 ? 478 + rnd()*22 : 385 + rnd()*90; t.dep0 = 945 + rnd()*38; });  // ประตูปิด 08:30 ครูสายต้องมาก่อน
+// ที่จอดตามลำดับการมาถึง (มาก่อนจอดด้านใน) และออกกลับแบบคันที่จอดด้านนอกออกก่อน ไม่ต้องขับผ่านรถคันอื่น
+for (const mode of ['car', 'moto']) {
+  const ts = TEACHERS.filter(t => t.mode === mode).sort((a, b) => a.arr0 - b.arr0), deps = ts.map(t => t.dep0).sort((a, b) => b - a);
+  ts.forEach((t, k) => { t.rank = k; t.dep1 = deps[k]; });
+}
 TEACHERS.forEach((t, i) => {
-  t.mode = i % 7 === 3 || i % 7 === 6 ? 'moto' : 'car';
-  const arr = rnd() < .2 ? 478 + rnd()*22 : 385 + rnd()*90, dep = 945 + rnd()*38;  // ประตูปิด 08:30 ครูสายต้องมาก่อน
-  const nCar = TEACHERS.slice(0, i).filter(x => x.mode === t.mode).length;
-  t.spot = t.mode === 'car' ? (nCar < 10 ? [-9.5 + (nCar%5)*2.8, nCar < 5 ? -31.5 : -27.5] : [-9.5 + (nCar-10)*2.8, -24.8]) : [6.6, -32.5 + nCar*1.3];
+  const arr = t.arr0, dep = t.dep1, nCar = t.rank;
+  t.spot = t.mode === 'car' ? (nCar < 10 ? [-9.5 + (nCar%5)*2.8, nCar < 5 ? -31.5 : -27.5] : [-9.5 + (nCar-10)*2.8, -24.8]) : [7.4, -31.4 + nCar*1.6];
   t.veh = addVeh(t.mode, t.mode === 'car' ? pick(CAR_COLS) : '#111827', []);
   const moto = t.mode === 'moto', sB = moto ? sOf(15) + (t.spot[1] + 34.5) : S_LANE0 + (4.5 - t.spot[0]);
   const spur = moto ? [t.spot] : [[t.spot[0], LANE - 2.5], t.spot];
@@ -356,13 +362,16 @@ TEACHERS.forEach((t, i) => {
   // รถ 6 ล้อ: จอดในโรงรถตอนว่าง ออกจากโรงรถไปรับนักเรียนเช้า/เย็น
   const outOf = t0 => { const pts = [GARAGE, [-50, -36], [-56, -30], [-63, -26.5], [ROAD_OUT, -28], [ROAD_OUT, -66]]; let tt = t0; return pts.map((q, j) => { if (j) tt += Math.hypot(q[0]-pts[j-1][0], q[1]-pts[j-1][1]) / (j > 3 ? V_ROAD : V_SCHOOL); return [tt, ...q]; }); };
   const [h1, h2] = truckHome;
-  truck.trips.push([[355, ...GARAGE], ...outOf(380)], [[h1.arrive, ...GARAGE], ...outOf(GATE_OPEN)], [[h2.arrive, ...GARAGE], [2000, ...GARAGE]]);
+  const [o1, o2] = truckOut;
+  truck.trips.push([[355, ...GARAGE], [o1.depart - .3, ...GARAGE]], [[h1.arrive, ...GARAGE], [o2.depart - .3, ...GARAGE]], [[h2.arrive, ...GARAGE], [2000, ...GARAGE]]);
+  for (const s of STUDENTS) if (s.bin) s.veh.trips = [[...s.bin.tr, ...s.bout.tr]];
   truck.trips.sort((a, b) => a[0][0] - b[0][0]);
 })();
 for (const s of STUDENTS) {
   if (s.scan == null) continue;
   if (s.am) { const side = (r, d) => r.zone === 'B' ? [r.at[0] + d, r.at[1] - 1.5] : [r.at[0] + 1.5, r.at[1] + d];
     s.arr = s.am.dwellStart + rnd()*.3; s.drop = side(s.am, (rnd()-.5)*2); s.pickAt = s.pm.dwellStart; s.pickPos = side(s.pm, 0); s.pmZone = s.pm.zone; s.leave = s.pm.dwellEnd - .05; }
+  if (s.bin) { s.arr = s.bin.arrive; s.leave = s.bout.depart - .3; }
   s.scan = Math.round(s.arr + walk(s.drop));
 }
 TEACHERS.forEach(t => { t.arr = t.runIn.arrive; t.scan = Math.round(t.arr + walk(t.drop)); t.leave = t.runOut.depart - .3; });
@@ -561,6 +570,7 @@ function placeOfAgent(a, m){
     return [L[0], L[1]];
   }
   if (where == null) return ['GATE',''];
+  if (a.kind === 's') { const lu = lineUp(a, m, where); if (lu) return [lu.from, `เข้าแถวหน้าห้อง เตรียมไป${ZONES[lu.to][0]}`]; }
   if (a.kind === 't') return teacherPlace(r, where);
   const l = lesson(a.cls, where); return [l.where, `${l.sub} · ${l.tea}${l.co?.length ? ' + ' + l.co.join(', ') : ''}`];
 }
@@ -629,9 +639,25 @@ function kgTarget(a, m, kg){
   const w = m*1.7 + a.i*2.1;   // วิ่งเล่นรอบ ๆ โดมสนามเด็กเล่น
   return {p: new THREE.Vector3(-47 + (a.ox-.5)*15 + Math.sin(w)*2.5, 0, 18 + (a.oz-.5)*8 + Math.cos(w*.8)*2), pose:'run'};
 }
+// เปลี่ยนคาบแล้วต้องย้ายห้อง: เข้าแถวหน้าห้องเดิม 5 นาที แล้วเดินเรียงแถวไปห้องใหม่ (ออกทีละคน)
+const PSTART = ROUTINE.filter(r => typeof r[2] === 'number').map(r => r[0]), LINE_MIN = 5;
+const fromRoom = (c, p) => p === 0 ? HOMEROOM[c] : lesson(c, p - 1).where;
+function lineUp(a, m, p){
+  if (isKG(a.cls) || p === 3) return null;   // คาบ 4 มาจากที่แปรงฟันหลังพักเที่ยง
+  const P = PSTART[p], coh = a.cohort ??= STUDENTS.filter(s => s.cls === a.cls && s.scan != null), k = coh.indexOf(a.ref);
+  if (m < P || m >= P + LINE_MIN + k*.06) return null;
+  const from = fromRoom(a.cls, p), to = lesson(a.cls, p).where;
+  if (from === to || !zones[from] || !zones[to]) return null;
+  const same = CLASSES.filter(([c]) => !isKG(c) && fromRoom(c, p) === from && lesson(c, p).where !== from).map(([c]) => c);
+  const F = zones[from], T = zones[to], dx = T.c.x - F.c.x, dz = T.c.z - F.c.z, off = 1.6 + same.indexOf(a.cls)*1.3, along = (k - (coh.length-1)/2)*.62;
+  const pos = Math.abs(dx) > Math.abs(dz) ? new THREE.Vector3(F.c.x + Math.sign(dx)*(F.sx/2 + off), 0, F.c.z + along)
+                                          : new THREE.Vector3(F.c.x + along, 0, F.c.z + Math.sign(dz)*(F.sz/2 + off));
+  return {from, to, pos};
+}
 function targetOf(a, m){
   const [z] = placeOfAgent(a, m);
   if (!z) return null;
+  if (a.kind === 's') { const ph = phaseAt(m)[2]; if (typeof ph === 'number') { const lu = lineUp(a, m, ph); if (lu) return {p: lu.pos, pose: 'stand'}; } }
   const kg = kgAt(m);
   if (kg && z === kg[2] && (a.kind === 's' ? isKG(a.cls) : a.ref.name.startsWith('ครูอนุบาล'))) return kgTarget(a, m, kg);
   const ph = phaseAt(m)[2];
@@ -999,15 +1025,22 @@ function renderFarm(el){
 }
 
 /* ---------- ข้อความแจ้งเมื่อชั้นเรียนเปลี่ยนกิจกรรม/ย้ายห้อง ---------- */
-const PLACE_TH = {FREE:'ที่เล่น (สนาม/อาคาร)', PLAY:'สนามเด็กเล่น', TRAY:'โรงอาหาร', COOP:'สหกรณ์โรงอาหาร', BRUSH:'ที่แปรงฟัน', BRUSHP:'ที่แปรงฟัน',
+const PLACE_TH = {FREE:'ที่เล่น', PLAY:'สนามเด็กเล่น', TRAY:'โรงอาหาร', COOP:'สหกรณ์โรงอาหาร', BRUSH:'ที่แปรงฟัน', BRUSHP:'ที่แปรงฟัน',
   GATE:'จุดรอรถ', PICK:'จุดรอรถ', SCAN:'จุดสแกนหน้า'};
 const placeTh = z => PLACE_TH[z] || (ZONES[z] ? ZONES[z][0] : z);
 const feedState = {}, grpEl = {}, movedAt = {};
 let feedLast = -1, feedAcc = 0;
-function toast(cls, html){
-  const d = document.createElement('div'); d.style.setProperty('--c', CLS_COL[cls] || '#64748b'); d.innerHTML = html;
-  const f = $('toasts'); f.prepend(d); const mx = innerWidth <= 760 ? 2 : 4; while (f.children.length > mx) f.lastChild.remove();
-  setTimeout(() => d.classList.add('out'), 6000); setTimeout(() => d.remove(), 6600);
+// แจ้งเตือนทีละข้อความ: ต่อคิว แสดงข้อความละ 3 วินาที ถ้าคิวยาวเกินให้รวมเป็นข้อความเดียว
+const toastQ = []; let toastBusy = false;
+function toast(cls, html){ toastQ.push([cls, html]); if (!toastBusy) nextToast(); }
+function nextToast(){
+  if (!toastQ.length) { toastBusy = false; return; }
+  toastBusy = true;
+  let [cls, html] = toastQ.shift();
+  if (toastQ.length >= 2) { const all = [[cls, html], ...toastQ.splice(0)].map(t => t[0]).filter(Boolean); cls = ''; html = `🔔 <b>${[...new Set(all)].join(' · ')}</b> เปลี่ยนห้อง/กิจกรรม · ดูที่แผง "ตอนนี้"`; }
+  const f = $('toasts'); f.textContent = '';
+  const d = document.createElement('div'); d.style.setProperty('--c', CLS_COL[cls] || '#64748b'); d.innerHTML = html; f.appendChild(d);
+  setTimeout(() => d.classList.add('out'), 3000); setTimeout(() => { d.remove(); nextToast(); }, 3500);
 }
 const nowRows = {};
 function nowEl(c){ return nowRows[c] ??= (() => { const d = document.createElement('div'); d.style.setProperty('--c', CLS_COL[c]); $('now').appendChild(d); return d; })(); }
@@ -1032,13 +1065,32 @@ function classFeed(dt){
     }
     // ป้ายลอยเหนือกลุ่มที่กำลังเดินย้ายที่
     const walking = list.filter(a => a.walking), el = grpEl[c] ??= (() => { const e = document.createElement('div'); e.className = 'grp'; e.style.setProperty('--c', CLS_COL[c]); $('labels').appendChild(e); return e; })();
-    if (walking.length >= Math.max(3, list.length * .4) && feedState[c] && movedAt[c] != null && m - movedAt[c] < 6) {
+    if (walking.length >= Math.max(3, list.length * .3) && feedState[c] && movedAt[c] != null && m - movedAt[c] < 6) {
       const p = new THREE.Vector3(); walking.forEach(a => p.add(a.pos)); p.divideScalar(walking.length).setY(3.2);
-      el.dataset.x = p.x; el.dataset.z = p.z; el.textContent = `${c} → ${placeTh(feedState[c].split('|')[0])}`; el.style.opacity = 1;
-    } else el.style.opacity = 0;
+      el.dataset.x = p.x; el.dataset.z = p.z; el.dataset.on = 1;
+    } else el.dataset.on = 0;
   }
 }
 const clock = new THREE.Clock(); const v = new THREE.Vector3();
+// ป้ายบนแผนที่: แค่ชื่อชั้น ถ้าอยู่ใกล้กันบนจอให้รวมเป็นป้ายเดียว (รายละเอียดดูที่แผง "ตอนนี้")
+function placeGroupChips(){
+  const on = [];
+  for (const [c, el] of Object.entries(grpEl)) {
+    if (el.dataset.on !== '1') { el.style.opacity = 0; continue; }
+    v.set(+el.dataset.x, 3.2, +el.dataset.z).project(cam); on.push({c, el, x: (v.x*.5+.5)*innerWidth, y: (-v.y*.5+.5)*innerHeight});
+  }
+  const used = new Set();
+  for (const a of on) {
+    if (used.has(a)) continue; used.add(a);
+    const g = [a]; for (const b of on) if (!used.has(b) && Math.abs(b.x - a.x) < 70 && Math.abs(b.y - a.y) < 26) { used.add(b); g.push(b); }
+    const x = g.reduce((s, q) => s + q.x, 0) / g.length, y = Math.min(...g.map(q => q.y));
+    a.el.style.left = x + 'px'; a.el.style.top = y + 'px'; a.el.style.opacity = 1;
+    const txt = g.map(q => q.c).sort().join(' · ');
+    if (a.el.textContent !== txt) a.el.textContent = txt;
+    a.el.style.setProperty('--c', g.length > 1 ? '#334155' : CLS_COL[a.c]);
+    for (const q of g.slice(1)) q.el.style.opacity = 0;
+  }
+}
 $('hdrLogo').src = $('splashLogo').src;
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sim-sw.js').catch(() => {});
 function frame(){
@@ -1047,7 +1099,7 @@ function frame(){
   const ang = view.touched ? view.yaw : (view.yaw = Math.PI/4 + Math.sin(t*0.08)*0.25);
   cam.position.set(target.x+Math.sin(ang)*150, 120, target.z+Math.cos(ang)*150); cam.lookAt(target);
   moveAgents(Math.min(dt,.3)); moveVehicles(Math.min(dt,.3)); classFeed(dt); animFarm(Math.min(dt,.3), t);
-  for (const el of Object.values(grpEl)) if (el.dataset.x != null) { v.set(+el.dataset.x, 3.2, +el.dataset.z).project(cam); el.style.left = (v.x*.5+.5)*innerWidth+'px'; el.style.top = (-v.y*.5+.5)*innerHeight+'px'; }
+  placeGroupChips();
   renderer.render(scene,cam);
   for (const z of Object.values(zones)) { v.copy(z.p).project(cam); z.el.style.left = (v.x*.5+.5)*innerWidth+'px'; z.el.style.top = (-v.y*.5+.5)*innerHeight+'px'; }
   requestAnimationFrame(frame);
