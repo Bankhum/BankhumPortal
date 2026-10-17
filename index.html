@@ -366,7 +366,9 @@ for (const s of STUDENTS) {
 // ครู: ส่วนใหญ่ขับรถยนต์ บางส่วนขี่มอเตอร์ไซค์ จอดใต้หลังคาโรงจอดรถ (บางคนมาสายหลัง 08:00 ได้)
 TEACHERS.forEach((t, i) => { t.mode = i % 7 === 3 || i % 7 === 6 ? 'moto' : 'car'; t.arr0 = rnd() < .2 ? 478 + rnd()*22 : 385 + rnd()*90; t.dep0 = 945 + rnd()*38; });  // ประตูปิด 08:30 ครูสายต้องมาก่อน
 // ครูเวรประจำวัน (เวียนตามวัน) — ครูดีลาภขับ BYD Atto 3 สีขาว ปกติมา 07:40–08:10 วันเป็นเวรมาก่อน 07:00 กลับราว 16:00
-const DUTY_LIST = TEACHERS.filter(t => !t.name.startsWith('ครูอนุบาล')), dutyOn = d => DUTY_LIST[d % DUTY_LIST.length];
+const DUTY_LIST = TEACHERS.filter(t => !t.name.startsWith('ครูอนุบาล'));
+{ const i = DUTY_LIST.findIndex(t => t.name === 'ครูดีลาภ'), j = 3; if (i >= 0 && i !== j) [DUTY_LIST[i], DUTY_LIST[j]] = [DUTY_LIST[j], DUTY_LIST[i]]; }   // ครูดีลาภเป็นเวรวันพฤหัสบดี (ครูแจ้ง)
+const dutyOn = d => DUTY_LIST[d % DUTY_LIST.length];
 { const t = TEACHERS.find(t => t.name === 'ครูดีลาภ');
   if (t) { t.mode = 'car'; t.model = 'atto3'; t.arr0 = dutyOn(day) === t ? 402 + rnd()*14 : 460 + rnd()*30; t.dep0 = 956 + rnd()*7; } }
 // ที่จอดตามลำดับการมาถึง (มาก่อนจอดด้านใน) และออกกลับแบบคันที่จอดด้านนอกออกก่อน ไม่ต้องขับผ่านรถคันอื่น
