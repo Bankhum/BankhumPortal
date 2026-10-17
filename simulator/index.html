@@ -82,6 +82,21 @@ canvas{cursor:pointer}
 #bar .r1{display:flex;gap:10px;align-items:center;flex:1;min-width:0}
 #bar .r2{display:flex;gap:10px;align-items:center}
 #bar #info{width:auto;padding:0 10px;font-family:inherit;font-size:13px}
+#bar #find{width:auto;padding:0 10px;font-family:inherit;font-size:13px;background:#2563eb}
+#findp{position:fixed;z-index:30;left:50%;top:16px;transform:translateX(-50%);width:min(440px,calc(100vw - 32px));max-height:min(70vh,560px);display:flex;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 32px rgba(15,23,42,.18);font-size:13px}
+#findp[hidden]{display:none}
+#findp .fh{display:flex;gap:8px;align-items:center;padding:10px 10px 6px}
+#findp input{flex:1;font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;min-width:0}
+#findp .x{border:0;background:var(--chip);border-radius:8px;width:34px;height:34px;font-size:16px;cursor:pointer}
+#findp .chips{display:flex;gap:6px;flex-wrap:wrap;padding:0 10px 6px}
+#findp .chips button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:3px 9px;font:inherit;font-size:12px;cursor:pointer}
+#findp ul{list-style:none;margin:0;padding:0 6px 8px;overflow:auto}
+#findp li{display:flex;gap:8px;align-items:flex-start;padding:7px 6px;border-radius:9px;cursor:pointer}
+#findp li:hover,#findp li.on{background:#eff6ff}
+#findp li .av{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--chip);font-size:11px;font-weight:700}
+#findp li b{display:block}#findp li small{display:block;color:var(--mute)}
+#findp .src{padding:6px 12px 10px;color:var(--mute);font-size:11px;border-top:1px solid var(--line)}
+@media (max-width:700px){#findp{top:8px;max-height:58vh}}
 .mob{display:none!important}
 #c{touch-action:none}
 #bar .sp{display:flex;gap:4px;flex:none}
@@ -147,9 +162,16 @@ canvas{cursor:pointer}
 <div id="toasts" aria-live="polite"></div>
 <div id="hint">คลิกอาคารเพื่อดูว่าใครอยู่ข้างใน</div>
 <div id="note">ตารางเรียน ป.1–ป.6: ของจริง ภาคเรียนที่ 1/2569 · กิจวัตรอนุบาล: ตามที่ครูแจ้ง · ผลสแกนหน้า: ข้อมูลตัวอย่าง</div>
+<div id="findp" hidden role="dialog" aria-label="ค้นหานักเรียนหรือครู">
+  <div class="fh"><input id="fq" type="search" placeholder="พิมพ์ชื่อครู หรือชั้น เช่น ป.3 เลขที่ 5" autocomplete="off"><button class="x" id="fx" aria-label="ปิด">×</button></div>
+  <div class="chips" id="fchips"></div>
+  <ul id="fres"></ul>
+  <div class="src">ข้อมูลจากแบบจำลองนี้ (ตารางเรียน/ตารางสอนจริง · ชื่อนักเรียนยังเป็นเลขที่) · ยังไม่ได้เชื่อม SIS และระบบสารบรรณ</div>
+</div>
 <div class="panel" id="bar">
   <div class="r1"><button id="play" aria-label="เล่น/หยุด">⏸</button>
   <input id="time" type="range" min="355" max="990" step="1" value="420" aria-label="เวลา">
+  <button id="find" aria-label="ค้นหานักเรียนหรือครู">🔍 ค้นหา</button>
   <button id="info" class="mob" aria-label="รายละเอียด">☰ ข้อมูล</button></div>
   <div class="r2"><div class="sp" id="days"></div>
   <div class="sp" id="jumps"></div>
@@ -487,6 +509,8 @@ function onModel(g) {
   const sign = root.getObjectByName('School_Sign'); if (sign) GATE.copy(new THREE.Box3().setFromObject(sign).getCenter(new THREE.Vector3())).setY(0).add(new THREE.Vector3(-4,0,0));
   buildFarm(); buildRestroom(root); buildFloors(); initAgents(root); applyXrayAll();
   $('info').onclick = () => document.body.classList.toggle('sheet');
+  $('find').onclick = () => openFind($('findp').hidden); $('fx').onclick = () => openFind(false); $('fq').oninput = renderFind;
+  addEventListener('keydown', e => { if (e.key === 'Escape' && !$('findp').hidden) openFind(false); });
   $('home').onclick = () => { view.touched = false; target.set(0,0,0); setZoom(1); };
   const fitBar = () => document.documentElement.style.setProperty('--barH', ($('bar').offsetHeight + 16) + 'px');
   fitBar(); addEventListener('resize', fitBar); $('xr').onclick = () => { xrayAll = !xrayAll; applyXrayAll(); };
@@ -565,8 +589,12 @@ function inZone(name, ox, oz){
   const z = zones[name]; if (!z) return GATE.clone();
   const m = 0.12; return new THREE.Vector3(z.c.x + (m + ox*(1-2*m) - .5)*z.sx, z.y, z.c.z + (m + oz*(1-2*m) - .5)*z.sz);
 }
+// คาบส่องโลก ส่องใจ: ทุกชั้นเข้าแถวตอนลึกในอาคารอเนกประสงค์ ครูเวรประจำวันอบรมวินัย คุณธรรมอยู่หน้าแถว
+const isAssembly = sub => /ส่องโลก/.test(sub);
+const dutyTeacher = () => { const L = AGENTS.filter(a => a.kind === 't' && !a.ref.name.startsWith('ครูอนุบาล')); return L.length ? L[day % L.length].ref : null; };
 function teacherPlace(t, p){
   if (t.name.startsWith('ครูอนุบาล')) return ['Kindergarten','สอนอนุบาล'];
+  if (CLASSES.some(([c]) => isAssembly(lesson(c, p).sub)) && t === dutyTeacher()) return ['Multipurpose_Hall', 'ครูเวร อบรมวินัย คุณธรรม หน้าแถว'];
   const s = tslot(t.name.slice(3), p);   // ตามตารางสอนของครูเอง
   if (s) { const [sub, c] = s; if (c === '-') return [placeOf(sub) || 'Multipurpose_Hall', `ดูแล${sub}`]; return [lesson(c, p).where, `สอน ${c} ${sub}`]; }
   for (const [c] of CLASSES) { const l = lesson(c,p); if ('ครู'+l.tea === t.name) return [l.where, `สอน ${c} ${l.sub}`]; }
@@ -607,9 +635,9 @@ function placeOfAgent(a, m){
     return [L[0], L[1]];
   }
   if (where == null) return ['GATE',''];
-  if (a.kind === 's') { const lu = lineUp(a, m, where); if (lu) return [lu.from, `เข้าแถวหน้าห้อง เตรียมไป${ZONES[lu.to][0]}`]; }
+  if (a.kind === 's') { const lu = lineUp(a, m, where); if (lu) return [lu.from, lu.walk ? `เดินแถวเรียงหนึ่งไป${ZONES[lu.to][0]}` : `เข้าแถว 2 แถว (ชาย/หญิง) หน้าห้อง เตรียมไป${ZONES[lu.to][0]}`]; }
   if (a.kind === 't') return teacherPlace(r, where);
-  const l = lesson(a.cls, where); return [l.where, `${l.room && ROOMS[l.room] ? ROOMS[l.room].th.replace('ห้อง ', '') + ' · ' : ''}${l.sub} · ${l.tea}${l.co?.length ? ' + ' + l.co.join(', ') : ''}`];
+  const l = lesson(a.cls, where); if (isAssembly(l.sub)) return [l.where, `${l.sub} · แถวตอนลึก อบรมวินัย คุณธรรม`]; return [l.where, `${l.room && ROOMS[l.room] ? ROOMS[l.room].th.replace('ห้อง ', '') + ' · ' : ''}${l.sub} · ${l.tea}${l.co?.length ? ' + ' + l.co.join(', ') : ''}`];
 }
 // รูปแบบกิจกรรมของแต่ละวิชา
 function poseOf(zone, sub){
@@ -686,27 +714,44 @@ function kgTarget(a, m, kg){
 const PSTART = ROUTINE.filter(r => typeof r[2] === 'number').map(r => r[0]), LINE_MIN = 5;
 const keyAt = (c, p) => { const l = lesson(c, p); return l.room || l.where; };
 const fromRoom = (c, p) => p === 0 ? (HOMEROOM_ROOM[c] || HOMEROOM[c]) : keyAt(c, p - 1);
+// เข้าแถว 2 แถว แยกชาย/หญิง 5 นาที แล้วเดินแถวเรียงหนึ่ง (ชายนำ หญิงต่อท้าย) ไปตามเส้นทางจนถึงห้องใหม่
+const FILE_V = 9, FILE_GAP = .75;   // ม./นาที, ระยะห่างในแถวเรียงหนึ่ง
 function lineUp(a, m, p){
   if (isKG(a.cls) || p === 3) return null;   // คาบ 4 มาจากที่แปรงฟันหลังพักเที่ยง
-  const P = PSTART[p], coh = a.cohort ??= STUDENTS.filter(s => s.cls === a.cls && s.scan != null), k = coh.indexOf(a.ref);
-  if (m < P || m >= P + LINE_MIN + k*.06) return null;
+  const P = PSTART[p];
+  if (m < P || m >= P + 30) return null;
   const fk = fromRoom(a.cls, p), tk = keyAt(a.cls, p);
   if (fk === tk || !keyRect(fk) || !keyRect(tk)) return null;
+  const coh = a.cohort ??= STUDENTS.filter(s => s.cls === a.cls && s.scan != null), girl = a.ref.no % 2 === 0;
+  const boys = a.boys ??= coh.filter(s => s.no % 2 !== 0).length, row = coh.filter(s => (s.no % 2 === 0) === girl).indexOf(a.ref);
   const same = CLASSES.filter(([c]) => !isKG(c) && fromRoom(c, p) === fk && keyAt(c, p) !== fk).map(([c]) => c), ci = same.indexOf(a.cls);
   const from = ROOMS[fk] ? ROOMS[fk].b : fk, to = ROOMS[tk] ? ROOMS[tk].b : tk;
-  if (ROOMS[fk]) {   // เข้าแถว 2 แถวที่ระเบียงหน้าห้อง (ชั้นเดียวกับห้อง)
-    const R = ROOMS[fk], rows = Math.ceil(coh.length / 2), row = Math.floor(k / 2), col = k % 2;
-    return {from, to, pos: new THREE.Vector3(R.c.x - R.sx/2 - .5 - col*.75 - ci*1.6, R.y, R.c.z + (row - (rows-1)/2)*Math.min(.6, (R.sz - .4)/rows))};
+  let pos, S;
+  if (ROOMS[fk]) {   // 2 แถวที่ระเบียงหน้าห้อง (ชั้นเดียวกับห้อง)
+    const R = ROOMS[fk], half = Math.ceil(coh.length / 2), sp = Math.min(.6, (R.sz - .4)/half);
+    pos = new THREE.Vector3(R.c.x - R.sx/2 - .5 - (girl ? .75 : 0) - ci*1.6, R.y, R.c.z + (row - (half-1)/2)*sp);
+    S = R.y > 1.8 && STAIR[R.b] ? STAIR[R.b].bot3.clone() : new THREE.Vector3(R.c.x - R.sx/2 - .9 - ci*1.6, 0, R.c.z);
+  } else {
+    const F = zones[from], T = keyRect(tk), dx = T.c.x - F.c.x, dz = T.c.z - F.c.z, off = 1.6 + ci*1.8, along = (row - coh.length/4)*.62, lat = girl ? .75 : 0;
+    const X = Math.abs(dx) > Math.abs(dz);
+    pos = X ? new THREE.Vector3(F.c.x + Math.sign(dx)*(F.sx/2 + off + lat), 0, F.c.z + along) : new THREE.Vector3(F.c.x + along, 0, F.c.z + Math.sign(dz)*(F.sz/2 + off + lat));
+    S = X ? new THREE.Vector3(F.c.x + Math.sign(dx)*(F.sx/2 + off + .4), 0, F.c.z + (coh.length/4 + 1)*.62) : new THREE.Vector3(F.c.x + (coh.length/4 + 1)*.62, 0, F.c.z + Math.sign(dz)*(F.sz/2 + off + .4));
   }
-  const F = zones[from], T = keyRect(tk), dx = T.c.x - F.c.x, dz = T.c.z - F.c.z, off = 1.6 + ci*1.3, along = (k - (coh.length-1)/2)*.62;
-  const pos = Math.abs(dx) > Math.abs(dz) ? new THREE.Vector3(F.c.x + Math.sign(dx)*(F.sx/2 + off), 0, F.c.z + along)
-                                          : new THREE.Vector3(F.c.x + along, 0, F.c.z + Math.sign(dz)*(F.sz/2 + off));
-  return {from, to, pos};
+  if (m < P + LINE_MIN) return {from, to, pos};
+  // เดินแถวเรียงหนึ่ง: หัวแถวออกจากจุด S ไปยังขอบห้อง/บันไดของอาคารปลายทาง แต่ละคนเว้นระยะเท่ากัน
+  const T = keyRect(tk), RT = ROOMS[tk];
+  const D = RT && RT.y > 1.8 && STAIR[RT.b] ? STAIR[RT.b].bot3.clone()
+    : new THREE.Vector3(Math.min(T.c.x + T.sx/2, Math.max(T.c.x - T.sx/2, S.x)), 0, Math.min(T.c.z + T.sz/2, Math.max(T.c.z - T.sz/2, S.z)));
+  const L = S.distanceTo(D), order = girl ? boys + row : row;
+  const d = (m - P - LINE_MIN - ci*(coh.length*FILE_GAP + 4)/FILE_V)*FILE_V - order*FILE_GAP;
+  if (d >= L) return null;
+  if (d < 0) return {from, to, pos};
+  return {from, to, walk: true, pos: S.clone().lerp(D, L ? d/L : 1)};
 }
 function targetOf(a, m){
   const [z] = placeOfAgent(a, m);
   if (!z) return null;
-  if (a.kind === 's') { const ph = phaseAt(m)[2]; if (typeof ph === 'number') { const lu = lineUp(a, m, ph); if (lu) return {p: lu.pos, pose: 'stand'}; } }
+  if (a.kind === 's') { const ph = phaseAt(m)[2]; if (typeof ph === 'number') { const lu = lineUp(a, m, ph); if (lu) return {p: lu.pos, pose: lu.walk ? 'walk' : 'stand'}; } }
   const kg = kgAt(m);
   if (kg && z === kg[2] && (a.kind === 's' ? isKG(a.cls) : a.ref.name.startsWith('ครูอนุบาล'))) return kgTarget(a, m, kg);
   const ph = phaseAt(m)[2];
@@ -758,6 +803,20 @@ function targetOf(a, m){
   }
   if (typeof where === 'number') {
     const L = layout(m);
+    const H = zones.Multipurpose_Hall, asm = CLASSES.filter(([c]) => isAssembly(lesson(c, where).sub)).map(([c]) => c);
+    if (H && z === 'Multipurpose_Hall' && asm.length) {   // แถวตอนลึก ชั้นละ 2 แถว (ชาย/หญิง) หันหน้าไปทางครูเวร (ด้าน z น้อย)
+      const fz = H.c.z - H.sz/2 + .8;
+      if (a.kind === 's' && asm.includes(a.cls)) {
+        const ci = asm.indexOf(a.cls), coh = a.cohort ??= STUDENTS.filter(s => s.cls === a.cls && s.scan != null), girl = a.ref.no % 2 === 0;
+        const row = coh.filter(s => (s.no % 2 === 0) === girl).indexOf(a.ref);
+        return {p: new THREE.Vector3(H.c.x + (ci - (asm.length-1)/2)*2.3 + (girl ? .45 : -.45), 0, fz + 2.6 + row*.7), pose:'stand', yaw: Math.PI};
+      }
+      if (a.kind === 't') {
+        if (a.ref === dutyTeacher()) return {p: new THREE.Vector3(H.c.x, 0, fz), pose:'stand', teach: true};
+        const ts = AGENTS.filter(b => b.kind === 't' && b.ref !== dutyTeacher() && placeOfAgent(b, m)[0] === 'Multipurpose_Hall'), k = ts.indexOf(a), side = k % 2 ? 1 : -1;
+        return {p: new THREE.Vector3(H.c.x + side*(H.sx/2 - .6), 0, fz + 2.6 + (k >> 1)*1.5), pose:'stand', yaw: -side*Math.PI/2};
+      }
+    }
     if (a.kind === 's') {
       const k = L[a.cls], r = subRect(k.z, k.i, k.n), pose = poseOf(k.z, k.l.sub);
       const mates = a.cohort ??= STUDENTS.filter(s => s.cls === a.cls && s.scan != null);
@@ -930,6 +989,46 @@ function select(name){
   selected = name === selected ? null : name;
   if (selected) setXray(selected, true);
   renderSel();
+}
+/* ---------- ค้นหานักเรียน / ครู: อยู่ที่ไหน อาคารไหน เรียน/สอนอะไร ทำอะไรอยู่ ---------- */
+let follow = null, findMark = null;
+const whoOf = a => a.kind === 't' ? fullName(a.ref.name) : `${a.cls} เลขที่ ${a.ref.no}`;
+function statusOf(a){
+  if (a.kind === 's' && a.ref.scan == null) return {where: 'ไม่ได้มาโรงเรียน', what: 'ขาดเรียนวันนี้'};
+  const [z, txt] = placeOfAgent(a, simMin);
+  if (!z) return {where: simMin < (a.ref.scan ?? 0) ? 'ยังไม่ถึงโรงเรียน' : 'กลับบ้านแล้ว', what: simMin < (a.ref.scan ?? 0) ? 'สแกนหน้าเวลา ' + fmt(a.ref.scan) : ''};
+  const room = a.kind === 's' && typeof phaseAt(simMin)[2] === 'number' ? lesson(a.cls, phaseAt(simMin)[2]).room : null;
+  return {where: placeTh(z) + (room && ROOMS[room] ? ' · ' + ROOMS[room].th : ''), what: txt || ''};
+}
+function findMatches(q){
+  q = q.trim().replace(/\s+/g, ' '); if (!q) return [];
+  const m = q.match(/^(อ|ป)\.?\s*(\d)(?:\s*(?:เลขที่|no\.?|#)?\s*(\d+))?$/i);
+  if (m) { const c = `${m[1]}.${m[2]}`; return AGENTS.filter(a => a.kind === 's' && a.cls === c && (!m[3] || a.ref.no === +m[3])); }
+  const k = q.replace(/^ครู\s*/, '').toLowerCase();
+  return AGENTS.filter(a => a.kind === 't' && (fullName(a.ref.name) + ' ' + a.ref.name).toLowerCase().includes(k));
+}
+function renderFind(){
+  const ul = $('fres'), q = $('fq').value, list = findMatches(q).slice(0, 40);
+  ul.innerHTML = !q.trim() ? '<li style="cursor:default;color:var(--mute)">พิมพ์ชื่อครู หรือชั้นเรียน แล้วแตะรายชื่อเพื่อดูตำแหน่งบนแผนที่</li>'
+    : list.length ? list.map(a => { const st = statusOf(a); return `<li data-i="${AGENTS.indexOf(a)}" class="${a === follow ? 'on' : ''}"><span class="av">${a.kind === 't' ? '👩‍🏫' : a.cls}</span><span><b>${whoOf(a)}</b><small>📍 ${st.where}</small><small>${st.what}</small></span></li>`; }).join('')
+    : '<li style="cursor:default;color:var(--mute)">ไม่พบ ลองพิมพ์ชื่อครู หรือ ป.1–ป.6 / อ.2–อ.3</li>';
+  for (const li of ul.querySelectorAll('li[data-i]')) li.onclick = () => { follow = AGENTS[+li.dataset.i]; view.touched = true; if (view.zoom < 2.2) setZoom(2.6); renderFind(); };
+}
+function openFind(on){
+  $('findp').hidden = !on; if (!on) { follow = null; if (findMark) findMark.visible = false; return; }
+  if (!$('fchips').childElementCount) { const ch = ['ป.1','ป.2','ป.3','ป.4','ป.5','ป.6','อ.2','อ.3','ครู'];
+    $('fchips').innerHTML = ch.map(c => `<button>${c}</button>`).join(''); for (const b of $('fchips').children) b.onclick = () => { $('fq').value = b.textContent; renderFind(); }; }
+  renderFind(); setTimeout(() => $('fq').focus(), 50);
+}
+let findT = 0;
+function followFind(dt){
+  if ($('findp').hidden) return;
+  if ((findT += dt) > .5) { findT = 0; if (document.activeElement !== $('fq') || follow) renderFind(); }
+  if (!findMark) { findMark = new THREE.Mesh(new THREE.ConeGeometry(.45, 1, 12).rotateX(Math.PI), new THREE.MeshBasicMaterial({color:'#2563eb'})); findMark.renderOrder = 5; scene.add(findMark); }
+  findMark.visible = !!(follow && follow.shown);
+  if (!findMark.visible) return;
+  findMark.position.copy(follow.pos).add(new THREE.Vector3(0, 2.9 + Math.sin(performance.now()/200)*.2, 0));
+  target.lerp(new THREE.Vector3(follow.pos.x, 0, follow.pos.z), Math.min(1, dt*3));
 }
 function renderSel(){
   const el = $('sel'); if (!selected) { el.hidden = true; return; }
@@ -1306,7 +1405,7 @@ function frame(){
   if (playing) { simMin += dt * speed; if (simMin > 990) simMin = 355; slider.value = simMin; update(); }
   const ang = view.touched ? view.yaw : (view.yaw = Math.PI/4 + Math.sin(t*0.08)*0.25);
   cam.position.set(target.x+Math.sin(ang)*150, 120, target.z+Math.cos(ang)*150); cam.lookAt(target);
-  moveAgents(Math.min(dt,.3)); moveVehicles(Math.min(dt,.3)); classFeed(dt); animFarm(Math.min(dt,.3), t);
+  moveAgents(Math.min(dt,.3)); moveVehicles(Math.min(dt,.3)); classFeed(dt); animFarm(Math.min(dt,.3), t); followFind(Math.min(dt,.3));
   placeGroupChips(); placeRoomLabels();
   renderer.render(scene,cam);
   for (const z of Object.values(zones)) { v.copy(z.p).project(cam); z.el.style.left = (v.x*.5+.5)*innerWidth+'px'; z.el.style.top = (-v.y*.5+.5)*innerHeight+'px'; }
