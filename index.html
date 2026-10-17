@@ -72,6 +72,7 @@ html,body{margin:0;height:100%;overflow:hidden;font-family:Sarabun,sans-serif;co
 #toasts{position:fixed;left:50%;top:40px;transform:translateX(-50%);width:min(440px,92vw);display:flex;flex-direction:column;gap:5px;pointer-events:none;z-index:5}
 #toasts div{background:rgba(255,255,255,.96);border:1px solid var(--line);border-left:5px solid var(--c);border-radius:10px;padding:6px 10px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.12);transition:opacity .5s,transform .5s}
 #toasts div b{margin-right:4px}#toasts div.out{opacity:0;transform:translateY(-6px)}
+.rlab{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;background:rgba(255,255,255,.9);color:#334155;border:1px solid #cbd5e1;border-radius:6px;padding:1px 6px;font-size:10.5px;pointer-events:none}
 .grp{position:absolute;transform:translate(-50%,-100%);white-space:nowrap;background:var(--c);color:#fff;border-radius:999px;padding:2px 8px;font-size:11.5px;font-weight:600;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.25);transition:opacity .4s}
 #hint{position:fixed;left:50%;top:14px;transform:translateX(-50%);font-size:11px;color:var(--mute);background:var(--panel);border-radius:999px;padding:3px 10px;border:1px solid var(--line)}
 canvas{cursor:pointer}
@@ -161,7 +162,30 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 
 /* ---------- ข้อมูลตัวอย่าง (รูปแบบเดียวกับที่จะดึงจากระบบจริง) ---------- */
 const CLASSES = [['อ.2',14],['อ.3',15],['ป.1',24],['ป.2',23],['ป.3',27],['ป.4',26],['ป.5',28],['ป.6',27]];
-const HOMEROOM = {'อ.2':'Kindergarten','อ.3':'Kindergarten','ป.1':'P1P2_Classroom','ป.2':'P1P2_Classroom','ป.3':'Wooden_Building','ป.4':'Wooden_Building','ป.5':'Chalerm_Building','ป.6':'Chalerm_Building'};
+const HOMEROOM = {'อ.2':'Kindergarten','อ.3':'Kindergarten','ป.1':'P1P2_Classroom','ป.2':'P1P2_Classroom','ป.3':'Chalerm_Building','ป.4':'Chalerm_Building','ป.5':'Chalerm_Building','ป.6':'Chalerm_Building'};
+/* ---------- อาคาร 2 ชั้น: ห้องเรียนและห้องต่างๆ (ตามที่ครูบอก) ---------- */
+const F2 = 3.7;   // ความสูงพื้นชั้น 2
+const mkRoom = (th, b, x0, x1, z0, z1, y) => ({th, b, y, c: new THREE.Vector3((x0+x1)/2, y, (z0+z1)/2), sx: x1-x0, sz: z1-z0});
+const ROOMS = {
+  'ห้อง ป.3': mkRoom('ชั้น 2 ห้อง ป.3', 'Chalerm_Building', 25.6, 35, -6.5, 1.6, F2), 'ห้อง ป.4': mkRoom('ชั้น 2 ห้อง ป.4', 'Chalerm_Building', 25.6, 35, 1.6, 9.7, F2),
+  'ห้อง ป.5': mkRoom('ชั้น 2 ห้อง ป.5', 'Chalerm_Building', 25.6, 35, 9.7, 17.8, F2), 'ห้อง ป.6': mkRoom('ชั้น 2 ห้อง ป.6', 'Chalerm_Building', 25.6, 35, 17.8, 25.9, F2),
+  'ห้องประชุม': mkRoom('ชั้น 1 ห้องประชุม', 'Chalerm_Building', 25.6, 35, -6.5, 4, 0), 'Bankhum Studio': mkRoom('ชั้น 1 Bankhum Studio', 'Chalerm_Building', 25.6, 35, 4, 11, 0),
+  'ห้องธุรการ': mkRoom('ชั้น 1 ห้องธุรการ', 'Chalerm_Building', 25.6, 35, 11, 17, 0), 'ห้องผู้บริหาร': mkRoom('ชั้น 1 ห้องผู้บริหาร', 'Chalerm_Building', 25.6, 35, 17, 22, 0),
+  'ห้องน้ำครู': mkRoom('ชั้น 1 ห้องน้ำครูชาย/หญิง', 'Chalerm_Building', 25.6, 35, 22, 25.9, 0),
+  'ห้องวิทยาศาสตร์': mkRoom('ชั้น 1 ห้องวิทยาศาสตร์', 'Wooden_Building', 22.2, 32, -43, -22.2, 0), 'ห้องภาษาอังกฤษ': mkRoom('ชั้น 2 ห้องภาษาอังกฤษ', 'Wooden_Building', 22.2, 32, -43, -22.2, F2),
+  'ห้องคอมพิวเตอร์': mkRoom('ชั้น 2 ห้องคอมพิวเตอร์', 'Technology_Building', 9.6, 19, -47.6, -40.4, F2),
+};
+const HOMEROOM_ROOM = {'ป.3':'ห้อง ป.3','ป.4':'ห้อง ป.4','ป.5':'ห้อง ป.5','ป.6':'ห้อง ป.6'};
+// บันไดขึ้นชั้น 2 (ในอาคาร): จุดล่าง → จุดบน
+const STAIR = {Chalerm_Building: {bot: [24.5, -12.8], top: [24.5, -7.2]}, Wooden_Building: {bot: [21.2, -15.6], top: [21.2, -21.4]}, Technology_Building: {bot: [8.5, -39.3], top: [14.3, -39.3]}};
+for (const s of Object.values(STAIR)) { s.bot3 = new THREE.Vector3(s.bot[0], 0, s.bot[1]); s.top3 = new THREE.Vector3(s.top[0], F2, s.top[1]); }
+function roomOf(sub){
+  if (/เทคโนโลยี|วิทยาการคำนวณ/.test(sub)) return 'ห้องคอมพิวเตอร์';
+  if (/วิทยาศาสตร์/.test(sub)) return 'ห้องวิทยาศาสตร์';
+  if (/ภาษาอังกฤษ|Word Power/.test(sub)) return 'ห้องภาษาอังกฤษ';
+  return null;
+}
+const keyRect = k => zones[k] || ROOMS[k];
 // ตารางเรียนจริง ภาคเรียนที่ 1/2569 (ป.1–ป.6) · "วิชา|ครู" ต่อคาบ, จันทร์–ศุกร์
 const REAL = {"ป.1": [["กิจกรรมส่องโลก ส่องใจ|", "ภาษาไทย|ราตรี", "ภาษาอังกฤษ|กมลวรรณ", "คณิตศาสตร์|สุทิสา", "กิจกรรมทักษะทางน้ำและการเอาตัวรอด|พลกฤต", "เทคโนโลยีเพื่อการเรียนรู้|ดีลาภ"], ["คณิตศาสตร์|สุทิสา", "ภาษาไทย|ราตรี", "ความเป็นพลเมือง|ราตรี", "วิถีธรรมวิถีไทย|สุทิสา", "ศิลปะและวัฒนธรรมเพื่อสุนทรียภาพ|ณัชลักษมณ์", "กิจกรรมอ่านสร้างสรรค์ แบ่งปันแรงบันดาลใจ|ราตรี"], ["คณิตศาสตร์|สุทิสา", "ภาษาอังกฤษ|กมลวรรณ", "ภาษาไทย|ราตรี", "สุขภาพกายและจิต|พลกฤต", "กิจกรรมปลุกพลังคิดไว|สุทิสา", "เศรษฐกิจและการเงิน|รัตติกาล"], ["ภาษาไทย|ราตรี", "คณิตศาสตร์|สุทิสา", "ภาษาอังกฤษ|กมลวรรณ", "ภาษาจีนเพื่อการสื่อสาร|อรวรรณ", "การเรียนรู้เพื่อชีวิต|รัตติกาล", "กิจกรรมพัฒนาผู้เรียน|"], ["ภาษาอังกฤษ|กมลวรรณ", "คณิตศาสตร์|สุทิสา", "ภาษาไทย|ราตรี", "นักวิทยาศาสตร์น้อย|วิไลวรรณ", "การป้องกันการทุจริต|ราตรี", "กิจกรรม Word Power World Power|สุทิสา"]], "ป.2": [["กิจกรรมส่องโลก ส่องใจ|", "คณิตศาสตร์|สุทิสา", "ภาษาไทย|ราตรี", "ภาษาอังกฤษ|กมลวรรณ", "ความเป็นพลเมือง|ดีลาภ", "กิจกรรมทักษะทางน้ำและการเอาตัวรอด|พลกฤต"], ["ภาษาไทย|ราตรี", "คณิตศาสตร์|สุทิสา", "ภาษาจีนเพื่อการสื่อสาร|อรวรรณ", "วิถีธรรมวิถีไทย|ดีลาภ", "กิจกรรม Word Power World Power|กมลวรรณ", "ศิลปะและวัฒนธรรมเพื่อสุนทรียภาพ|ณัชลักษมณ์"], ["ภาษาไทย|ราตรี", "คณิตศาสตร์|สุทิสา", "ภาษาอังกฤษ|กมลวรรณ", "เทคโนโลยีเพื่อการเรียนรู้|ดีลาภ", "การเรียนรู้เพื่อชีวิต|รัตติกาล", "กิจกรรมปลุกพลังคิดไว|ดีลาภ"], ["คณิตศาสตร์|สุทิสา", "ภาษาไทย|ราตรี", "นักวิทยาศาสตร์น้อย|วิไลวรรณ", "ภาษาอังกฤษ|กมลวรรณ", "การป้องกันการทุจริต|ดีลาภ", "กิจกรรมพัฒนาผู้เรียน|"], ["ภาษาจีนเพื่อการสื่อสาร|อรวรรณ", "ภาษาอังกฤษ|กมลวรรณ", "สุขภาพกายและจิต|พลกฤต", "เศรษฐกิจและการเงิน|รัตติกาล", "นักวิทยาศาสตร์น้อย|วิไลวรรณ", "กิจกรรมอ่านสร้างสรรค์ แบ่งปันแรงบันดาลใจ|กมลวรรณ"]], "ป.3": [["กิจกรรมส่องโลก ส่องใจ|", "ภาษาไทย|นิภา", "คณิตศาสตร์|นิภา", "นักวิทยาศาสตร์น้อย|วิไลวรรณ", "นักวิทยาศาสตร์น้อย|วิไลวรรณ", "การเรียนรู้เพื่อชีวิต|รัตติกาล"], ["ภาษาไทย|นิภา", "ภาษาอังกฤษ|กมลวรรณ", "เศรษฐกิจและการเงิน|รัตติกาล", "สุขภาพกายและจิต|พลกฤต", "กิจกรรมอ่านสร้างสรรค์ แบ่งปันแรงบันดาลใจ|นิภา", "กิจกรรมทักษะทางน้ำและการเอาตัวรอด|พลกฤต"], ["ภาษาอังกฤษ|กมลวรรณ", "ภาษาไทย|นิภา", "คณิตศาสตร์|นิภา", "เศรษฐกิจและการเงิน|รัตติกาล", "เทคโนโลยีเพื่อการเรียนรู้|ดีลาภ", "กิจกรรมปลุกพลังคิดไว|นิภา"], ["คณิตศาสตร์|นิภา", "ภาษาไทย|นิภา", "ภาษาจีนเพื่อการสื่อสาร|อรวรรณ", "ความเป็นพลเมือง|นิภา", "ศิลปะและวัฒนธรรมเพื่อสุนทรียภาพ|ณัชลักษมณ์", "กิจกรรมพัฒนาผู้เรียน|"], ["คณิตศาสตร์|นิภา", "ภาษาจีนเพื่อการสื่อสาร|อรวรรณ", "วิถีธรรมวิถีไทย|นิภา", "เทคโนโลยีเพื่อการเรียนรู้|ดีลาภ", "การป้องกันการทุจริต|นิภา", "กิจกรรม Word Power World Power|นิภา"]], "ป.4": [["กิจกรรมส่องโลก ส่องใจ|", "สังคมศึกษา|รัตติกาล", "ภาษาอังกฤษ|ทรงวุฒิ", "ภาษาไทย|ภัทรวดี", "คณิตศาสตร์|วริทธิ์นันท์", "การงานอาชีพ|ยุรนันท์"], ["พลศึกษา|พลกฤต", "สังคมศึกษา|รัตติกาล", "คณิตศาสตร์|วริทธิ์นันท์", "ประวัติศาสตร์|ทรงวุฒิ", "ว่ายน้ำ|พลกฤต", "ชุมนุม|"], ["วิทยาศาสตร์|วิไลวรรณ", "วิทยาศาสตร์|วิไลวรรณ", "ภาษาอังกฤษ|ทรงวุฒิ", "ศิลปะ|ณัชลักษมณ์", "แนะแนว|ยุรนันท์", "ภาษาไทย|ภัทรวดี"], ["คณิตศาสตร์|วริทธิ์นันท์", "สุขศึกษา|พลกฤต", "วิทยาการคำนวณ|ดีลาภ", "ภาษาไทย|ภัทรวดี", "ภาษาจีน|อรวรรณ", "ลูกเสือ ยุวกาชาด|"], ["ต้านทุจริต|ทรงวุฒิ", "ภาษาไทย|ภัทรวดี", "คณิตศาสตร์|วริทธิ์นันท์", "ศิลปะ|ณัชลักษมณ์", "หน้าที่พลเมือง|ทรงวุฒิ", "ภาษาจีน|อรวรรณ"]], "ป.5": [["กิจกรรมส่องโลก ส่องใจ|", "ภาษาไทย|ภัทรวดี", "ประวัติศาสตร์|วริทธิ์นันท์", "คณิตศาสตร์|วริทธิ์นันท์", "สังคมศึกษา|รัตติกาล", "ต้านทุจริต|ทรงวุฒิ"], ["ภาษาไทย|ภัทรวดี", "ภาษาอังกฤษ|ทรงวุฒิ", "ศิลปะ|ณัชลักษมณ์", "คณิตศาสตร์|วริทธิ์นันท์", "การงานอาชีพ|ยุรนันท์", "ชุมนุม|"], ["ภาษาไทย|ภัทรวดี", "พลศึกษา|พลกฤต", "สังคมศึกษา|รัตติกาล", "ภาษาจีน|อรวรรณ", "ว่ายน้ำ|พลกฤต", "ภาษาอังกฤษ|ทรงวุฒิ"], ["วิทยาศาสตร์|วิไลวรรณ", "วิทยาศาสตร์|วิไลวรรณ", "แนะแนว|ภัทรวดี", "ศิลปะ|ณัชลักษมณ์", "สุขศึกษา|พลกฤต", "ลูกเสือ ยุวกาชาด|"], ["ภาษาไทย|ภัทรวดี", "คณิตศาสตร์|วริทธิ์นันท์", "หน้าที่พลเมือง|ทรงวุฒิ", "ภาษาจีน|อรวรรณ", "วิทยาการคำนวณ|ดีลาภ", "คณิตศาสตร์|วริทธิ์นันท์"]], "ป.6": [["กิจกรรมส่องโลก ส่องใจ|", "คณิตศาสตร์|วริทธิ์นันท์", "การงานอาชีพ|ดีลาภ", "ภาษาอังกฤษ|ทรงวุฒิ", "ภาษาไทย|ภัทรวดี", "ภาษาจีน|อรวรรณ"], ["คณิตศาสตร์|วริทธิ์นันท์", "ภาษาไทย|ภัทรวดี", "แนะแนว|วิไลวรรณ", "วิทยาศาสตร์|วิไลวรรณ", "วิทยาศาสตร์|วิไลวรรณ", "ชุมนุม|"], ["พลศึกษา|พลกฤต", "ภาษาไทย|ภัทรวดี", "ศิลปะ|ณัชลักษมณ์", "คณิตศาสตร์|วริทธิ์นันท์", "ภาษาจีน|อรวรรณ", "ว่ายน้ำ|พลกฤต"], ["สังคมศึกษา|รัตติกาล", "ภาษาไทย|ภัทรวดี", "ศิลปะ|ณัชลักษมณ์", "วิทยาการคำนวณ|ดีลาภ", "หน้าที่พลเมือง|ทรงวุฒิ", "ลูกเสือ ยุวกาชาด|"], ["คณิตศาสตร์|วริทธิ์นันท์", "สังคมศึกษา|รัตติกาล", "ประวัติศาสตร์|วิไลวรรณ", "ภาษาอังกฤษ|ทรงวุฒิ", "สุขศึกษา|พลกฤต", "ต้านทุจริต|ทรงวุฒิ"]]};
 // ตารางสอนรายครู ภาคเรียนที่ 1/2569 · "ครู|วัน|คาบ" → [วิชา, ชั้น] ('-' = กิจกรรมรวม)
@@ -187,7 +211,8 @@ const lesson = (c, p) => {
     const k = kgAt([510,570,630,750,810,870][p]); return {sub: k[1], tea: 'ครูอนุบาล', where: k[2] === 'Canteen' ? 'Canteen' : 'Kindergarten'}; }
   const [sub, tea] = REAL[c][day][p].split('|');
   const co = tea ? coTeachers(c, p, tea, sub) : [];
-  return {sub, tea: tea || 'ครูทุกคน', co, where: placeOf(sub) || HOMEROOM[c]};
+  const rm = roomOf(sub), where = rm ? ROOMS[rm].b : placeOf(sub) || HOMEROOM[c];
+  return {sub, tea: tea || 'ครูทุกคน', co, where, room: rm || (where === HOMEROOM[c] ? HOMEROOM_ROOM[c] : null)};
 };
 function placeOf(s){
   if (/ทางน้ำ|ว่ายน้ำ/.test(s)) return 'Swimming_Pool';
@@ -448,7 +473,7 @@ function onModel(g) {
   root.children.forEach(o => { if (/^(Student|Teacher)_/.test(o.name)) o.visible = false; });
   const tent = root.getObjectByName('Museum_Walk'); if (tent) tent.removeFromParent();   // เอาเต็นท์หลังคาโค้งสีน้ำเงินออก (ตามที่ครูขอ)
   const sign = root.getObjectByName('School_Sign'); if (sign) GATE.copy(new THREE.Box3().setFromObject(sign).getCenter(new THREE.Vector3())).setY(0).add(new THREE.Vector3(-4,0,0));
-  buildFarm(); initAgents(root); applyXrayAll();
+  buildFarm(); buildFloors(); initAgents(root); applyXrayAll();
   $('info').onclick = () => document.body.classList.toggle('sheet');
   $('home').onclick = () => { view.touched = false; target.set(0,0,0); setZoom(1); };
   const fitBar = () => document.documentElement.style.setProperty('--barH', ($('bar').offsetHeight + 16) + 'px');
@@ -534,14 +559,14 @@ function teacherPlace(t, p){
   if (s) { const [sub, c] = s; if (c === '-') return [placeOf(sub) || 'Multipurpose_Hall', `ดูแล${sub}`]; return [lesson(c, p).where, `สอน ${c} ${sub}`]; }
   for (const [c] of CLASSES) { const l = lesson(c,p); if ('ครู'+l.tea === t.name) return [l.where, `สอน ${c} ${l.sub}`]; }
   for (const [c] of CLASSES) { const l = lesson(c,p); if (l.tea === 'ครูทุกคน') return [l.where, `ดูแล ${l.sub}`]; }
-  return ['Chalerm_Building','ห้องพักครู (ไม่มีคาบสอน)'];
+  return ['Chalerm_Building','ห้องธุรการ (ไม่มีคาบสอน)'];
 }
 // ตอนนี้แต่ละคนควรอยู่ที่ไหน → [zone|null, ข้อความ]
 function placeOfAgent(a, m){
   const r = a.ref; if (r.scan == null || m < (r.arr ?? r.scan)) return [null,'ยังไม่มา'];
   if (r.leave != null && m >= r.leave) return [null,'กลับบ้านแล้ว'];
   if (m < r.scan + .4) return ['SCAN','เดินไปสแกนหน้าที่อาคารเฉลิมพระเกียรติ'];
-  if (a.kind === 't' && m >= 930) return m >= r.leave - 5 ? ['PARK','เดินไปที่รถ'] : ['Chalerm_Building','ห้องพักครู'];
+  if (a.kind === 't' && m >= 930) return m >= r.leave - 5 ? ['PARK','เดินไปที่รถ'] : ['Chalerm_Building','ห้องธุรการ'];
   if (a.kind === 's' && m >= 930 && r.pickAt != null && m >= r.pickAt) return ['PICK','ขึ้นรถกลับบ้าน'];
   if (a.kind === 's' && m >= 930) return ['GATE', r.mode === 'bike' ? 'ไปเอาจักรยาน' : `รอ${MODES[r.mode][0]} ${r.pmZone === 'B' ? 'หน้าห้องคอมพิวเตอร์' : 'หน้าอาคารเฉลิมฯ'}`];
   const kg = kgAt(m);
@@ -550,7 +575,7 @@ function placeOfAgent(a, m){
   if (where === 'gate' && m >= 930) return ['GATE','กลับบ้าน'];
   if (where === 'Flagpole') return ['Flagpole', a.kind === 't' ? 'ร่วมกิจกรรมหน้าเสาธง' : 'เข้าแถว เคารพธงชาติ สวดมนต์'];
   if (where === 'gate') {
-    if (a.kind === 't') return ['Chalerm_Building','ห้องพักครู เตรียมการสอน'];
+    if (a.kind === 't') return ['Chalerm_Building','ห้องธุรการ เตรียมการสอน'];
     if (m < r.scan + 4) return [HOMEROOM[a.cls], 'เอากระเป๋าไปเก็บที่ห้อง'];
     if (isKG(a.cls)) return ['PLAY','วิ่งเล่นสนามเด็กเล่น'];
     return (r.no + a.cls.length) % 5 < 2 ? ['Canteen','ซื้อขนมที่โรงอาหาร'] : ['FREE','เล่นตามอัธยาศัย'];
@@ -561,18 +586,18 @@ function placeOfAgent(a, m){
     const g = COLOR_GROUPS[r.grp ??= (r.no + CLASSES.findIndex(([c]) => c === a.cls)) % 4]; return [g[2], `กลุ่มสี${g[0]} ${g[3]}`];
   }
   if (where === 'homeroom') {
-    if (a.kind === 't') { const c = r.name.startsWith('ครูอนุบาล') ? 'อ.' + r.name.slice(-1) : HR_TEACHER[r.name]; return c ? [HOMEROOM[c], `โฮมรูม ${c}`] : ['Chalerm_Building','ห้องพักครู']; }
+    if (a.kind === 't') { const c = r.name.startsWith('ครูอนุบาล') ? 'อ.' + r.name.slice(-1) : HR_TEACHER[r.name]; return c ? [HOMEROOM[c], `โฮมรูม ${c}`] : ['Chalerm_Building','ห้องธุรการ']; }
     return [HOMEROOM[a.cls], 'โฮมรูม ออมทรัพย์'];
   }
   if (where === 'lunch') {
-    if (a.kind === 't') return m < 715 ? ['Canteen','กินข้าวกลางวัน'] : ['Chalerm_Building','ห้องพักครู'];
+    if (a.kind === 't') return m < 715 ? ['Canteen','กินข้าวกลางวัน'] : ['Chalerm_Building','ห้องธุรการ'];
     const L = lunchAt(a.cls, m); if (!L) return placeOfAgent(a, 679.9);
     return [L[0], L[1]];
   }
   if (where == null) return ['GATE',''];
   if (a.kind === 's') { const lu = lineUp(a, m, where); if (lu) return [lu.from, `เข้าแถวหน้าห้อง เตรียมไป${ZONES[lu.to][0]}`]; }
   if (a.kind === 't') return teacherPlace(r, where);
-  const l = lesson(a.cls, where); return [l.where, `${l.sub} · ${l.tea}${l.co?.length ? ' + ' + l.co.join(', ') : ''}`];
+  const l = lesson(a.cls, where); return [l.where, `${l.room && ROOMS[l.room] ? ROOMS[l.room].th.replace('ห้อง ', '') + ' · ' : ''}${l.sub} · ${l.tea}${l.co?.length ? ' + ' + l.co.join(', ') : ''}`];
 }
 // รูปแบบกิจกรรมของแต่ละวิชา
 function poseOf(zone, sub){
@@ -589,13 +614,13 @@ function layout(m){
   const where = phaseAt(m)[2], v = {};
   if (typeof where === 'number') {
     const per = {};
-    for (const [c] of CLASSES) { const l = lesson(c, where); (per[l.where] ??= []).push(c); }
-    for (const [z, list] of Object.entries(per)) list.forEach((c, i) => v[c] = {z, i, n: list.length, l: lesson(c, where)});
+    for (const [c] of CLASSES) { const l = lesson(c, where); (per[l.room || l.where] ??= []).push(c); }
+    for (const [z, list] of Object.entries(per)) list.forEach((c, i) => { const l = lesson(c, where); v[c] = {z, b: l.where, i, n: list.length, l}; });
   }
   layout.k = key; layout.v = v; return v;
 }
 function subRect(z, i, n){
-  const Z = zones[z], long = Z.sx >= Z.sz;
+  const Z = keyRect(z), long = Z.sx >= Z.sz;
   const w = long ? Z.sx/n : Z.sx, d = long ? Z.sz : Z.sz/n;
   const off = (i + .5)/n - .5;
   return {cx: Z.c.x + (long ? off*Z.sx : 0), cz: Z.c.z + (long ? 0 : off*Z.sz), w: w*.86, d: d*.8, y: Z.y};
@@ -641,15 +666,21 @@ function kgTarget(a, m, kg){
 }
 // เปลี่ยนคาบแล้วต้องย้ายห้อง: เข้าแถวหน้าห้องเดิม 5 นาที แล้วเดินเรียงแถวไปห้องใหม่ (ออกทีละคน)
 const PSTART = ROUTINE.filter(r => typeof r[2] === 'number').map(r => r[0]), LINE_MIN = 5;
-const fromRoom = (c, p) => p === 0 ? HOMEROOM[c] : lesson(c, p - 1).where;
+const keyAt = (c, p) => { const l = lesson(c, p); return l.room || l.where; };
+const fromRoom = (c, p) => p === 0 ? (HOMEROOM_ROOM[c] || HOMEROOM[c]) : keyAt(c, p - 1);
 function lineUp(a, m, p){
   if (isKG(a.cls) || p === 3) return null;   // คาบ 4 มาจากที่แปรงฟันหลังพักเที่ยง
   const P = PSTART[p], coh = a.cohort ??= STUDENTS.filter(s => s.cls === a.cls && s.scan != null), k = coh.indexOf(a.ref);
   if (m < P || m >= P + LINE_MIN + k*.06) return null;
-  const from = fromRoom(a.cls, p), to = lesson(a.cls, p).where;
-  if (from === to || !zones[from] || !zones[to]) return null;
-  const same = CLASSES.filter(([c]) => !isKG(c) && fromRoom(c, p) === from && lesson(c, p).where !== from).map(([c]) => c);
-  const F = zones[from], T = zones[to], dx = T.c.x - F.c.x, dz = T.c.z - F.c.z, off = 1.6 + same.indexOf(a.cls)*1.3, along = (k - (coh.length-1)/2)*.62;
+  const fk = fromRoom(a.cls, p), tk = keyAt(a.cls, p);
+  if (fk === tk || !keyRect(fk) || !keyRect(tk)) return null;
+  const same = CLASSES.filter(([c]) => !isKG(c) && fromRoom(c, p) === fk && keyAt(c, p) !== fk).map(([c]) => c), ci = same.indexOf(a.cls);
+  const from = ROOMS[fk] ? ROOMS[fk].b : fk, to = ROOMS[tk] ? ROOMS[tk].b : tk;
+  if (ROOMS[fk]) {   // เข้าแถว 2 แถวที่ระเบียงหน้าห้อง (ชั้นเดียวกับห้อง)
+    const R = ROOMS[fk], rows = Math.ceil(coh.length / 2), row = Math.floor(k / 2), col = k % 2;
+    return {from, to, pos: new THREE.Vector3(R.c.x - R.sx/2 - .5 - col*.75 - ci*1.6, R.y, R.c.z + (row - (rows-1)/2)*Math.min(.6, (R.sz - .4)/rows))};
+  }
+  const F = zones[from], T = keyRect(tk), dx = T.c.x - F.c.x, dz = T.c.z - F.c.z, off = 1.6 + ci*1.3, along = (k - (coh.length-1)/2)*.62;
   const pos = Math.abs(dx) > Math.abs(dz) ? new THREE.Vector3(F.c.x + Math.sign(dx)*(F.sx/2 + off), 0, F.c.z + along)
                                           : new THREE.Vector3(F.c.x + along, 0, F.c.z + Math.sign(dz)*(F.sz/2 + off));
   return {from, to, pos};
@@ -678,7 +709,7 @@ function targetOf(a, m){
     if (z === 'FREE') return freePlay(a, m);
     const hrC = a.kind === 's' ? a.cls : (a.ref.name.startsWith('ครูอนุบาล') ? 'อ.' + a.ref.name.slice(-1) : HR_TEACHER[a.ref.name]);
     if (hrC && z === HOMEROOM[hrC]) {
-      const share = CLASSES.filter(([c]) => HOMEROOM[c] === z).map(([c]) => c), r = subRect(z, share.indexOf(hrC), share.length);
+      const key = HOMEROOM_ROOM[hrC] || z, share = CLASSES.filter(([c]) => (HOMEROOM_ROOM[c] || HOMEROOM[c]) === key).map(([c]) => c), r = subRect(key, share.indexOf(hrC), share.length);
       if (a.kind === 't') return {p: teacherFront(r, 'sit'), pose:'stand', teach: true};
       const cm = a.cohort ??= STUDENTS.filter(s => s.cls === a.cls && s.scan != null);
       return {p: slotOf(r, 'sit', cm.indexOf(a.ref), cm.length, a.ox, a.oz), pose: ph === 'homeroom' ? 'sit' : 'stand'};
@@ -712,6 +743,7 @@ function targetOf(a, m){
     const ts = tslot(a.ref.name.slice(3), where), mine = Object.entries(L).find(([c, k]) => 'ครู'+k.l.tea === a.ref.name || ts?.[1] === c || (a.ref.name.startsWith('ครูอนุบาล') && c === 'อ.'+a.ref.name.slice(-1)));
     if (mine) { const k = mine[1], r = subRect(k.z, k.i, k.n); return {p: teacherFront(r, poseOf(k.z, k.l.sub)), pose:'stand', teach: true}; }
   }
+  if (a.kind === 't' && z === 'Chalerm_Building') { const R = ROOMS[a.ref.name === 'ครูกนกวรรณ' ? 'ห้องผู้บริหาร' : 'ห้องธุรการ']; return {p: new THREE.Vector3(R.c.x + (a.ox-.5)*R.sx*.8, 0, R.c.z + (a.oz-.5)*R.sz*.8), pose:'stand'}; }
   return {p: inZone(z, a.ox, a.oz), pose:'stand'};
 }
 const spawnOf = a => new THREE.Vector3(a.ref.drop[0], 0, a.ref.drop[1]);
@@ -777,6 +809,18 @@ function moveVehicles(dt){
 }
 const dummy = new THREE.Object3D();
 let desks;
+// เดินไปห้องชั้น 2 ต้องขึ้น/ลงบันไดของอาคารนั้น
+const bldAt = p => Object.keys(STAIR).find(b => { const z = zones[b]; return z && Math.abs(p.x - z.c.x) <= z.sx/2 + 1.5 && Math.abs(p.z - z.c.z) <= z.sz/2 + 1.5; });
+function stepTo(a, tgt, dt){
+  const d = tgt.clone().sub(a.pos), len = d.length(), step = Math.max(16*dt, len*Math.min(1, dt*.9));
+  if (len > step) { a.pos.addScaledVector(d, step/len); return false; } a.pos.copy(tgt); return true;
+}
+function waypoint(a, tgt){
+  const upB = a.pos.y > 1.8 ? bldAt(a.pos) : null, tB = tgt.y > 1.8 ? bldAt(tgt) : null;
+  if (upB && upB !== tB) return {p: STAIR[upB].top3, start: {b: upB, dir: -1}};
+  if (!upB && tB && STAIR[tB]) return {p: STAIR[tB].bot3, start: {b: tB, dir: 1}};
+  return {p: tgt};
+}
 function moveAgents(dt){
   if (!bodies) return;
   const duty = phaseAt(simMin)[2] === 'duty'; if (uniDay !== day || uniDuty !== duty) { uniDuty = duty; applyUniforms(); }
@@ -787,8 +831,8 @@ function moveAgents(dt){
     if (!tgt) { a.shown = false; }
     else {
       if (!a.shown) { a.shown = true; a.pos.copy(spawnOf(a)); }
-      const d = tgt.clone().sub(a.pos); const len = d.length(), step = Math.max(16*dt, len*Math.min(1, dt*.9));
-      if (len > step) a.pos.addScaledVector(d, step/len); else a.pos.copy(tgt);
+      if (a.stair) { if (stepTo(a, a.stair.dir > 0 ? STAIR[a.stair.b].top3 : STAIR[a.stair.b].bot3, dt * .5)) a.stair = null; }
+      else { const w = waypoint(a, tgt); if (stepTo(a, w.p, dt) && w.start) a.stair = w.start; }
     }
     const arrived = T && a.pos.distanceTo(tgt) < .4, pose = arrived ? T.pose : 'walk';
     a.walking = !!T && a.pos.distanceTo(tgt) > 1.5;
@@ -932,7 +976,7 @@ function update(force){
   const occ = occupancy(m);
   for (const [name,z] of Object.entries(zones)) {
     const o = occ[name];
-    const L = typeof where === 'number' ? Object.entries(layout(m)).filter(([,k]) => k.z === name) : [];
+    const L = typeof where === 'number' ? Object.entries(layout(m)).filter(([,k]) => k.b === name) : [];
     const cut = s => s.length > 26 ? s.slice(0,25)+'…' : s;
     z.el.innerHTML = `<b>${z.th}</b>` + (L.length ? L.map(([c,k]) => `<i>📖 ${c} ${cut(k.l.sub)} · ${k.l.tea}</i>`).join('')
       : `<i>${o ? `${o.n} คน · ${cut([...o.txt][0])}` : 'ว่าง'}</i>`);
@@ -981,6 +1025,28 @@ function buildFarm(){
   const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(SPRK.length * DROPS * 3), 3));
   spray = new THREE.Points(geo, new THREE.PointsMaterial({color:'#7dd3fc', size:3.2, sizeAttenuation:false, transparent:true, opacity:0, depthWrite:false}));
   spray.frustumCulled = false; spray.visible = false; g.add(spray);
+}
+// พื้นชั้น 2 (โปร่งแสงให้เห็นชั้นล่าง) + บันได + ป้ายชื่อห้อง
+const roomLabs = [];
+function buildFloors(){
+  const slabM = new THREE.MeshLambertMaterial({color:'#e2e8f0', transparent:true, opacity:.5, depthWrite:false}), stairM = new THREE.MeshLambertMaterial({color:'#94a3b8'});
+  const SLAB = {Chalerm_Building: [23.5, 35.5, -7.2, 26.4], Wooden_Building: [20.2, 32.2, -43.7, -21.4], Technology_Building: [7.3, 19.3, -48.1, -40.1]};
+  for (const [b, [x0, x1, z0, z1]] of Object.entries(SLAB)) {
+    const s = new THREE.Mesh(new THREE.BoxGeometry(x1-x0, .16, z1-z0), slabM); s.position.set((x0+x1)/2, F2 - .08, (z0+z1)/2); s.renderOrder = 1; scene.add(s);
+    const S = STAIR[b], len = S.bot3.distanceTo(S.top3), st = new THREE.Mesh(new THREE.BoxGeometry(1.3, .18, len), stairM);
+    st.position.copy(S.bot3).add(S.top3).multiplyScalar(.5); st.lookAt(S.top3); st.castShadow = true; scene.add(st);
+    for (let i = 1; i < 10; i++) { const q = S.bot3.clone().lerp(S.top3, i/10), step = new THREE.Mesh(new THREE.BoxGeometry(1.3, .06, .12), stairM); step.position.copy(q).setY(q.y + .1); step.lookAt(S.top3.clone().setY(q.y + .1)); scene.add(step); }
+  }
+  for (const [k, R] of Object.entries(ROOMS)) {
+    const el = document.createElement('div'); el.className = 'rlab'; el.textContent = R.th; $('labels').appendChild(el);
+    roomLabs.push({el, R, p: R.c.clone().setY(R.y + 2.2)});
+  }
+}
+function placeRoomLabels(){
+  for (const L of roomLabs) {
+    const on = selected === L.R.b || view.zoom >= 2.4; L.el.style.display = on ? '' : 'none'; if (!on) continue;
+    v.copy(L.p).project(cam); L.el.style.left = (v.x*.5+.5)*innerWidth + 'px'; L.el.style.top = (-v.y*.5+.5)*innerHeight + 'px';
+  }
 }
 function animFarm(dt, t){
   if (!spray) return;
@@ -1099,7 +1165,7 @@ function frame(){
   const ang = view.touched ? view.yaw : (view.yaw = Math.PI/4 + Math.sin(t*0.08)*0.25);
   cam.position.set(target.x+Math.sin(ang)*150, 120, target.z+Math.cos(ang)*150); cam.lookAt(target);
   moveAgents(Math.min(dt,.3)); moveVehicles(Math.min(dt,.3)); classFeed(dt); animFarm(Math.min(dt,.3), t);
-  placeGroupChips();
+  placeGroupChips(); placeRoomLabels();
   renderer.render(scene,cam);
   for (const z of Object.values(zones)) { v.copy(z.p).project(cam); z.el.style.left = (v.x*.5+.5)*innerWidth+'px'; z.el.style.top = (-v.y*.5+.5)*innerHeight+'px'; }
   requestAnimationFrame(frame);
