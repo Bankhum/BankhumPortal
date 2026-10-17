@@ -419,7 +419,7 @@ const ZONES = {
   Greenhouse:['โรงเรือนเกษตร','#22c55e'], Canteen:['โรงอาหาร','#ef4444'],
   Chalerm_Building:['อาคารเฉลิมพระเกียรติ','#14b8a6'], P1P2_Classroom:['อาคาร ป.1 ป.2','#f97316'],
   Wooden_Building:['อาคารไม้','#e11d48'], Multipurpose_Hall:['อาคารอเนกประสงค์','#64748b'],
-  Flagpole:['ลานเสาธง','#0ea5e9'], Field:['สนามฟุตบอล','#84cc16'], SmartFarm:['💧 แปลงเกษตรอัจฉริยะ','#16a34a'],
+  Flagpole:['ลานเสาธง','#0ea5e9'], Field:['สนามฟุตบอล','#84cc16'], SmartFarm:['💧 แปลงเกษตรอัจฉริยะ','#16a34a'], Restroom:['🚻 ห้องน้ำนักเรียน','#0284c7'],
 };
 
 const fmt = m => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(Math.floor(m%60)).padStart(2,'0')}`;
@@ -464,8 +464,9 @@ function onModel(g) {
     const m = o.material; if (m && m.color) { const hsl={}; m.color.getHSL(hsl); m.color.setHSL(hsl.h, hsl.s*0.85, Math.min(.9, hsl.l*1.02+.04)); m.roughness = .85; }
   }});
   for (const [name,[th,col]] of Object.entries(ZONES)) {
-    const obj = name === 'SmartFarm' ? null : root.getObjectByName(name === 'Field' ? 'Football' : name); if (!obj && name !== 'SmartFarm') continue;
-    const box = obj ? new THREE.Box3().setFromObject(obj) : new THREE.Box3(new THREE.Vector3(FARM.x0, 0, FARM.z0), new THREE.Vector3(FARM.x1, 1.2, FARM.z1)); const size = box.getSize(new THREE.Vector3()); const c = box.getCenter(new THREE.Vector3());
+    const VB = {SmartFarm: FARM, Restroom: WC}[name];
+    const obj = VB ? null : root.getObjectByName(name === 'Field' ? 'Football' : name); if (!obj && !VB) continue;
+    const box = obj ? new THREE.Box3().setFromObject(obj) : new THREE.Box3(new THREE.Vector3(VB.x0, 0, VB.z0), new THREE.Vector3(VB.x1, name === 'Restroom' ? 2.4 : 1.2, VB.z1)); const size = box.getSize(new THREE.Vector3()); const c = box.getCenter(new THREE.Vector3());
     if (name === 'Flagpole') { size.set(ASSEMBLY.x1 - ASSEMBLY.x0, 1.5, ASSEMBLY.z1 - ASSEMBLY.z0); c.set((ASSEMBLY.x0 + ASSEMBLY.x1)/2, 0, (ASSEMBLY.z0 + ASSEMBLY.z1)/2); box.min.y = 0; }
     if (name === 'Field') { size.set(22, 1, 26); box.min.y = 0; }
     size.x += 1.2; size.z += 1.2; size.y += 1;
@@ -484,7 +485,7 @@ function onModel(g) {
   if (dome) { dome.rotation.y = Math.PI/2; dome.position.x = PLAY_C[0]; dome.position.z = PLAY_C[1]; buildPlayset(); }
   const tent = root.getObjectByName('Museum_Walk'); if (tent) tent.removeFromParent();   // เอาเต็นท์หลังคาโค้งสีน้ำเงินออก (ตามที่ครูขอ)
   const sign = root.getObjectByName('School_Sign'); if (sign) GATE.copy(new THREE.Box3().setFromObject(sign).getCenter(new THREE.Vector3())).setY(0).add(new THREE.Vector3(-4,0,0));
-  buildFarm(); buildFloors(); initAgents(root); applyXrayAll();
+  buildFarm(); buildRestroom(root); buildFloors(); initAgents(root); applyXrayAll();
   $('info').onclick = () => document.body.classList.toggle('sheet');
   $('home').onclick = () => { view.touched = false; target.set(0,0,0); setZoom(1); };
   const fitBar = () => document.documentElement.style.setProperty('--barH', ($('bar').offsetHeight + 16) + 'px');
@@ -1118,6 +1119,38 @@ function buildFarm(){
   const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(SPRK.length * DROPS * 3), 3));
   spray = new THREE.Points(geo, new THREE.PointsMaterial({color:'#7dd3fc', size:4.2, sizeAttenuation:false, transparent:true, opacity:0, depthWrite:false}));
   spray.frustumCulled = false; spray.visible = false; g.add(spray);
+}
+// ห้องน้ำนักเรียน: 8 ห้อง แบ่งโซนชาย 4 / หญิง 4 ตรงกลางเป็นอ่างล้างมือ (แทนกล่องเทาเดิมของแบบจำลอง)
+const WC = {x0: 42, x1: 49, z0: -49, z1: -36.5}, WC_MID = (WC.z0 + WC.z1)/2;
+function buildRestroom(root){
+  for (const n of ['Toilet_P3_P6_a', 'Toilet_P3_P6_b']) { const o = root.getObjectByName(n); if (o) o.visible = false; }
+  const g = new THREE.Group(); scene.add(g);
+  const M = c => new THREE.MeshLambertMaterial({color: c});
+  const B = (w, h, d, mat, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; g.add(o); return o; };
+  const {x0, x1, z0, z1} = WC, W = x1 - x0, H = 2.4, cx = (x0 + x1)/2;
+  const wallM = M('#cbd5e1'), tileB = M('#bfdbfe'), tileG = M('#fbcfe8'), part = M('#94a3b8'), doorB = M('#2563eb'), doorG = M('#db2777'), white = M('#f8fafc');
+  B(W, .08, z1 - z0, M('#e5e7eb'), cx, .04, (z0 + z1)/2);                          // พื้น
+  B(W, H, .18, wallM, cx, H/2, z0); B(W, H, .18, wallM, cx, H/2, z1); B(.18, H, z1 - z0, wallM, x1, H/2, (z0 + z1)/2);
+  const L = (z1 - z0 - 3.2)/2; for (const zc of [z0 + L/2, z1 - L/2]) B(.18, H, L, wallM, x0, H/2, zc);   // ผนังฝั่งโรงอาหาร เว้นทางเข้ากลาง 3.2 ม.
+  const zone = (zs, ze, tile, door, label) => {                                      // ห้องส้วม 4 ห้องเรียงตามแนว x
+    const zc = (zs + ze)/2, dep = Math.abs(ze - zs), sw = W/4, front = ze;
+    B(W - .2, .03, dep, tile, cx, .09, zc);
+    for (let i = 0; i < 4; i++) {
+      const x = x0 + sw*(i + .5);
+      if (i) B(.08, 2, dep, part, x0 + sw*i, 1, zc);
+      B(sw*.7, 1.9, .06, door, x, 1, front); B(.55, .45, .7, white, x, .23, zs + Math.sign(ze - zs)*.55);   // ประตู + โถส้วม
+    }
+    const el = document.createElement('div'); el.className = 'rlab'; el.textContent = label; $('labels').appendChild(el);
+    roomLabs.push({el, R: {b: 'Restroom'}, p: new THREE.Vector3(cx, 2.8, zc)});
+  };
+  zone(z0 + .1, z0 + 2.6, tileB, doorB, '🚹 ห้องน้ำชาย 4 ห้อง');
+  zone(z1 - .1, z1 - 2.6, tileG, doorG, '🚺 ห้องน้ำหญิง 4 ห้อง');
+  for (const zz of [z0 + 4.2, z1 - 4.2]) B(W - 3.4, 1.5, .1, part, x1 - (W - 3.4)/2, .75, zz);   // ผนังกั้นโซนชาย/หญิง
+  B(W - 1.2, .85, .7, M('#e2e8f0'), cx, .43, WC_MID);                              // เคาน์เตอร์อ่างล้างมือกลางอาคาร
+  for (let i = 0; i < 6; i++) { const x = x0 + .9 + i*(W - 1.8)/5; if (Math.abs(x - cx) < .3) continue;
+    for (const dz of [-.22, .22]) B(.42, .06, .3, M('#7dd3fc'), x, .88, WC_MID + dz); }
+  const el = document.createElement('div'); el.className = 'rlab'; el.textContent = '🚰 อ่างล้างมือ'; $('labels').appendChild(el);
+  roomLabs.push({el, R: {b: 'Restroom'}, p: new THREE.Vector3(cx, 2.2, WC_MID)});
 }
 // พื้นชั้น 2 (โปร่งแสงให้เห็นชั้นล่าง) + บันได + ป้ายชื่อห้อง
 const roomLabs = [];
