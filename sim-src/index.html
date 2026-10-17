@@ -203,6 +203,26 @@ canvas{cursor:pointer}
 #nogl{position:fixed;inset:0;z-index:99;display:grid;place-items:center;background:#143C58;color:#fff;font:15px/1.6 system-ui,sans-serif;padding:16px;text-align:center}#nogl>div{max-width:420px}#nogl b{font-size:18px}#nogl button{margin-top:8px;padding:8px 18px;border:0;border-radius:8px;background:#fff;color:#143C58;font-weight:600;cursor:pointer}
 #dash .lgn{display:inline-block;margin-top:8px;padding:7px 14px;border-radius:8px;background:var(--navy);color:#fff;text-decoration:none;font-weight:600}#dash .who{font-size:13px;margin:4px 0}#dash .who a{margin-left:6px;color:var(--blue)}
 #dash .stu{display:flex;gap:6px;margin:4px 0}#dash .stu input{flex:1;min-width:0;padding:6px 8px;border:1px solid var(--line);border-radius:8px}#dash .stu button{padding:6px 12px;border:0;border-radius:8px;background:var(--navy);color:#fff}
+
+/* ---- ป้ายไม่ซ้อน + จอเล็ก/แท็บเล็ต ---- */
+#labels .clash{visibility:hidden}
+@media (max-width:1200px),(pointer:coarse) and (max-width:1400px){
+ .lab:not(.pick) i{display:none}.lab.off:not(.pick){display:none}
+ .lab{font-size:11.5px;padding:3px 8px}
+ #top button,#top select{height:40px;min-width:40px}
+}
+@media (min-width:761px) and (max-width:1200px),(min-width:761px) and (pointer:coarse) and (max-width:1400px){
+ .mob{display:inline-block!important}
+ #left,#right,#note,#hint{display:none}
+ body.sheet #left,body.sheet #right{display:block}
+ body.sheet #right{max-height:calc(100vh - var(--topbar) - var(--barH,112px) - 30px)}
+ #bar button{min-height:44px}
+}
+@media (max-width:520px){#top .brand>div{display:none}}
+@media (max-width:760px){
+ #now{display:none!important}
+ #left .grid div{min-height:34px}
+}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
 </head>
@@ -1984,6 +2004,33 @@ function frame(){
   placeGroupChips(); placeRoomLabels();
   renderer.render(scene,cam);
   for (const z of Object.values(zones)) { v.copy(z.p).project(cam); z.el.style.left = (v.x*.5+.5)*innerWidth+'px'; z.el.style.top = (-v.y*.5+.5)*innerHeight+'px'; }
+  declutter();   // ทุกเฟรม หลังวางตำแหน่งป้ายครบแล้ว (อ่านขนาดป้ายครั้งเดียวต่อเฟรม)
+}
+/* ป้ายบนแผนที่ไม่ให้ซ้อนกัน: วางตามลำดับความสำคัญ ป้ายที่ทับป้ายที่สำคัญกว่าจะซ่อนไว้ก่อน (ซูมเข้าแล้วจะกลับมา) */
+function declutter(){
+  const zoneEl = new Map(Object.entries(zones).map(([n, z]) => [z.el, z]));
+  const rank = el => {
+    const z = zoneEl.get(el);
+    if (z) return el.classList.contains('pick') ? 0 : z.st === 'class' || z.st === 'change' ? 1 : z.st === 'general' ? 3 : 6;
+    if (el.classList.contains('grp')) return 2;
+    if (el.classList.contains('lab')) return 4;   // ป้ายรถ/ประตู
+    return 5;                                      // ป้ายห้อง/จุดย่อย
+  };
+  const items = [];
+  for (const el of $('labels').children) {
+    el.classList.remove('clash');
+    if (el.style.display === 'none' || getComputedStyle(el).display === 'none') continue;
+    const r = el.getBoundingClientRect(); if (!r.width) continue;
+    items.push({el, r, k: rank(el), fading: el.style.opacity === '0'});   // ป้ายที่กำลังจางหายไม่จองที่ แต่ถ้าทับก็ซ่อนทันที
+  }
+  items.sort((a, b) => a.fading - b.fading || a.k - b.k || a.r.top - b.r.top);
+  const kept = [], pad = 3;
+  for (const it of items) {
+    const {r} = it;
+    if (r.right < 0 || r.left > innerWidth || r.bottom < 0 || r.top > innerHeight) continue;
+    if (kept.some(q => r.left < q.right + pad && q.left < r.right + pad && r.top < q.bottom + pad && q.top < r.bottom + pad)) { it.el.classList.add('clash'); continue; }
+    if (!it.fading) kept.push(r);
+  }
 }
 frame();
 </script>
