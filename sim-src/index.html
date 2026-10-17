@@ -149,7 +149,7 @@ canvas{cursor:pointer}
 @media (max-width:760px),(max-height:520px){
  :root{--topbar:46px}
  #top{gap:6px;padding:0 8px}#top .brand b{font-size:13px;letter-spacing:.03em}#top .brand img{width:28px;height:28px}
- #top .tclock b#tDay,#top .tctl{display:none}#top .badge{font-size:9.5px;padding:1px 6px}#top #tTime{font-size:16px}
+ #top .tclock b#tDay,#top #tPlay,#top #tSpeed{display:none}#top .badge{font-size:9.5px;padding:1px 6px}#top #tTime{font-size:16px}
  #top .mode{font-size:0;padding:4px}#top .mode i{margin:0}
  #top #tDash{padding:0 8px;font-size:12px}
  #left{top:calc(var(--topbar) + 6px)!important}
@@ -202,6 +202,7 @@ canvas{cursor:pointer}
 @media (max-height:520px) and (min-width:600px){#bar{flex-direction:row;align-items:center}#bar .r1{flex:0 0 42%}#bar .rr{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0}#left{padding:4px 10px}#left .clock{font-size:18px}}
 #nogl{position:fixed;inset:0;z-index:99;display:grid;place-items:center;background:#143C58;color:#fff;font:15px/1.6 system-ui,sans-serif;padding:16px;text-align:center}#nogl>div{max-width:420px}#nogl b{font-size:18px}#nogl button{margin-top:8px;padding:8px 18px;border:0;border-radius:8px;background:#fff;color:#143C58;font-weight:600;cursor:pointer}
 #dash .lgn{display:inline-block;margin-top:8px;padding:7px 14px;border-radius:8px;background:var(--navy);color:#fff;text-decoration:none;font-weight:600}#dash .who{font-size:13px;margin:4px 0}#dash .who a{margin-left:6px;color:var(--blue)}
+#dash .stu{display:flex;gap:6px;margin:4px 0}#dash .stu input{flex:1;min-width:0;padding:6px 8px;border:1px solid var(--line);border-radius:8px}#dash .stu button{padding:6px 12px;border:0;border-radius:8px;background:var(--navy);color:#fff}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
 </head>
@@ -270,7 +271,11 @@ import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 
 /* ---------- ข้อมูลตัวอย่าง (รูปแบบเดียวกับที่จะดึงจากระบบจริง) ---------- */
-const CLASSES = [['อ.2',14],['อ.3',15],['ป.1',24],['ป.2',23],['ป.3',27],['ป.4',26],['ป.5',28],['ป.6',27]];
+// จำนวนนักเรียนและจำนวนชาย ต่อห้อง จากทะเบียนรายชื่อของโรงเรียน ภาคเรียนที่ 1/2569 (184 คน) · เฉพาะตัวเลขรวม ไม่มีชื่อในหน้านี้
+const ROSTER_TERM = '1/2569';
+const CLASSES = [['อ.2',14,8],['อ.3',12,7],['ป.1',18,10],['ป.2',29,17],['ป.3',29,18],['ป.4',34,17],['ป.5',31,16],['ป.6',17,10]];
+const BOYS = Object.fromEntries(CLASSES.map(([c,, b]) => [c, b]));
+const isGirl = s => s.no > BOYS[s.cls];   // เลขที่จำลอง: ชายก่อน หญิงต่อท้าย ตามจำนวนจริงของแต่ละห้อง
 const HOMEROOM = {'อ.2':'Kindergarten','อ.3':'Kindergarten','ป.1':'P1P2_Classroom','ป.2':'P1P2_Classroom','ป.3':'Chalerm_Building','ป.4':'Chalerm_Building','ป.5':'Chalerm_Building','ป.6':'Chalerm_Building'};
 /* ---------- อาคาร 2 ชั้น: ห้องเรียนและห้องต่างๆ (ตามที่ครูบอก) ---------- */
 const F2 = 3.7;   // ความสูงพื้นชั้น 2
@@ -741,7 +746,7 @@ function uniformOf(a){
 }
 function uniformBase(a){
   if (a.kind === 't') return {shirt:'#cbd5e1', bottom:'#334155', scarf:null, hat:null, skirt:false};
-  const k = a.cls.startsWith('อ'), girl = a.ref.no % 2 === 0;
+  const k = a.cls.startsWith('อ'), girl = isGirl(a.ref);
   if (day === UNIFORM_DAY.scout) return k ? {shirt:UNI.white, bottom:UNI.navy, scarf:UNI.scoutYellow, hat:UNI.kCap, skirt:girl}
                                          : {shirt:UNI.white, bottom:UNI.navy, scarf:UNI.scoutPink, hat: girl ? null : UNI.scoutHat, skirt:girl};
   if (k && day === UNIFORM_DAY.kPE) return {shirt:UNI.peGreen, bottom:UNI.black, scarf:null, hat:null, skirt:false};
@@ -921,8 +926,8 @@ function lineUp(a, m, p){
   if (m < P || m >= P + 30) return null;
   const fk = fromRoom(a.cls, p), tk = keyAt(a.cls, p);
   if (fk === tk || !keyRect(fk) || !keyRect(tk)) return null;
-  const coh = a.cohort ??= STUDENTS.filter(s => s.cls === a.cls && s.scan != null), girl = a.ref.no % 2 === 0;
-  const boys = a.boys ??= coh.filter(s => s.no % 2 !== 0).length, row = coh.filter(s => (s.no % 2 === 0) === girl).indexOf(a.ref);
+  const coh = a.cohort ??= STUDENTS.filter(s => s.cls === a.cls && s.scan != null), girl = isGirl(a.ref);
+  const boys = a.boys ??= coh.filter(s => !isGirl(s)).length, row = coh.filter(s => isGirl(s) === girl).indexOf(a.ref);
   const same = CLASSES.filter(([c]) => !isKG(c) && fromRoom(c, p) === fk && keyAt(c, p) !== fk).map(([c]) => c), ci = same.indexOf(a.cls);
   const from = ROOMS[fk] ? ROOMS[fk].b : fk, to = ROOMS[tk] ? ROOMS[tk].b : tk;
   let pos, S;
@@ -1031,8 +1036,8 @@ function targetOf(a, m){
     if (H && z === 'Multipurpose_Hall' && asm.length) {   // แถวตอนลึก ชั้นละ 2 แถว (ชาย/หญิง) หันหน้าไปทางครูเวร (ด้าน z น้อย)
       const fz = H.c.z - H.sz/2 + .8;
       if (a.kind === 's' && asm.includes(a.cls)) {
-        const ci = asm.indexOf(a.cls), coh = a.cohort ??= STUDENTS.filter(s => s.cls === a.cls && s.scan != null), girl = a.ref.no % 2 === 0;
-        const row = coh.filter(s => (s.no % 2 === 0) === girl).indexOf(a.ref);
+        const ci = asm.indexOf(a.cls), coh = a.cohort ??= STUDENTS.filter(s => s.cls === a.cls && s.scan != null), girl = isGirl(a.ref);
+        const row = coh.filter(s => isGirl(s) === girl).indexOf(a.ref);
         return {p: new THREE.Vector3(H.c.x + (ci - (asm.length-1)/2)*2.3 + (girl ? .45 : -.45), 0, fz + 2.6 + row*.7), pose:'stand', yaw: Math.PI};
       }
       if (a.kind === 't') {
@@ -1342,6 +1347,7 @@ function select(name){
   selected = name === selected ? null : name;
   if (selected) setXray(selected, true);
   renderSel(); const tb = document.getElementById('tBld'); if (tb) tb.value = selected && zones[selected] ? selected : '';
+  if (typeof lastKey !== 'undefined') update(true);   // show the highlight at once, also while paused
 }
 /* ---------- ค้นหานักเรียน / ครู: อยู่ที่ไหน อาคารไหน เรียน/สอนอะไร ทำอะไรอยู่ ---------- */
 let follow = null, findMark = null;
@@ -1477,7 +1483,7 @@ $('tDash').onclick = () => openDash();
 // แผงสถานะกิจกรรม: ทำอะไร ที่ไหน ช่วงเวลาไหน วิชา ครูผู้รับผิดชอบ จำนวนนักเรียน และแหล่งข้อมูล
 function renderActivity(m){
   const [t0, phase, where] = phaseAt(m), i = ROUTINE.findIndex(r => r[0] === t0), t1 = ROUTINE[i + 1]?.[0] ?? 990, span = `${fmt(t0)}–${fmt(t1)}`;
-  const nStu = c => { const n = CLASSES.find(x => x[0] === c)[1]; return `${n} คน ${srcB(FEED ? 'ver' : 'sim')}`; };
+  const nStu = c => { const [, n, b] = CLASSES.find(x => x[0] === c); return `${n} คน (ชาย ${b} หญิง ${n - b}) ${srcB('ver')}`; };
   const tea = l => l.tea === 'ครูทุกคน' || l.tea === 'ครูอนุบาล' ? l.tea : fullName('ครู' + l.tea) + (l.co?.length ? ' + ' + l.co.map(t => fullName('ครู' + t)).join(', ') : '');
   let rows;
   if (typeof where === 'number') rows = CLASSES.map(([c]) => { const l = lesson(c, where), rm = l.room && ROOMS[l.room];
@@ -1858,7 +1864,7 @@ function renderDash(){
   $('dashBody').innerHTML = `
   <div class="kpi">
     <div>ห้องเรียน (ระดับชั้น)<b>${CLASSES.length}</b><small>อ.2–ป.6 ${srcB('sch')}</small></div>
-    <div>นักเรียน (จากแหล่งข้อมูลจริง)<b>${fed ?? '—'}</b><small>${fed != null ? `BANKHUM SIS ${FEED.date} ${srcB('ver')}` : `ยังไม่เชื่อม SIS ${srcB('unk')}`}</small></div>
+    <div>นักเรียนตามทะเบียน<b>${fed ?? CLASSES.reduce((a, x) => a + x[1], 0)}</b><small>${fed != null ? `BANKHUM SIS ${FEED.date}` : `ชาย ${CLASSES.reduce((a, x) => a + x[2], 0)} · หญิง ${CLASSES.reduce((a, x) => a + x[1] - x[2], 0)} · ภาค ${ROSTER_TERM}`} ${srcB('ver')}</small></div>
     <div>ครูในตารางสอนวันนี้<b>${roster.size}</b><small>นับจากตารางสอน ${srcB('sch')}</small></div>
     <div>อาคารที่มีกิจกรรมตามตาราง<b>${isP ? bNow.length : '—'}</b><small>${isP ? when : 'ช่วงนี้ไม่ใช่คาบเรียน'} ${srcB('sch')}</small></div>
     <div>สถานะข้อมูลล่าสุด<b style="font-size:15px">${FEED ? 'SIS + ตาราง' : 'ตาราง + จำลอง'}</b><small>${FEED ? 'Last updated ' + FEED.fetched : DataAdapter.message || 'ไม่ได้รับข้อมูลจาก SIS'}</small></div>
@@ -1908,8 +1914,17 @@ async function renderStaff(refresh){
     h += `<div class="scroll"><table><tr><th>ห้อง</th><th>ทั้งหมด</th><th>มา</th><th>สาย</th><th>ลา/ป่วย</th><th>ขาด</th><th>ยังไม่มีบันทึก</th></tr>${a.classes.map(c => row(esc(c.cls) + (c.room ? '/' + esc(c.room) : ''), c)).join('')}${row('รวม', T)}</table></div>
       <small style="color:var(--mute)">SIS วันที่ ${esc(a.date)} · Last updated ${new Date(a.fetched_at).toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit', timeZone:'Asia/Bangkok'})} · ข้อมูลเช็กชื่อไม่ใช่หลักฐานว่าบุคคลอยู่ ณ ห้องใดในเวลาปัจจุบัน</small>`;
   }
+  h += `<h4>ค้นหานักเรียนจากทะเบียน ${srcB('ver')}</h4><form id="stuF" class="stu"><input id="stuQ" placeholder="ชื่อ รหัสนักเรียน หรือชั้น เช่น ป.4" aria-label="ค้นหานักเรียน"><button>ค้นหา</button></form><div id="stuR"></div>`;
   if (AUTH.role === 'ADMIN' && auditData) h += `<h4>บันทึกการเข้าใช้ (audit log)</h4>${auditData.stored ? `<div class="scroll"><table><tr><th>เวลา</th><th>ผู้ใช้</th><th>บทบาท</th><th>การกระทำ</th></tr>${auditData.rows.map(r => `<tr><td>${new Date(r.ts).toLocaleString('th-TH', {timeZone:'Asia/Bangkok'})}</td><td>${esc(r.email || '—')}</td><td>${esc(r.role)}</td><td>${esc(r.action)} ${esc(r.detail)}</td></tr>`).join('')}</table></div>` : '<div class="lock">ยังไม่ได้ผูกฐานข้อมูล SIM_AUDIT บันทึกอยู่ใน log ของ Cloudflare Functions</div>'}`;
   el.innerHTML = h;
+  $('stuF').onsubmit = async e => {
+    e.preventDefault(); const q = $('stuQ').value.trim(), out = $('stuR'); if (q.length < 2) { out.innerHTML = '<div class="lock">พิมพ์อย่างน้อย 2 ตัวอักษร</div>'; return; }
+    out.innerHTML = '<div class="lock">กำลังค้นหา…</div>'; const r = await getJ('/sim-api/students?q=' + encodeURIComponent(q));
+    if (r.code === 401) { AUTH = {role:'PUBLIC', login_available:true}; return renderStaff(); }
+    out.innerHTML = !r.ok ? `<div class="lock">${r.status === 'unconfigured' ? 'ยังไม่ได้นำเข้าทะเบียนรายชื่อบนเซิร์ฟเวอร์' : esc(r.error || 'ค้นหาไม่สำเร็จ')}</div>`
+      : !r.rows.length ? '<div class="lock">ไม่พบรายชื่อ</div>'
+      : `<div class="scroll"><table><tr><th>ชั้น</th><th>เลขที่</th><th>รหัส</th><th>ชื่อ</th></tr>${r.rows.map(x => `<tr><td>${esc(x.cls)}</td><td>${esc(x.no)}</td><td>${esc(x.student_id)}</td><td>${esc(x.name)}</td></tr>`).join('')}</table></div><small style="color:var(--mute)">ทะเบียนบอกว่านักเรียนอยู่ชั้นใด ไม่ได้บอกว่าตอนนี้อยู่ที่ไหน</small>`;
+  };
 }
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sim-sw.js').catch(() => {});
 document.addEventListener('visibilitychange', () => { if (!document.hidden) clock.getDelta(); });

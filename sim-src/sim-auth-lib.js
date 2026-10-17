@@ -7,7 +7,7 @@
  *   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET  OAuth client (Web application) from Google Cloud Console
  *   SIM_SESSION_SECRET                      any long random string
  *   SIM_EXECUTIVES, SIM_ADMINS              comma-separated school emails; everyone else @bankhum.ac.th is TEACHER
- *   SIM_AUDIT (optional D1 binding)         audit log table; without it the log goes to the Functions log
+ *   SIM_DB (D1 binding, database "bankhum-campus-sim")  audit log + student roster; without it the log goes to the Functions log
  */
 export const DOMAIN = 'bankhum.ac.th';
 export const ROLES = ['PUBLIC', 'TEACHER', 'EXECUTIVE', 'ADMIN'];
@@ -57,9 +57,9 @@ export async function audit(env, req, user, action, detail = '') {
   const row = { ts: new Date().toISOString(), email: user.email || null, role: user.role, action, detail: String(detail).slice(0, 200),
     ip: req.headers.get('CF-Connecting-IP') || null };
   try {
-    if (env.SIM_AUDIT) {
-      await env.SIM_AUDIT.prepare('CREATE TABLE IF NOT EXISTS sim_audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT, email TEXT, role TEXT, action TEXT, detail TEXT, ip TEXT)').run();
-      await env.SIM_AUDIT.prepare('INSERT INTO sim_audit_log (ts, email, role, action, detail, ip) VALUES (?, ?, ?, ?, ?, ?)')
+    if (env.SIM_DB) {
+      await env.SIM_DB.prepare('CREATE TABLE IF NOT EXISTS sim_audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT, email TEXT, role TEXT, action TEXT, detail TEXT, ip TEXT)').run();
+      await env.SIM_DB.prepare('INSERT INTO sim_audit_log (ts, email, role, action, detail, ip) VALUES (?, ?, ?, ?, ?, ?)')
         .bind(row.ts, row.email, row.role, row.action, row.detail, row.ip).run();
     } else console.log('SIM_AUDIT', JSON.stringify(row));
   } catch (e) { console.log('SIM_AUDIT_FAIL', JSON.stringify(row), String(e)); }
