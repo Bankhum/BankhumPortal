@@ -1,6 +1,6 @@
 /**
  * GET /sim-feed — ผลสแกนหน้าวันนี้แบบไม่ระบุตัวตน (ชั้น · เลขที่ · เพศ · สถานะ · เวลา) จาก BANKHUM SIS
- * ให้ BANKHUM LIVE SIM ใช้แทนข้อมูลจำลอง รหัส SIM_FEED_TOKEN เก็บไว้ฝั่งเซิร์ฟเวอร์ (Pages → Settings → Variables and Secrets)
+ * ให้ BANKHUM CAMPUS SIM ใช้แทนข้อมูลจำลอง รหัส SIM_FEED_TOKEN เก็บไว้ฝั่งเซิร์ฟเวอร์ (Pages → Settings → Variables and Secrets)
  * ไม่มีชื่อนักเรียนในข้อมูลนี้ จึงเปิดให้หน้าเว็บสาธารณะเรียกได้ · แคช 30 วินาที
  */
 const SIS = 'https://sis.bankhum.ac.th/api/sim/today';

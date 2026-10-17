@@ -1,13 +1,13 @@
 {
- "name": "BANKHUM LIVE SIM",
- "short_name": "LIVE SIM",
- "description": "ระบบจำลองและติดตามกิจกรรมภายในโรงเรียน · โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)",
+ "name": "BANKHUM CAMPUS SIM",
+ "short_name": "CAMPUS SIM",
+ "description": "ระบบจำลองและแสดงสถานะกิจกรรมภายในโรงเรียน · โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)",
  "start_url": "./",
  "scope": "./",
  "display": "standalone",
  "orientation": "any",
  "background_color": "#e8f6ff",
- "theme_color": "#1d6fd6",
+ "theme_color": "#143C58",
  "lang": "th",
  "icons": [
   {
