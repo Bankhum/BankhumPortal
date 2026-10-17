@@ -353,7 +353,7 @@ for (const s of STUDENTS) {
     s.veh = addVeh('bike', '#0f766e', []);
     s.bin = addRun(s.veh, 'park', arr - lead, {sB: sOf(11), spot: rack, spur: [[DROP_X-2.5, 15], [DROP_X-2.5, -9], [rack[0], -9], rack]});
     s.bout = addRun(s.veh, 'leave', dep, {sB: S_LANE0 + Math.max(0, 4.5 - rack[0]), spot: rack, spur: [[Math.min(rack[0], 4.5), LANE], [rack[0], -16], rack]});
-    s.veh.rider = CLS_COL_EARLY[s.cls]; s.rack = rack; s.arr = arr; s.leave = dep; s.drop = [rack[0], rack[1] + .8];
+    s.veh.rider = CLS_COL_EARLY[s.cls]; s.veh.park = rack; s.rack = rack; s.arr = arr; s.leave = dep; s.drop = [rack[0], rack[1] + .8];
   } else {
     // ผู้ปกครองมาส่ง 06:00–08:00 (ส่วนใหญ่ 07:00–07:50) และมารับหลัง 15:30
     const arr = 358 + Math.pow(rnd(), .55)*118, pm = 929 + Math.pow(rnd(), 1.3)*28, dwell = s.mode === 'car' ? .9 : .6;
@@ -380,7 +380,7 @@ for (const mode of ['car', 'moto']) {
 TEACHERS.forEach((t, i) => {
   const arr = t.arr0, dep = t.dep1, nCar = t.rank;
   t.spot = t.mode === 'car' ? [-46 + nCar*2.8, -39.5] : [7.4, -31.4 + nCar*1.6];   // ลานจอดรถครูหลังอาคาร ป.1 ป.2
-  t.veh = addVeh(t.mode, t.model === 'atto3' ? '#f1f5f9' : t.mode === 'car' ? pick(CAR_COLS) : '#111827', [], t.model ? fullName(t.name) : undefined); t.veh.model = t.model;
+  t.veh = addVeh(t.mode, t.model === 'atto3' ? '#f1f5f9' : t.mode === 'car' ? pick(CAR_COLS) : '#111827', [], t.model ? fullName(t.name) : undefined); t.veh.model = t.model; t.veh.park = t.spot;
   const moto = t.mode === 'moto', sB = moto ? sOf(15) + (t.spot[1] + 34.5) : sOf(18);
   const spur = moto ? [t.spot] : [[-53, -28], [-50, -36], [t.spot[0], -36], t.spot];
   t.runIn = addRun(t.veh, 'park', arr, {sB, spot: t.spot, spur}); t.runOut = addRun(t.veh, 'leave', dep, {sB, spot: t.spot, spur});
@@ -864,7 +864,7 @@ function buildVeh(v){
   }
   else if (v.type === 'garage') { }   // ใช้หลังคาโรงจอดรถของแบบจำลอง
   else if (v.type === 'kiosk') { g.add(box(.5, 1.5, .5, '#334155', .75)); g.add(box(.08, .5, .6, v.color, 1.45, 0, .27)); }
-  else { g.add(box(.35, .55, 1.7, v.color, .6)); const c = new THREE.Mesh(new THREE.CapsuleGeometry(.3,.6,3,8), new THREE.MeshLambertMaterial({color: v.rider || (v.type === 'moto' ? '#475569' : '#0f766e')})); c.position.y = 1.35; g.add(c); }
+  else { g.add(box(.35, .55, 1.7, v.color, .6)); const c = new THREE.Mesh(new THREE.CapsuleGeometry(.3,.6,3,8), new THREE.MeshLambertMaterial({color: v.rider || (v.type === 'moto' ? '#475569' : '#0f766e')})); c.position.y = 1.35; g.add(c); v.riderMesh = c; }
   g.scale.setScalar(K); g.visible = false; scene.add(g); v.g = g;
   if (v.label) { v.el = document.createElement('div'); v.el.className = 'lab'; v.el.style.setProperty('--c', v.type === 'truck' ? '#2563eb' : v.type === 'kiosk' || v.type === 'gate' ? v.color : v.type === 'garage' ? '#475569' : '#64748b'); v.el.innerHTML = `<b>${({car:'⚡', truck:'🚚', van:'🚐', kiosk:'📷', garage:'🅿', gate: v.color === '#16a34a' ? '⬇' : '⬆'})[v.type]} ${v.label}</b>`; $('labels').appendChild(v.el); }
 }
@@ -946,6 +946,9 @@ function moveVehicles(dt){
       if (v.el && v.lastWant !== want) { v.lastWant = want; v.el.innerHTML = `<b>${v.color === '#16a34a' ? '⬇' : '⬆'} ${v.label}${want ? ' · ปิดอยู่' : ''}</b>`; } }
     if (!['kiosk','gate','garage'].includes(v.type) && Math.hypot(s.dx, s.dz) > .01) { const yaw = Math.atan2(s.dx, s.dz); let d = yaw - g.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); g.rotation.y += d * Math.min(1, dt*8); }
     v.mv = g.visible ? g.position.clone().sub(gp) : null; g.visible = true;
+    if (v.riderMesh && v.park) { const parked = Math.hypot(g.position.x - v.park[0], g.position.z - v.park[1]) <= .6;
+      v.riderMesh.visible = !parked;                                  // จอดแล้วคนลงจากรถ ไม่ต้องมีคนขี่ค้างไว้
+      if (parked && v.type === 'bike') { g.visible = false; if (v.el) v.el.style.display = 'none'; continue; } }   // ไม่แสดงแถวจักรยานที่จอดหน้าเสาธง (ครูให้เอาออก)
     if (v.el) { v.el.style.display = ''; const p = g.position.clone().setY(['kiosk','gate','garage'].includes(v.type) ? 7 : 4.5).project(cam); v.el.style.left = (p.x*.5+.5)*innerWidth+'px'; v.el.style.top = (-p.y*.5+.5)*innerHeight+'px'; }
   }
 }
