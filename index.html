@@ -849,8 +849,19 @@ function buildVeh(v){
     g.add(box(1.85,.78,4.3,v.color,.78)); g.add(box(1.9,.22,4.35,'#1f2937',.42)); g.add(box(1.68,.62,2.5,'#1e293b',1.45,-.3)); g.add(box(1.72,.08,2.5,v.color,1.8,-.3));
     for (const sx of [-.7,.7]) g.add(box(.06,.06,2.2,'#94a3b8',1.88,-.3,sx)); g.add(box(1.5,.07,.05,'#bae6fd',1.05,2.16)); wheels(2, 1.85, 2.7, .4); }
   else if (v.type === 'car') { g.add(box(1.8,.7,4.2,v.color,.65)); g.add(box(1.6,.6,2.2,'#334155',1.3,-.2)); wheels(2, 1.8, 2.8, .35); }
-  else if (v.type === 'gate') { v.leaves = []; for (const s of [-1, 1]) { g.add(box(.5, 2.2, .5, '#475569', 1.1, s*4.2)); g.add(box(.6, .25, .6, v.color, 2.3, s*4.2));
-      const pv = new THREE.Group(); pv.position.set(0, 0, s*4); pv.add(box(3.9, 1.3, .08, '#334155', .85, 0, 1.95)); pv.userData.s = s; g.add(pv); v.leaves.push(pv); } }
+  else if (v.type === 'gate') {   // ประตูรั้วเลื่อนไฟฟ้า: บานเดียววิ่งบนราง เปิดเลื่อนไปซ้อนข้างรั้ว มีมอเตอร์และไฟเตือนกะพริบตอนเลื่อน
+    const dir = v.color === '#16a34a' ? 1 : -1; v.slideDir = dir;
+    for (const z of [-4.2, 4.2, dir*13]) { g.add(box(.45, 2.1, .45, '#475569', 1.05, z)); }
+    g.add(box(.6, .25, .6, v.color, 2.25, -4.2)); g.add(box(.6, .25, .6, v.color, 2.25, 4.2));
+    g.add(box(.12, .05, 17.4, '#9ca3af', .03, dir*4.4));                                        // รางเลื่อน
+    const motor = box(.55, .7, .7, '#e5e7eb', .35, -dir*4.9, .45); g.add(motor);
+    v.lamp = box(.18, .18, .18, '#f59e0b', 2.55, -dir*4.2); v.lamp.material = new THREE.MeshBasicMaterial({color:'#78350f'}); g.add(v.lamp);
+    const pv = new THREE.Group(), F = '#1f2937';
+    pv.add(box(.1, .1, 8.5, F, 1.75)); pv.add(box(.1, .1, 8.5, F, .25)); pv.add(box(.1, .06, 8.5, F, 1.0));
+    for (let i = 0; i <= 17; i++) pv.add(box(.05, 1.5, .05, F, 1.0, -4.25 + i*.5));
+    for (const z of [-3.2, 3.2]) pv.add(box(.2, .18, .3, '#111827', .09, z));                   // ล้อ
+    g.add(pv); v.slide = pv; v.slideX = 0;
+  }
   else if (v.type === 'garage') { }   // ใช้หลังคาโรงจอดรถของแบบจำลอง
   else if (v.type === 'kiosk') { g.add(box(.5, 1.5, .5, '#334155', .75)); g.add(box(.08, .5, .6, v.color, 1.45, 0, .27)); }
   else { g.add(box(.35, .55, 1.7, v.color, .6)); const c = new THREE.Mesh(new THREE.CapsuleGeometry(.3,.6,3,8), new THREE.MeshLambertMaterial({color: v.rider || (v.type === 'moto' ? '#475569' : '#0f766e')})); c.position.y = 1.35; g.add(c); }
@@ -930,7 +941,9 @@ function moveVehicles(dt){
     if (!s) { g.visible = false; if (v.el) v.el.style.display = 'none'; continue; }
     const tgt = new THREE.Vector3(s.x, 0, s.z);
     g.position.copy(tgt);   // วางรถบนเส้นทางจริงทุกเฟรม (ไม่ตัดมุมข้ามคน)
-    if (v.leaves) { const want = gateClosed(simMin) ? 1 : 0; for (const pv of v.leaves) { const a = pv.userData.s * want * Math.PI/2; pv.rotation.y += (a - pv.rotation.y) * Math.min(1, dt*3); } if (v.el && v.lastWant !== want) { v.lastWant = want; v.el.innerHTML = `<b>${v.color === '#16a34a' ? '⬇' : '⬆'} ${v.label}${want ? ' · ปิดอยู่' : ''}</b>`; } }
+    if (v.slide) { const want = gateClosed(simMin) ? 1 : 0, open = (1 - want)*8.6*v.slideDir, d = open - v.slideX, st = Math.min(Math.abs(d), dt*3.5);   // เลื่อนช้า ๆ แบบมอเตอร์จริง
+      v.slideX += Math.sign(d)*st; v.slide.position.z = v.slideX; v.lamp.material.color.set(Math.abs(d) > .01 && Math.sin(performance.now()/150) > 0 ? '#f59e0b' : '#78350f');
+      if (v.el && v.lastWant !== want) { v.lastWant = want; v.el.innerHTML = `<b>${v.color === '#16a34a' ? '⬇' : '⬆'} ${v.label}${want ? ' · ปิดอยู่' : ''}</b>`; } }
     if (!['kiosk','gate','garage'].includes(v.type) && Math.hypot(s.dx, s.dz) > .01) { const yaw = Math.atan2(s.dx, s.dz); let d = yaw - g.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); g.rotation.y += d * Math.min(1, dt*8); }
     v.mv = g.visible ? g.position.clone().sub(gp) : null; g.visible = true;
     if (v.el) { v.el.style.display = ''; const p = g.position.clone().setY(['kiosk','gate','garage'].includes(v.type) ? 7 : 4.5).project(cam); v.el.style.left = (p.x*.5+.5)*innerWidth+'px'; v.el.style.top = (-p.y*.5+.5)*innerHeight+'px'; }
