@@ -200,6 +200,7 @@ canvas{cursor:pointer}
 }
 @media (max-height:520px){#right{max-height:calc(100vh - var(--barH,112px) - 70px)}}
 @media (max-height:520px) and (min-width:600px){#bar{flex-direction:row;align-items:center}#bar .r1{flex:0 0 42%}#bar .rr{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0}#left{padding:4px 10px}#left .clock{font-size:18px}}
+#nogl{position:fixed;inset:0;z-index:99;display:grid;place-items:center;background:#143C58;color:#fff;font:15px/1.6 system-ui,sans-serif;padding:16px;text-align:center}#nogl>div{max-width:420px}#nogl b{font-size:18px}#nogl button{margin-top:8px;padding:8px 18px;border:0;border-radius:8px;background:#fff;color:#143C58;font-weight:600;cursor:pointer}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
 </head>
@@ -637,8 +638,22 @@ function occupancy(m){
 }
 
 /* ---------- 3D ---------- */
-const renderer = new THREE.WebGLRenderer({canvas:document.getElementById('c'),antialias:true,alpha:true,preserveDrawingBuffer:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+function glNotice(msg){
+  const d = document.createElement('div'); d.id = 'nogl'; d.setAttribute('role', 'alert');
+  d.innerHTML = `<div><b>แสดงภาพ 3 มิติไม่ได้</b><p>${msg}</p><p>ลองเปิดด้วย Chrome, Edge หรือ Safari รุ่นใหม่ และเปิด "ใช้การเร่งฮาร์ดแวร์" ในเบราว์เซอร์</p><button onclick="location.reload()">ลองอีกครั้ง</button></div>`;
+  document.body.appendChild(d);
+}
+const LOWEND = matchMedia('(max-width: 700px)').matches || (navigator.hardwareConcurrency || 8) <= 4;
+let renderer;
+try {
+  const t = document.createElement('canvas');
+  if (!(t.getContext('webgl2') || t.getContext('webgl'))) throw new Error('no webgl');
+  renderer = new THREE.WebGLRenderer({canvas:document.getElementById('c'),antialias:!LOWEND,alpha:true,preserveDrawingBuffer:true});
+} catch (e) { glNotice('อุปกรณ์หรือเบราว์เซอร์นี้ไม่รองรับ WebGL'); throw e; }
+renderer.setPixelRatio(Math.min(devicePixelRatio, LOWEND ? 1.5 : 2));
+let glLost = false;
+renderer.domElement.addEventListener('webglcontextlost', e => { e.preventDefault(); glLost = true; glNotice('การแสดงผลกราฟิกหยุดชั่วคราว (หน่วยความจำกราฟิกไม่พอ)'); });
+renderer.domElement.addEventListener('webglcontextrestored', () => location.reload());
 renderer.shadowMap.enabled = true;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 const scene = new THREE.Scene();
@@ -647,7 +662,7 @@ scene.add(new THREE.HemisphereLight(0xffffff,0xc8d0dc,1.6));
 const sun = new THREE.DirectionalLight(0xffffff,2.2);
 sun.position.set(-60,120,80); sun.castShadow = true;
 Object.assign(sun.shadow.camera,{left:-90,right:90,top:90,bottom:-90,far:400});
-sun.shadow.mapSize.set(2048,2048); sun.shadow.bias=-0.0008; sun.shadow.normalBias=0.4; scene.add(sun);
+sun.shadow.mapSize.set(LOWEND ? 1024 : 2048, LOWEND ? 1024 : 2048); sun.shadow.bias=-0.0008; sun.shadow.normalBias=0.4; scene.add(sun);
 
 let zoom = 58, t0 = performance.now();
 const target = new THREE.Vector3(0,0,0);
@@ -1855,8 +1870,11 @@ function renderDash(){
   <div class="lock">🔒 ข้อมูลละเอียด (สถิติการมาเรียนรายห้อง รายงานสำหรับผู้บริหาร) จะแสดงเฉพาะผู้ที่เข้าสู่ระบบด้วยอีเมลโรงเรียนตามสิทธิ์ ระบบสิทธิ์อยู่ระหว่างออกแบบ</div>`;
 }
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sim-sw.js').catch(() => {});
+document.addEventListener('visibilitychange', () => { if (!document.hidden) clock.getDelta(); });
 function frame(){
-  const dt = clock.getDelta(), t = (performance.now()-t0)/1000;
+  requestAnimationFrame(frame);
+  if (glLost || document.hidden) return;
+  const dt = Math.min(clock.getDelta(), .5), t = (performance.now()-t0)/1000;
   if (playing) { simMin += dt * speed; if (simMin > 990) simMin = 355; slider.value = simMin; update(); }
   const ang = view.touched ? view.yaw : (view.yaw = Math.PI/4 + Math.sin(t*0.08)*0.25);
   cam.position.set(target.x+Math.sin(ang)*150, 120, target.z+Math.cos(ang)*150); cam.lookAt(target);
@@ -1864,7 +1882,6 @@ function frame(){
   placeGroupChips(); placeRoomLabels();
   renderer.render(scene,cam);
   for (const z of Object.values(zones)) { v.copy(z.p).project(cam); z.el.style.left = (v.x*.5+.5)*innerWidth+'px'; z.el.style.top = (-v.y*.5+.5)*innerHeight+'px'; }
-  requestAnimationFrame(frame);
 }
 frame();
 </script>
