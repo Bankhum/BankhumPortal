@@ -291,7 +291,8 @@ const ROAD_IN = -72, ROAD_OUT = -68, NORTH_Z = 56;
 // → จุดรับส่งหน้าอาคารเฉลิมพระเกียรติ → วนอ้อมหลังลานเสาธง/สนามฟุตบอล → ออกประตูหน้า (ป้ายโรงเรียน)
 // รถทุกคันวิ่งเรียงแถวทีละคันบนเส้นเดียวกัน ไม่แซง เว้นระยะ และขับช้าในเขตโรงเรียน
 const LANE = -21.5, DROP_X = 19.5;
-const SCAN_PT = [21.6, -11];   // จุดสแกนหน้า หน้าอาคารเฉลิมพระเกียรติ
+const SCAN_PT = [21.6, -11];   // จุดสแกนหน้า หน้าอาคารเฉลิมพระเกียรติ (นักเรียน)
+const TSCAN_PT = [26.7, 14];   // จุดสแกนหน้าครู อยู่ในห้องธุรการ ชั้น 1 อาคารเฉลิมพระเกียรติ (ครูแจ้ง)
 const V_SCHOOL = 130, V_ROAD = 450, V_BIKE = 180, GAP = 1.8;   // ม./นาที (≈ 8 กม./ชม. ในโรงเรียน)
 const VEH = [];
 const GATE_IN_Z = 24, GATE_OUT_Z = -26.8, FENCE = {x0: -64, x1: 63, z0: -49.5, z1: 48.5};
@@ -333,6 +334,7 @@ const vanAM = vans.map((v, i) => addRun(v, 'drop', 382 + i*24, {dwell: 1.2, zone
 const vanPM = vans.map((v, i) => addRun(v, 'leave', 937 + i*3, busPark(BUS_X.van[i])));
 addVeh('garage', '#94a3b8', [[[0, -4, CANOPY_Z], [2000, -4, CANOPY_Z]]], 'ที่จอดรถโรงเรียน');
 addVeh('kiosk', '#14b8a6', [[[0, ...SCAN_PT], [2000, ...SCAN_PT]]], 'จุดสแกนหน้า');
+addVeh('kiosk', '#7c3aed', [[[0, ...TSCAN_PT], [2000, ...TSCAN_PT]]], 'สแกนหน้าครู (ห้องธุรการ)');
 addVeh('gate', '#16a34a', [[[0, FENCE.x0, GATE_IN_Z], [2000, FENCE.x0, GATE_IN_Z]]], 'ประตูรถเข้า');
 addVeh('gate', '#dc2626', [[[0, FENCE.x0, GATE_OUT_Z], [2000, FENCE.x0, GATE_OUT_Z]]], 'ประตูรถออก');
 const CAR_COLS = ['#dc2626','#f8fafc','#9ca3af','#1f2937','#0ea5e9','#a16207','#16a34a','#e5e7eb'];
@@ -438,9 +440,59 @@ for (const s of STUDENTS) {
   if (s.bin) { s.arr = s.bin.arrive; s.leave = s.bout.depart - .3; }
   s.scan = Math.round(s.arr + walk(s.drop));
 }
-TEACHERS.forEach(t => { t.arr = t.runIn.arrive; t.scan = Math.round(t.arr + walk(t.drop)); t.leave = t.runOut.depart - .3; });
+TEACHERS.forEach(t => { t.arr = t.runIn.arrive; t.scan = Math.round(t.arr + walk(t.drop, TSCAN_PT)); t.leave = t.runOut.depart - .3; });
 const SCANS = [...STUDENTS.filter(s=>s.scan!=null).map(s=>({t:s.scan, who:`${s.cls} เลขที่ ${s.no}`, cls:s.cls})),
                ...TEACHERS.map(s=>({t:s.scan, who:fullName(s.name), cls:'ครู'}))].sort((a,b)=>a.t-b.t);
+
+/* ---------- รอบนอกโรงเรียน: ถนนหน้าโรงเรียน + ซอยข้าง มีรถชาวบ้านผ่านบางเบา (ไม่หนาแน่น) ---------- */
+const FAR = 150, SOI_E = 57.4, SOI_W = 54;   // ซอยข้างโรงเรียน: เลนขาออก (ไปทางตะวันออก) / เลนขาเข้า
+// รถผู้ปกครองวิ่งมาจากปลายถนนจริง ไม่โผล่กลางถนนหน้าโรงเรียน
+for (const v of VEH) for (const tr of v.trips) {
+  const a = tr[0], b = tr[tr.length-1];
+  if (Math.abs(a[1] - ROAD_IN) < .5 && Math.abs(a[2] + 64) < 1) tr.unshift([a[0] - (a[2] + FAR)/V_ROAD, ROAD_IN, -FAR]);
+  if (Math.abs(b[1] - ROAD_OUT) < .5 && Math.abs(b[2] + 66) < 1) tr.push([b[0] + (b[2] + FAR)/V_ROAD, ROAD_OUT, -FAR]);
+}
+const PASS_ROUTES = [
+  [8, [[ROAD_IN, -FAR], [ROAD_IN, FAR]]],                         // ตรงผ่านหน้าโรงเรียน ขึ้นเหนือ
+  [8, [[ROAD_OUT, FAR], [ROAD_OUT, -FAR]]],                       // ตรงผ่านหน้าโรงเรียน ลงใต้
+  [3, [[ROAD_IN, -FAR], [ROAD_IN, SOI_E], [FAR, SOI_E]]],          // เลี้ยวเข้าซอยข้าง
+  [3, [[FAR, SOI_W], [ROAD_OUT, SOI_W], [ROAD_OUT, -FAR]]],        // ออกจากซอยผ่านหน้าโรงเรียน
+  [2, [[FAR, SOI_W], [ROAD_IN, SOI_W], [ROAD_IN, FAR]]],
+  [2, [[ROAD_OUT, FAR], [ROAD_OUT, SOI_E], [FAR, SOI_E]]],
+];
+(function passingTraffic(){
+  let sd = 2024; const r = () => (sd = (sd*16807) % 2147483647) / 2147483647;   // สุ่มแยก ไม่กระทบค่าสุ่มของนักเรียน
+  const HZ = 120, onRoad = (x, z) => x < -58 || z > 46 || x > 70 || z < -60, slots = new Map();
+  const put = (k, e) => { let s = slots.get(k); if (!s) slots.set(k, s = []); s.push(e); };
+  for (const v of VEH) if (LEN[v.type]) for (const tr of v.trips) {   // จองตำแหน่งรถโรงเรียนบนถนนสาธารณะ ทุก 1/120 นาที
+    let i = 1;
+    for (let k = Math.ceil(tr[0][0]*HZ); k <= tr[tr.length-1][0]*HZ; k++) {
+      const t = k/HZ; while (i < tr.length - 1 && tr[i][0] < t) i++;
+      const [t0, x0, z0] = tr[i-1], [t1, x1, z1] = tr[i], f = t1 > t0 ? (t - t0)/(t1 - t0) : 1, x = x0 + (x1-x0)*f, z = z0 + (z1-z0)*f;
+      if (onRoad(x, z)) put(k, {x, z, L: LEN[v.type]});
+    }
+  }
+  const plan = (pts, t0, V) => { const tr = [[t0, ...pts[0]]]; for (let j = 1; j < pts.length; j++) tr.push([tr[j-1][0] + Math.hypot(pts[j][0]-pts[j-1][0], pts[j][1]-pts[j-1][1])/V, ...pts[j]]); return tr; };
+  const samples = tr => { const out = []; let i = 1;
+    for (let k = Math.ceil(tr[0][0]*HZ); k <= tr[tr.length-1][0]*HZ; k++) { const t = k/HZ; while (i < tr.length - 1 && tr[i][0] < t) i++;
+      const [t0, x0, z0] = tr[i-1], [t1, x1, z1] = tr[i], f = (t - t0)/(t1 - t0), h = Math.hypot(x1-x0, z1-z0);
+      out.push({k, x: x0 + (x1-x0)*f, z: z0 + (z1-z0)*f, fx: (x1-x0)/h, fz: (z1-z0)/h}); }
+    return out; };
+  const free = (S, L) => S.every(s => (slots.get(s.k) || []).every(o => { const dx = o.x - s.x, dz = o.z - s.z, al = Math.abs(dx*s.fx + dz*s.fz), sd = Math.abs(dx*s.fz - dz*s.fx);
+    return sd > 2.9 || al > (L + o.L)/2 + 2; }));
+  const tot = PASS_ROUTES.reduce((a, [w]) => a + w, 0);
+  for (let t = 340; t < 1000; t += .6 + r()*2.4) {   // ราว 1 คันทุก 1–3 นาที (เวลาจำลอง)
+    let q = r()*tot, route = PASS_ROUTES[0][1]; for (const [w, p] of PASS_ROUTES) if ((q -= w) < 0) { route = p; break; }
+    const u = r(), type = u < .55 ? 'car' : u < .9 ? 'moto' : 'van', V = type === 'moto' ? 430 : 470, L = LEN[type];
+    for (let tryN = 0; tryN < 6; tryN++) {
+      const tr = plan(route, t + tryN*.2, V), S = samples(tr);
+      if (!free(S, L)) continue;
+      S.forEach(s => put(s.k, {x: s.x, z: s.z, L}));
+      const pk = a => a[Math.floor(r()*a.length)], col = pk(type === 'car' ? CAR_COLS : type === 'van' ? ['#f8fafc', '#e5e7eb', '#fde68a'] : ['#111827', '#b91c1c', '#1d4ed8', '#6b7280']);
+      addVeh(type, col, [tr]).passer = true; break;
+    }
+  }
+})();
 
 /* ---------- โซนบนแผนที่ ---------- */
 const ZONES = {
@@ -613,7 +665,7 @@ function teacherPlace(t, p){
 function placeOfAgent(a, m){
   const r = a.ref; if (r.scan == null || m < (r.arr ?? r.scan)) return [null,'ยังไม่มา'];
   if (r.leave != null && m >= r.leave) return [null,'กลับบ้านแล้ว'];
-  if (m < r.scan + .4) return ['SCAN','เดินไปสแกนหน้าที่อาคารเฉลิมพระเกียรติ'];
+  if (m < r.scan + .4) return a.kind === 't' ? ['Chalerm_Building','เดินไปสแกนหน้าที่ห้องธุรการ'] : ['SCAN','เดินไปสแกนหน้าที่อาคารเฉลิมพระเกียรติ'];
   if (a.kind === 't' && m >= 930) return m >= r.leave - 5 ? ['PARK','เดินไปที่รถ'] : ['Chalerm_Building','ห้องธุรการ'];
   if (a.kind === 's' && m >= 930 && r.pickAt != null && m >= r.pickAt) return ['PICK','ขึ้นรถกลับบ้าน'];
   if (a.kind === 's' && m >= 930) return ['GATE', r.mode === 'bike' ? 'ไปเอาจักรยาน' : `รอ${MODES[r.mode][0]} ${r.pmZone === 'C' ? 'ที่จอดรถโรงเรียน' : r.pmZone === 'B' ? 'หน้าห้องคอมพิวเตอร์' : 'หน้าอาคารเฉลิมฯ'}`];
@@ -859,6 +911,7 @@ function targetOf(a, m){
     const ts = tslot(a.ref.name.slice(3), where), mine = Object.entries(L).find(([c, k]) => 'ครู'+k.l.tea === a.ref.name || ts?.[1] === c || (a.ref.name.startsWith('ครูอนุบาล') && c === 'อ.'+a.ref.name.slice(-1)));
     if (mine) { const k = mine[1], r = subRect(k.z, k.i, k.n); return {p: teacherFront(r, poseOf(k.z, k.l.sub)), pose:'stand', teach: true}; }
   }
+  if (a.kind === 't' && z === 'Chalerm_Building' && m < a.ref.scan + .4) return {p: new THREE.Vector3(TSCAN_PT[0] + .8 + a.ox*1.2, 0, TSCAN_PT[1] + (a.oz-.5)*2), pose:'stand'};   // ต่อคิวสแกนหน้าในห้องธุรการ
   if (a.kind === 't' && z === 'Chalerm_Building') { const R = ROOMS[a.ref.name === 'ครูกนกวรรณ' ? 'ห้องผู้บริหาร' : 'ห้องธุรการ']; return {p: new THREE.Vector3(R.c.x + (a.ox-.5)*R.sx*.8, 0, R.c.z + (a.oz-.5)*R.sz*.8), pose:'stand'}; }
   return {p: inZone(z, a.ox, a.oz), pose:'stand'};
 }
@@ -942,8 +995,59 @@ function buildGarden(){
   roomLabs.push({el, R: {b: 'Garden'}, p: new THREE.Vector3((x0+x1)/2, 1.6, (z0+z1)/2)});
 }
 
+// ชุมชนรอบโรงเรียน: พื้นดินรอบนอก ต่อถนนหน้าโรงเรียน/ซอยข้างออกไป และบ้านคนแบบบางเบา
+const HOUSES = [   // [x, z, หันหน้า (rad), แบบ, สีผนัง, สีหลังคา]
+  [-88, -112, Math.PI/2, 0, '#fef3c7', '#b91c1c'], [-90, -48, Math.PI/2, 1, '#e0f2fe', '#1d4ed8'], [-87, 2, Math.PI/2, 2, '#a16207', '#57534e'],
+  [-89, 36, Math.PI/2, 0, '#fce7f3', '#9a3412'], [-88, 98, Math.PI/2, 1, '#f5f5f4', '#0f766e'], [-88, 132, Math.PI/2, 0, '#dcfce7', '#b91c1c'],
+  [-34, 73, Math.PI, 1, '#fef9c3', '#b45309'], [8, 75, Math.PI, 2, '#92400e', '#44403c'], [56, 72, Math.PI, 0, '#e0e7ff', '#1e40af'], [112, 74, Math.PI, 1, '#ffedd5', '#9a3412'],
+  [97, 4, -Math.PI/2, 0, '#f1f5f9', '#475569'], [100, -46, -Math.PI/2, 2, '#a16207', '#57534e'], [-18, -84, 0, 0, '#fef3c7', '#0f766e'], [38, -86, 0, 1, '#ecfccb', '#b91c1c'],
+];
+function buildOutside(){
+  const site = scene.getObjectByName('Site'), gM = site?.getObjectByName('poly')?.material || new THREE.MeshLambertMaterial({color:'#cec0ae'}), rM = site?.getObjectByName('poly_1')?.material || new THREE.MeshLambertMaterial({color:'#949496'});
+  const G = 2*FAR + 30, ground = new THREE.Mesh(new THREE.PlaneGeometry(G, G), gM); ground.rotation.x = -Math.PI/2; ground.position.y = -.25; ground.receiveShadow = true; scene.add(ground);
+  const lnM = new THREE.MeshBasicMaterial({color:'#f8fafc'}), road = (x0, x1, z0, z1) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, .05, z1 - z0), rM); m.position.set((x0+x1)/2, -.12, (z0+z1)/2); m.receiveShadow = true; scene.add(m);
+    const alongZ = z1 - z0 > x1 - x0, L = alongZ ? z1 - z0 : x1 - x0;
+    for (let d = 1.5; d < L - 1; d += 4) { const dash = new THREE.Mesh(new THREE.BoxGeometry(alongZ ? .18 : 1.6, .02, alongZ ? 1.6 : .18), lnM);
+      dash.position.set(alongZ ? (x0+x1)/2 : x0 + d, -.08, alongZ ? z0 + d : (z0+z1)/2); scene.add(dash); }
+  };
+  road(-74.9, -64.8, -FAR - 8, -64.8); road(-74.9, -64.8, 60.8, FAR + 8); road(79, FAR + 8, 50.6, 60.8);   // ถนนหน้าโรงเรียน (ต่อเหนือ-ใต้) + ซอยข้าง
+  const mat = c => new THREE.MeshLambertMaterial({color: c}), bx = (g, w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(c)); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; g.add(m); return m; };
+  const gable = (g, w, d, h, c, y) => {   // หลังคาจั่ว (ปริซึมสามเหลี่ยม)
+    const sh = new THREE.Shape([new THREE.Vector2(-w/2, 0), new THREE.Vector2(w/2, 0), new THREE.Vector2(0, h)]);
+    const m = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, {depth: d, bevelEnabled: false}).translate(0, 0, -d/2), mat(c)); m.position.y = y; m.castShadow = true; g.add(m);
+  };
+  for (const [x, z, yaw, kind, wall, roof] of HOUSES) {
+    const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw; scene.add(g);
+    if (kind === 2) {   // บ้านไม้ใต้ถุนสูง
+      for (const px of [-3, 0, 3]) for (const pz of [-3, 3]) bx(g, .3, 2.4, .3, '#57534e', px, 1.2, pz);
+      bx(g, 7, 2.6, 7, wall, 0, 3.7, 0); bx(g, 7.4, .15, 2.2, '#78350f', 0, 2.45, 4.5);   // ชาน
+      gable(g, 8.6, 8, 3.2, roof, 5); bx(g, 1, 1.9, .1, '#451a03', 0, 3.4, 3.55);
+      for (const wx of [-2.2, 2.2]) bx(g, 1, .9, .1, '#1e293b', wx, 3.9, 3.55);
+      bx(g, 1.1, .12, 3, '#78350f', -2.6, 1.3, 6.6).rotation.x = -.7;   // บันได
+    } else {
+      const H = kind === 1 ? 5.6 : 2.9;
+      bx(g, 7, H, 7.5, wall, 0, H/2, 0); gable(g, 8.2, 8.5, kind === 1 ? 2.2 : 2.6, roof, H);
+      bx(g, 1.1, 2.1, .1, '#7c2d12', 0, 1.05, 3.78);
+      for (const wx of [-2.3, 2.3]) for (let fl = 0; fl < (kind === 1 ? 2 : 1); fl++) bx(g, 1.3, 1, .1, '#1e293b', wx, 1.5 + fl*2.8, 3.78);
+      if (kind === 1) bx(g, 7.2, .15, 1.2, '#e5e7eb', 0, 2.9, 4.3);   // กันสาด/ระเบียงชั้น 2
+      bx(g, 3.2, .1, 1.8, '#9ca3af', 0, .05, 4.8);   // ลานหน้าบ้าน
+    }
+    for (const sx of [-1, 1]) { bx(g, .15, .9, 12, '#e7e5e4', sx*6, .45, 0); bx(g, 4.2, .9, .15, '#e7e5e4', sx*3.9, .45, 6); }   // รั้วเตี้ยรอบบ้าน เว้นช่องประตู
+    bx(g, 11.9, .9, .15, '#e7e5e4', 0, .45, -6);
+    const tr = new THREE.Group(); tr.position.set(4.3, 0, -3.5); g.add(tr);
+    bx(tr, .35, 2.2, .35, '#78350f', 0, 1.1, 0); const c = new THREE.Mesh(new THREE.SphereGeometry(1.6, 8, 6), mat(kind ? '#4d7c0f' : '#15803d')); c.position.y = 3; c.castShadow = true; tr.add(c);
+  }
+  for (let i = 0; i < 26; i++) {   // ต้นไม้ริมทาง/ในชุมชน
+    const a = i*2.39996, rr = 92 + (i*37 % 50), x = Math.cos(a)*rr*1.05, z = Math.sin(a)*rr*.95;
+    if ((x > -80 && x < -60) || (z > 46 && z < 64) || HOUSES.some(h => Math.hypot(h[0] - x, h[1] - z) < 10) || Math.abs(x) > FAR || Math.abs(z) > FAR) continue;
+    const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
+    bx(g, .4, 2.4, .4, '#78350f', 0, 1.2, 0); const c = new THREE.Mesh(new THREE.SphereGeometry(1.8 + (i%3)*.4, 8, 6), mat(['#15803d', '#4d7c0f', '#166534'][i%3])); c.position.y = 3.2; c.castShadow = true; g.add(c);
+  }
+}
+
 function buildFence(){ // รั้วรอบโรงเรียน เว้นช่องประตูรถเข้า/ออกด้านถนน
-  fenceBuilt = true; buildRoad(); buildGarden(); const {x0, x1, z0, z1} = FENCE, H = 1.6, segs = [];
+  fenceBuilt = true; buildOutside(); buildRoad(); buildGarden(); const {x0, x1, z0, z1} = FENCE, H = 1.6, segs = [];
   const gaps = [[GATE_IN_Z - 4, GATE_IN_Z + 4], [GATE_OUT_Z - 4, GATE_OUT_Z + 4]];
   let z = z0; for (const [a, b] of gaps.sort((p, q) => p[0] - q[0])) { segs.push([x0, z, x0, a]); z = b; } segs.push([x0, z, x0, z1]);
   segs.push([x0, z1, x1, z1], [x1, z1, x1, z0], [x1, z0, x0, z0]);
