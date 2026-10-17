@@ -1,7 +1,7 @@
 {
- "name": "Bankhum Simulator",
- "short_name": "BK Simulator",
- "description": "จำลองหนึ่งวันที่โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)",
+ "name": "BANKHUM LIVE SIM",
+ "short_name": "LIVE SIM",
+ "description": "ระบบจำลองและติดตามกิจกรรมภายในโรงเรียน · โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)",
  "start_url": "./",
  "scope": "./",
  "display": "standalone",
