@@ -82,6 +82,9 @@ canvas{cursor:pointer}
 #bar .vsep{width:1px;align-self:stretch;background:var(--line)}
 #bar button{border:0;background:#111827;color:#fff;border-radius:8px;width:34px;height:30px;font-size:14px;cursor:pointer;flex:none}
 #bar input{flex:1;accent-color:#111827;min-width:80px}
+#bar .tl{flex:1;min-width:80px;position:relative;display:flex;flex-direction:column}#bar .tl input{width:100%;margin:0}
+#bar .ticks{position:relative;height:13px;margin:0 8px}#bar .ticks i{position:absolute;top:0;width:1px;height:4px;background:#94a3b8}#bar .ticks b{position:absolute;top:3px;transform:translateX(-50%);font-size:9px;font-weight:600;color:var(--mute);white-space:nowrap}
+@media (max-width:760px){#bar .ticks b.o{display:none}}
 #bar .r1{display:flex;gap:10px;align-items:center;flex:1;min-width:0}
 #bar .r2{display:flex;gap:10px;align-items:center}
 #bar #info{width:auto;padding:0 10px;font-family:inherit;font-size:13px}
@@ -226,7 +229,7 @@ canvas{cursor:pointer}
 </div>
 <div class="panel" id="bar">
   <div class="r1"><button id="play" aria-label="เล่น/หยุด">⏸</button>
-  <input id="time" type="range" min="355" max="990" step="1" value="420" aria-label="เวลา">
+  <div class="tl"><input id="time" type="range" min="355" max="990" step="1" value="420" aria-label="เวลาจำลอง"><div class="ticks" id="ticks" aria-hidden="true"></div></div>
   <button id="find" aria-label="ค้นหานักเรียนหรือครู">🔍 ค้นหา</button>
   <button id="info" class="mob" aria-label="รายละเอียด">☰ ข้อมูล</button></div>
   <div class="rr"><div class="r2"><div class="sp" id="days"></div><span class="vsep"></span>
@@ -1397,7 +1400,7 @@ const setPlaying = p => { playing = p; $('play').textContent = $('tPlay').textCo
 $('play').onclick = $('tPlay').onclick = () => setPlaying(!playing);
 $('tReset').onclick = () => { simMin = +slider.min; slider.value = simMin; setPlaying(false); update(true); };   // กลับเวลาเริ่มต้นของวันจำลอง
 slider.oninput = () => { simMin = +slider.value; update(); };
-for (const [lab,m] of [['รถมาส่ง',440],['ทำเวร',462],['เข้าแถว',480],['คาบ 1',515],['พักเที่ยง',700],['คาบ 5',815],['รถมารับ',932]]) {
+for (const [lab,m] of [['รถมาส่ง',440],['ทำเวร',462],['เข้าแถว',480],['คาบ 1',515],['คาบ 2',575],['คาบ 3',635],['พักเที่ยง',700],['คาบ 4',755],['คาบ 5',815],['คาบ 6',875],['รถมารับ',932]]) {
   const b = document.createElement('button'); b.textContent = lab; b.onclick = () => { simMin = m; slider.value = m; if (lab.startsWith('รถ')) { setSpeed(.1); setPlaying(true); } else { setPlaying(false); } update(); };
   $('jumps').appendChild(b);
 }
@@ -1759,6 +1762,8 @@ function placeGroupChips(){
   }
 }
 $('hdrLogo').src = $('topLogo').src = $('splashLogo').src;
+{ const lo = +slider.min, hi = +slider.max, pc = t => (t - lo)/(hi - lo)*100, LB = {360:'06:00', 480:'เข้าแถว', 510:'คาบ1', 570:'2', 630:'3', 680:'พัก', 750:'4', 810:'5', 870:'6', 930:'เลิก'};
+  $('ticks').innerHTML = ROUTINE.filter(r => r[0] > lo && r[0] < hi).map(r => `<i style="left:${pc(r[0])}%"></i>` + (LB[r[0]] ? `<b class="${['พัก', 'เลิก'].includes(LB[r[0]]) ? '' : 'o'}" style="left:${pc(r[0])}%">${LB[r[0]]}</b>` : '')).join(''); }
 $('srcl').innerHTML = `ตัวเลขการมาเรียน: ${srcB(FEED ? 'ver' : 'sim')} · ครู: ${srcB('sim')}`;
 $('legend').innerHTML = Object.values(BSTAT).map(([t, c]) => `<span style="--s:${c}">${t}</span>`).join('');
 { const md = $('tMode'); md.classList.toggle('sis', !!FEED); md.querySelector('span').textContent = FEED ? 'SIS + ข้อมูลจำลอง' : 'ข้อมูลจำลอง';
