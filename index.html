@@ -291,6 +291,7 @@ function posAt(s){
   const f = Math.min(1, Math.max(0, (s - CUM[i-1]) / (CUM[i] - CUM[i-1])));
   return [MAIN[i-1][0] + (MAIN[i][0]-MAIN[i-1][0])*f, MAIN[i-1][1] + (MAIN[i][1]-MAIN[i-1][1])*f];
 }
+const ASSEMBLY = {x0: -17.1, x1: -0.4, z0: -5.9, z1: 15.6};   // ลานปูนสีเทาหน้าเสาธง (ที่เข้าแถว)
 const LEN = {truck: 8.6, van: 6.6, car: 5.6, moto: 2.4, bike: 1.8};
 function addVeh(type, color, trips, label){ const v = {type, color, trips, label, riders: 0, runs: []}; VEH.push(v); return v; }
 // run = หนึ่งเที่ยวบนเส้นทางหลัก: 'drop' (ส่ง/รับหน้าอาคาร), 'park' (ครูเข้าจอด), 'leave' (ครูออกจากที่จอด)
@@ -465,7 +466,7 @@ function onModel(g) {
   for (const [name,[th,col]] of Object.entries(ZONES)) {
     const obj = name === 'SmartFarm' ? null : root.getObjectByName(name === 'Field' ? 'Football' : name); if (!obj && name !== 'SmartFarm') continue;
     const box = obj ? new THREE.Box3().setFromObject(obj) : new THREE.Box3(new THREE.Vector3(FARM.x0, 0, FARM.z0), new THREE.Vector3(FARM.x1, 1.2, FARM.z1)); const size = box.getSize(new THREE.Vector3()); const c = box.getCenter(new THREE.Vector3());
-    if (name === 'Flagpole') { size.set(16, 1.5, 16); box.min.y = 0; }
+    if (name === 'Flagpole') { size.set(ASSEMBLY.x1 - ASSEMBLY.x0, 1.5, ASSEMBLY.z1 - ASSEMBLY.z0); c.set((ASSEMBLY.x0 + ASSEMBLY.x1)/2, 0, (ASSEMBLY.z0 + ASSEMBLY.z1)/2); box.min.y = 0; }
     if (name === 'Field') { size.set(22, 1, 26); box.min.y = 0; }
     size.x += 1.2; size.z += 1.2; size.y += 1;
     const geo = new THREE.BoxGeometry(size.x,size.y,size.z);
@@ -742,9 +743,13 @@ function targetOf(a, m){
     if (a.ref.pmZone === 'C') return {p: new THREE.Vector3(a.ref.pickPos[0] - .6 + a.ox*1.2, 0, LANE - 1.5 - a.oz*1.2), pose:'stand'};
     return {p: new THREE.Vector3(DROP_X + 1.5 + a.ox*1.4, 0, -10 + a.oz*29), pose:'stand'};
   }
-  if (where === 'Flagpole' && a.kind === 's') {
-    const ci = CLASSES.findIndex(([c]) => c === a.cls), f = zones.Flagpole;
-    return {p: new THREE.Vector3(f.c.x + (ci-3.5)*1.7, f.y, f.c.z - 2 + (a.ref.no % 15)*0.55), pose:'stand'};
+  if (where === 'Flagpole' && z === 'Flagpole') {   // เข้าแถวบนลานหน้าเสาธง หันหน้าไปทางเสาธง (ทิศตะวันออก) ชั้นละ 2 แถว
+    if (a.kind === 's') {
+      const ci = CLASSES.findIndex(([c]) => c === a.cls), coh = a.cohort ??= STUDENTS.filter(s => s.cls === a.cls && s.scan != null), k = coh.indexOf(a.ref);
+      return {p: new THREE.Vector3(ASSEMBLY.x1 - 2.2 - (k >> 1)*.7, 0, ASSEMBLY.z0 + 1.6 + ci*2.5 + (k & 1)*.8), pose:'stand', yaw: Math.PI/2};
+    }
+    const ts = AGENTS.filter(b => b.kind === 't'), k = ts.indexOf(a);   // ครูยืนด้านหน้าแถว หันหาเด็ก
+    return {p: new THREE.Vector3(ASSEMBLY.x1 + .2 - (k % 2)*.8, 0, ASSEMBLY.z0 + 1 + (k >> 1)*2.2), pose:'stand', yaw: -Math.PI/2};
   }
   if (where === 'Canteen') {
     const r = subRect('Canteen', 0, 1), idx = a.i;
@@ -813,7 +818,7 @@ function moveVehicles(dt){
   if (!fenceBuilt) buildFence();
   for (const v of VEH) {
     if (!v.g) buildVeh(v);
-    const s = vehAt(v, simMin), g = v.g;
+    const s = vehAt(v, simMin), g = v.g; v.st = s;
     if (!s) { g.visible = false; if (v.el) v.el.style.display = 'none'; continue; }
     const tgt = new THREE.Vector3(s.x, 0, s.z);
     if (!g.visible || g.position.distanceTo(tgt) > 40) g.position.copy(tgt);
@@ -838,22 +843,53 @@ function waypoint(a, tgt){
   if (!upB && tB && STAIR[tB]) return {p: STAIR[tB].bot3, start: {b: tB, dir: 1}};
   return {p: tgt};
 }
+// คนเดินถนนต้องไม่โดนรถ: รถที่กำลังวิ่งมีเขตอันตรายรอบตัวรถ + ด้านหน้า 3.5 ม.
+// คนจะหยุดรอก่อนก้าวเข้าเขตนั้น และถ้ารถเข้ามาใกล้ตอนยืนอยู่ ก็ถอยหลบออกข้างทาง
+const HALF_W = {truck: 1.65, van: 1.35, car: 1.2, moto: .5, bike: .45};
+function carsNow(){
+  const out = [];
+  for (const v of VEH) {
+    if (!LEN[v.type] || !v.g || !v.g.visible || !v.st) continue;
+    const moving = Math.hypot(v.st.dx, v.st.dz) > .01; if (!moving) continue;
+    const L = Math.hypot(v.st.dx, v.st.dz), fx = v.st.dx/L, fz = v.st.dz/L;
+    out.push({x: v.g.position.x, z: v.g.position.z, fx, fz, hl: LEN[v.type]/2 + .5, hw: HALF_W[v.type] + .6});
+  }
+  return out;
+}
+function carHit(p, c, ahead){
+  const dx = p.x - c.x, dz = p.z - c.z, along = dx*c.fx + dz*c.fz, side = dx*c.fz - dz*c.fx;
+  return Math.abs(side) < c.hw && along > -c.hl && along < c.hl + ahead ? side : null;
+}
+function yieldToCars(a, was, cars){
+  for (const c of cars) {
+    if (carHit(a.pos, c, 3.5) == null) continue;
+    const before = carHit(was, c, 3.5);
+    if (before == null) { a.pos.copy(was); continue; }               // หยุดรอที่ขอบถนน
+    const side = carHit(a.pos, c, 0) ?? before, sg = side >= 0 ? 1 : -1;   // รถมาถึงตัว: ถอยออกด้านข้าง
+    const along = (a.pos.x - c.x)*c.fx + (a.pos.z - c.z)*c.fz;
+    if (along > c.hl) { a.pos.x += c.fz*sg*.25; a.pos.z -= c.fx*sg*.25; }  // อยู่หน้ารถ: ค่อยๆ เบี่ยงออก
+    else { a.pos.x = c.x + c.fx*along + c.fz*sg*c.hw; a.pos.z = c.z + c.fz*along - c.fx*sg*c.hw; }
+  }
+}
 function moveAgents(dt){
   if (!bodies) return;
   const duty = phaseAt(simMin)[2] === 'duty'; if (uniDay !== day || uniDuty !== duty) { uniDuty = duty; applyUniforms(); }
   const t = performance.now()/1000;
   if (!desks) { desks = new THREE.InstancedMesh(new THREE.BoxGeometry(.95,.08,.6).translate(0,.62,0), new THREE.MeshLambertMaterial({color:'#b45309'}), STUDENTS.length); desks.castShadow = true; scene.add(desks); }
+  const cars = carsNow();
   for (const a of AGENTS) {
     const T = targetOf(a, simMin), tgt = T && T.p;
     if (!tgt) { a.shown = false; }
     else {
       if (!a.shown) { a.shown = true; a.pos.copy(spawnOf(a)); }
+      const was = a.pos.clone();
       if (a.stair) { if (stepTo(a, a.stair.dir > 0 ? STAIR[a.stair.b].top3 : STAIR[a.stair.b].bot3, dt * .5)) a.stair = null; }
       else { const w = waypoint(a, tgt); if (stepTo(a, w.p, dt) && w.start) a.stair = w.start; }
+      if (a.pos.y < 1) yieldToCars(a, was, cars);
     }
     const arrived = T && a.pos.distanceTo(tgt) < (T.pose === 'swim' ? 1.5 : .4), pose = arrived ? T.pose : 'walk';
     a.walking = !!T && a.pos.distanceTo(tgt) > 1.5;
-    dummy.position.copy(a.pos); dummy.rotation.set(0,0,0);
+    dummy.position.copy(a.pos); dummy.rotation.set(0, arrived && T.yaw != null ? T.yaw : 0, 0);
     let sy = 1;
     if (pose === 'walk' || pose === 'run') dummy.position.y += Math.abs(Math.sin(t*11 + a.i))*.25;
     if (pose === 'sit') sy = .62;
@@ -1011,40 +1047,76 @@ function update(force){
 }
 
 /* ---------- แปลงเกษตรอัจฉริยะ: สปริงเกอร์ตั้งเวลา 08:00 และ 15:30 + ตู้ควบคุม ---------- */
-const FARM = {x0:47.6, x1:60.4, z0:-3.6, z1:21.2}, FARM_LPM = 6;   // ลิตร/นาที/หัว
+const FARM = {x0:47.6, x1:60.4, z0:-3.6, z1:21.2}, FARM_LPM = 30, SPRAY_R = 4.3;   // ลิตร/นาที/หัว (หัวใหญ่ พ่นไกล)
 const FARM_SCHED = [[480, 495, 'รอบเช้า'], [930, 945, 'รอบบ่าย']];
 let farmManual = null, farmManualAt = 0, lastFarm = null, lastFarmM = 0;   // farmManual: null = อัตโนมัติ, true/false = สั่งเอง
 const farmAuto = m => FARM_SCHED.some(([a, b]) => m >= a && m < b);
 const farmOn = m => farmManual ?? farmAuto(m);
 const SPRK = []; let spray = null, wetMat = null, farmLvl = 0, cabLed = null;
-const DROPS = 40;
+const DROPS = 160;
 function buildFarm(){
   const g = new THREE.Group(); scene.add(g);
-  const pipeM = new THREE.MeshStandardMaterial({color:'#475569', roughness:.6}), headM = new THREE.MeshStandardMaterial({color:'#facc15', roughness:.5});
-  const pole = new THREE.CylinderGeometry(.07, .07, 1.1, 6), head = new THREE.CylinderGeometry(.2, .12, .22, 8);
-  wetMat = new THREE.MeshBasicMaterial({color:'#0369a1', transparent:true, opacity:0, depthWrite:false});
-  const wet = new THREE.CircleGeometry(2.1, 24);
-  for (const x of [49.8, 54, 58.2]) {
-    const lat = new THREE.Mesh(new THREE.BoxGeometry(.14, .1, FARM.z1 - FARM.z0), pipeM); lat.position.set(x, .06, (FARM.z0 + FARM.z1)/2); g.add(lat);
-    for (const z of [-.8, 4.6, 10, 15.4, 20]) {
-      const p = new THREE.Mesh(pole, pipeM); p.position.set(x, .55, z); g.add(p);
-      const hd = new THREE.Mesh(head, headM); hd.position.set(x, 1.15, z); g.add(hd);
-      const w = new THREE.Mesh(wet, wetMat); w.rotation.x = -Math.PI/2; w.position.set(x, .04, z); g.add(w);
-      SPRK.push({x, z, hd});
-    }
+  // เอาแปลงผักเดิมของแบบจำลองออก แล้ววางใหม่ให้น้อยแถวลง (ครึ่งใต้) ครึ่งเหนือเป็นโต๊ะผักไฮโดรโปนิกส์ "เติมผักฟาร์ม"
+  const site = scene.getObjectByName('Site'), soil = site && site.getObjectByName('poly_3');
+  let bedM = new THREE.MeshLambertMaterial({color:'#a4c58a'});
+  if (soil) { bedM = soil.material; soil.updateMatrixWorld(true);
+    const P = soil.geometry.attributes.position, I = soil.geometry.index, keep = [], v = new THREE.Vector3();
+    for (let t = 0; t < I.count; t += 3) { let x = 0, z = 0; for (let k = 0; k < 3; k++) { v.fromBufferAttribute(P, I.getX(t+k)).applyMatrix4(soil.matrixWorld); x += v.x/3; z += v.z/3; }
+      if (x > FARM.x0 && x < FARM.x1 && z > FARM.z0 && z < FARM.z1) continue; keep.push(I.getX(t), I.getX(t+1), I.getX(t+2)); }
+    soil.geometry.setIndex(keep); }
+  const B = (w, h, d, mat, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; g.add(o); return o; };
+  const leafM = new THREE.MeshLambertMaterial({color:'#4d9a2a'}), leaf = new THREE.SphereGeometry(.28, 6, 4);
+  const plants = [];
+  for (const x of [50.9, 57.1]) for (const z of [-1.6, 2.9, 7.4]) {             // แปลงดิน 2 แถว แถวละ 3 แปลง
+    B(3.8, .28, 3.4, bedM, x, .14, z);
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 4; j++) plants.push([x - 1.2 + i*1.2, .38, z - 1.2 + j*.8]);
   }
-  const main = new THREE.Mesh(new THREE.BoxGeometry(FARM.x1 - FARM.x0 + 2, .12, .16), pipeM); main.position.set((FARM.x0 + FARM.x1)/2 + 1, .07, FARM.z1 + .5); g.add(main);
+  const pl = new THREE.InstancedMesh(leaf, leafM, plants.length); plants.forEach(([x, y, z], i) => { dummy.position.set(x, y, z); dummy.rotation.set(0,0,0); dummy.scale.set(1, .7, 1); dummy.updateMatrix(); pl.setMatrixAt(i, dummy.matrix); }); g.add(pl);
+  const pipeM = new THREE.MeshStandardMaterial({color:'#475569', roughness:.6}), headM = new THREE.MeshStandardMaterial({color:'#facc15', roughness:.5});
+  const pole = new THREE.CylinderGeometry(.09, .09, 1.6, 6), head = new THREE.CylinderGeometry(.28, .16, .3, 8);
+  wetMat = new THREE.MeshBasicMaterial({color:'#0369a1', transparent:true, opacity:0, depthWrite:false});
+  const wet = new THREE.CircleGeometry(SPRAY_R, 32);
+  const lat = new THREE.Mesh(new THREE.BoxGeometry(.16, .1, 12.6), pipeM); lat.position.set(54, .06, 3.3); g.add(lat);
+  for (const z of [-1.6, 2.9, 7.4]) {                                             // สปริงเกอร์หัวใหญ่ 3 หัว กลางระหว่างสองแถว
+    const x = 54, p = new THREE.Mesh(pole, pipeM); p.position.set(x, .8, z); g.add(p);
+    const hd = new THREE.Mesh(head, headM); hd.position.set(x, 1.65, z); g.add(hd);
+    const w = new THREE.Mesh(wet, wetMat); w.rotation.x = -Math.PI/2; w.position.set(x, .05, z); g.add(w);
+    SPRK.push({x, z, hd});
+  }
+  const mainP = new THREE.Mesh(new THREE.BoxGeometry(6.6, .12, .16), pipeM); mainP.position.set(57.3, .07, 10); g.add(mainP);
+  // เติมผักฟาร์ม: โรงเรือนตาข่ายพรางแสง + โต๊ะรางปลูก NFT 3 โต๊ะ + ถังสารละลาย
+  const HX0 = 48.6, HX1 = 59.4, HZ0 = 11.8, HZ1 = 20.8, frameM = new THREE.MeshLambertMaterial({color:'#e2e8f0'});
+  for (const x of [HX0, (HX0+HX1)/2, HX1]) for (const z of [HZ0, HZ1]) B(.12, 2.6, .12, frameM, x, 1.3, z);
+  const net = new THREE.Mesh(new THREE.BoxGeometry(HX1 - HX0, .05, HZ1 - HZ0), new THREE.MeshLambertMaterial({color:'#166534', transparent:true, opacity:.28, depthWrite:false}));
+  net.position.set((HX0+HX1)/2, 2.6, (HZ0+HZ1)/2); g.add(net);
+  const legM = new THREE.MeshLambertMaterial({color:'#94a3b8'}), pvcM = new THREE.MeshLambertMaterial({color:'#f8fafc'}), lettuce = [];
+  for (const z of [13.6, 16.3, 19]) {
+    for (const x of [49.6, 54, 58.4]) for (const dz of [-.6, .6]) B(.08, .8, .08, legM, x, .4, z + dz);
+    for (let r = 0; r < 4; r++) { const zz = z - .6 + r*.4; B(9.4, .12, .16, pvcM, 54, .86, zz); for (let i = 0; i < 16; i++) lettuce.push([49.8 + i*.58, .98, zz]); }
+  }
+  const lg = new THREE.SphereGeometry(.16, 6, 4), lm = new THREE.MeshLambertMaterial({color:'#84cc16'});
+  const lt = new THREE.InstancedMesh(lg, lm, lettuce.length); lettuce.forEach(([x, y, z], i) => { dummy.position.set(x, y, z); dummy.rotation.set(0,0,0); dummy.scale.set(1, .6, 1); dummy.updateMatrix(); lt.setMatrixAt(i, dummy.matrix); }); g.add(lt);
+  const tank = new THREE.Mesh(new THREE.CylinderGeometry(.6, .6, 1.1, 14), new THREE.MeshLambertMaterial({color:'#1e40af'})); tank.position.set(59.9, .55, 12.8); tank.castShadow = true; g.add(tank);
+  // ป้าย "เติมผักฟาร์ม"
+  const cv = document.createElement('canvas'); cv.width = 512; cv.height = 128; const cx = cv.getContext('2d');
+  cx.fillStyle = '#15803d'; cx.fillRect(0, 0, 512, 128); cx.fillStyle = '#fff'; cx.font = 'bold 62px "Noto Sans Thai", "Sarabun", sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText('🥬 เติมผักฟาร์ม', 256, 66);
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.4, 1.1), new THREE.MeshBasicMaterial({map: tex, side: THREE.DoubleSide}));
+  sign.position.set(54, 3.3, HZ0 - .05); sign.rotation.y = -.5; g.add(sign);
+  for (const x of [52, 56]) B(.08, .8, .08, frameM, x, 2.95, HZ0);
+  const hl = document.createElement('div'); hl.className = 'rlab'; hl.textContent = '🥬 เติมผักฟาร์ม · ไฮโดรโปนิกส์'; $('labels').appendChild(hl);
+  roomLabs.push({el: hl, R: {b: 'SmartFarm'}, p: new THREE.Vector3(54, 3.2, 16.3)});
   // ตู้ควบคุม + ปั๊ม + เสาเซ็นเซอร์
   const cab = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.7, .6), new THREE.MeshStandardMaterial({color:'#e2e8f0', roughness:.5})); cab.position.set(61.6, .85, 21.7); cab.castShadow = true; g.add(cab);
   cabLed = new THREE.Mesh(new THREE.BoxGeometry(.7, .45, .05), new THREE.MeshBasicMaterial({color:'#334155'})); cabLed.position.set(61.6, 1.2, 21.38); g.add(cabLed);
   const ant = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, .9, 4), pipeM); ant.position.set(61.95, 2.1, 21.7); g.add(ant);
   const pump = new THREE.Mesh(new THREE.CylinderGeometry(.35, .35, .6, 10), new THREE.MeshStandardMaterial({color:'#2563eb'})); pump.rotation.z = Math.PI/2; pump.position.set(60.8, .35, 22.4); g.add(pump);
-  for (const [x, z] of [[52, 2], [56, 13]]) {
+  for (const [x, z] of [[50.9, 5.15], [57.1, .65]]) {
     const s = new THREE.Mesh(new THREE.CylinderGeometry(.05, .05, .7, 5), pipeM); s.position.set(x, .35, z); g.add(s);
     const sp = new THREE.Mesh(new THREE.BoxGeometry(.3, .2, .05), new THREE.MeshStandardMaterial({color:'#16a34a'})); sp.position.set(x, .75, z); g.add(sp);
   }
   const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(SPRK.length * DROPS * 3), 3));
-  spray = new THREE.Points(geo, new THREE.PointsMaterial({color:'#7dd3fc', size:3.2, sizeAttenuation:false, transparent:true, opacity:0, depthWrite:false}));
+  spray = new THREE.Points(geo, new THREE.PointsMaterial({color:'#7dd3fc', size:4.2, sizeAttenuation:false, transparent:true, opacity:0, depthWrite:false}));
   spray.frustumCulled = false; spray.visible = false; g.add(spray);
 }
 // พื้นชั้น 2 (โปร่งแสงให้เห็นชั้นล่าง) + บันได + ป้ายชื่อห้อง
@@ -1091,8 +1163,8 @@ function animFarm(dt, t){
   const P = spray.geometry.attributes.position.array; let k = 0;
   for (const s of SPRK) { s.hd.rotation.y += dt * 4;
     for (let j = 0; j < DROPS; j++) {
-      const ph = (t*.8 + j/DROPS + s.x*.13) % 1, a = j*2.39996 + t*1.5 + s.z, r = ph * 2.2 * farmLvl;
-      P[k++] = s.x + Math.cos(a)*r; P[k++] = 1.25 + 2.6*ph - 3.2*ph*ph; P[k++] = s.z + Math.sin(a)*r;
+      const ph = (t*1.1 + j/DROPS*7.3 + s.z*.13) % 1, a = j*2.39996 + t*1.5 + s.z, r = ph * SPRAY_R * (.55 + .45*((j*7) % 10)/10) * farmLvl;
+      P[k++] = s.x + Math.cos(a)*r; P[k++] = 1.75 + 4.2*ph - 5.6*ph*ph; P[k++] = s.z + Math.sin(a)*r;
     } }
   spray.geometry.attributes.position.needsUpdate = true;
 }
@@ -1116,7 +1188,10 @@ function renderFarm(el){
     <li><b>เซ็นเซอร์</b></li>
     <li>ความชื้นในดิน ${Math.round(s.moist)}% ${bar(s.moist, s.moist < 45 ? '#f59e0b' : '#0ea5e9')}<small>${s.moist < 45 ? 'ดินเริ่มแห้ง' : 'เหมาะสม'}</small></li>
     <li>อุณหภูมิ ${s.temp.toFixed(1)}°C · ความชื้นอากาศ ${s.hum}%</li>
-    <li>น้ำที่ใช้วันนี้ ${s.used.toLocaleString()} ลิตร · น้ำในถัง ${Math.round(s.tank)}% ${bar(s.tank, '#2563eb')}</li></ul>
+    <li>น้ำที่ใช้วันนี้ ${s.used.toLocaleString()} ลิตร · น้ำในถัง ${Math.round(s.tank)}% ${bar(s.tank, '#2563eb')}</li>
+    <li><b>🥬 เติมผักฟาร์ม (ไฮโดรโปนิกส์)</b></li>
+    <li>โต๊ะรางปลูก 3 โต๊ะ · ${3*4*16} ต้น<small>ปั๊มน้ำวนตลอดวัน</small></li>
+    <li>ค่า EC ${(1.6 + .1*Math.sin(m/90)).toFixed(1)} mS/cm · pH ${(6.1 + .15*Math.sin(m/70)).toFixed(1)}<small>เหมาะสม</small></li></ul>
     <small style="color:var(--mute);display:block;margin-top:4px">ค่าเซ็นเซอร์เป็นข้อมูลตัวอย่าง</small>`;
   el.querySelector('.x').onclick = () => select(selected);
   for (const b of el.querySelectorAll('.fbtn button')) b.onclick = () => {
