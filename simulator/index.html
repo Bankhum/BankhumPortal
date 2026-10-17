@@ -197,10 +197,10 @@ const tslot = (t, p) => TSLOT[`${t}|${day}|${p}`];
 const coTeachers = (c, p, main, sub) => NAMED_T.filter(t => { const s = tslot(t, p); return t !== main && s?.[1] === c && sub.includes(s[0].slice(0, 5)); });
 const KG = ['เตรียมความพร้อม','ศิลปะ','นิทาน','นอนกลางวัน','เล่นอิสระ','เตรียมความพร้อม']; // ใช้เฉพาะชื่อในตาราง
 // กิจวัตรอนุบาล (ตามที่ครูบอก: เรียน 08:30–10:30 → กินข้าวโรงอาหาร → แปรงฟัน → เข้าห้อง ~13:30 นอน → กลับบ้าน)
-// ช่วงที่ไม่ได้ระบุ (เล่นอิสระ 11:45–13:30, ตื่นนอน 14:45) เป็นค่าสมมติ
+// เข้าห้องนอน 12:20 (ตามที่ครูบอก) · ช่วงเล่นอิสระ 11:45–12:20 และตื่นนอน 14:45 เป็นค่าสมมติ
 const KG_DAY = [[510,'กิจกรรมเตรียมความพร้อม','Kindergarten','sit'],[570,'กิจกรรมสร้างสรรค์ ศิลปะ นิทาน','Kindergarten','sit'],
-  [630,'รับประทานอาหารกลางวัน','Canteen','sit'],[675,'แปรงฟัน','BRUSH','stand'],[705,'เล่นอิสระ สนามเด็กเล่น','PLAY','play'],
-  [810,'นอนกลางวัน','Kindergarten','sleep'],[885,'ตื่นนอน ดื่มนม เตรียมกลับบ้าน','Kindergarten','sit']];
+  [630,'รับประทานอาหารกลางวัน','Canteen','sit'],[675,'แปรงฟัน','BRUSH','stand'],[705,'เล่นอิสระ สนามเด็กเล่นมีหลังคา','PLAY','play'],
+  [740,'นอนกลางวัน','Kindergarten','sleep'],[885,'ตื่นนอน ดื่มนม เตรียมกลับบ้าน','Kindergarten','sit']];
 const kgAt = m => { if (m < 510 || m >= 930) return null; let k = null; for (const r of KG_DAY) if (m >= r[0]) k = r; return k; };
 const isKG = c => c.startsWith('อ');
 const NAMED_T = Object.keys(FULLNAME);
@@ -471,6 +471,8 @@ function onModel(g) {
     mesh.userData.zone = name;
   }
   root.children.forEach(o => { if (/^(Student|Teacher)_/.test(o.name)) o.visible = false; });
+  const dome = root.getObjectByName('Playground_Dome');
+  if (dome) { dome.rotation.y = Math.PI/2; dome.position.x = PLAY_C[0]; dome.position.z = PLAY_C[1]; buildPlayset(); }
   const tent = root.getObjectByName('Museum_Walk'); if (tent) tent.removeFromParent();   // เอาเต็นท์หลังคาโค้งสีน้ำเงินออก (ตามที่ครูขอ)
   const sign = root.getObjectByName('School_Sign'); if (sign) GATE.copy(new THREE.Box3().setFromObject(sign).getCenter(new THREE.Vector3())).setY(0).add(new THREE.Vector3(-4,0,0));
   buildFarm(); buildFloors(); initAgents(root); applyXrayAll();
@@ -643,18 +645,20 @@ const teacherFront = (r, pose) => pose === 'sit' ? new THREE.Vector3(r.cx, r.y, 
 // ตำแหน่ง + ท่าทาง ณ เวลา m
 // เวลาว่าง: นักเรียนกระจายเล่นหลายที่ ทั้งสนาม ลานกีฬา ระเบียงอาคาร ใต้อาคาร โดมเครื่องเล่น และอาคารเอนกประสงค์
 const PLAY_SPOTS = [[-29,-2,8,10,'run','สนามฟุตบอล'],[-8,4,6,7,'run','ลานกีฬา'],[-30,-22.6,13,.5,'circle','ระเบียงอาคาร ป.1 ป.2'],
-  [24.6,6,.7,14,'circle','ใต้อาคารเฉลิมพระเกียรติ'],[21.2,-29,.6,10,'circle','ระเบียงอาคารไม้'],[17,32,5,8,'run','อาคารเอนกประสงค์'],[-47,18,6,3.5,'run','โดมเครื่องเล่น']];
+  [24.6,6,.7,14,'circle','ใต้อาคารเฉลิมพระเกียรติ'],[21.2,-29,.6,10,'circle','ระเบียงอาคารไม้'],[17,32,5,8,'run','อาคารเอนกประสงค์'],[-47.4,14.5,3.5,6.5,'run','สนามเด็กเล่นมีหลังคา']];
 function freePlay(a, m){
   const sp = PLAY_SPOTS[(a.i * 5 + (a.ref.no || 0)) % PLAY_SPOTS.length], w = m*1.3 + a.i*1.7, r = sp[4] === 'run' ? 2.2 : .4;
   return {p: new THREE.Vector3(sp[0] + (a.ox-.5)*2*sp[2] + Math.sin(w)*r, 0, sp[1] + (a.oz-.5)*2*sp[3] + Math.cos(w*.9)*r), pose: sp[4]};
 }
+// สนามเด็กเล่นมีหลังคา: หมุนหลังคาโค้งเป็นแนวขวาง (ตามที่ครูขอ) ไม่ให้ทับถนน
+const PLAY_C = [-47.4, 14.5];
 function kgTarget(a, m, kg){
   const z = kg[2], pose = kg[3], mates = a.kgMates ??= STUDENTS.filter(s => isKG(s.cls) && s.scan != null);
   if (a.kind === 't') {
     const k = +a.ref.name.slice(-1) - 2;
     if (z === 'Kindergarten') return {p: teacherFront(subRect('Kindergarten', k, 2), 'sit'), pose:'stand', teach: pose !== 'sleep'};
     if (z === 'BRUSH') return {p: new THREE.Vector3(-51 + k*4, 0, 28.6), pose:'stand'};
-    if (z === 'PLAY') return {p: new THREE.Vector3(-50 + k*6, 0, 15), pose:'stand'};
+    if (z === 'PLAY') return {p: new THREE.Vector3(PLAY_C[0] - 2 + k*4, 0, PLAY_C[1] - 6 + k*12), pose:'stand'};
     return {p: inZone(z, .3 + k*.4, .15), pose:'stand'};
   }
   const idx = mates.indexOf(a.ref);
@@ -662,7 +666,7 @@ function kgTarget(a, m, kg){
   if (z === 'Canteen') return {p: slotOf(subRect('Canteen', 0, 1), 'sit', idx, mates.length, a.ox, a.oz), pose:'sit'};
   if (z === 'BRUSH') return {p: new THREE.Vector3(-55 + (idx % 15)*.62, 0, 30 + Math.floor(idx/15)*1.1), pose:'brush'};
   const w = m*1.7 + a.i*2.1;   // วิ่งเล่นรอบ ๆ โดมสนามเด็กเล่น
-  return {p: new THREE.Vector3(-47 + (a.ox-.5)*15 + Math.sin(w)*2.5, 0, 18 + (a.oz-.5)*8 + Math.cos(w*.8)*2), pose:'run'};
+  return {p: new THREE.Vector3(PLAY_C[0] + (a.ox-.5)*7 + Math.sin(w)*1.2, 0, PLAY_C[1] + (a.oz-.5)*14 + Math.cos(w*.8)*1.5), pose:'run'};
 }
 // เปลี่ยนคาบแล้วต้องย้ายห้อง: เข้าแถวหน้าห้องเดิม 5 นาที แล้วเดินเรียงแถวไปห้องใหม่ (ออกทีละคน)
 const PSTART = ROUTINE.filter(r => typeof r[2] === 'number').map(r => r[0]), LINE_MIN = 5;
@@ -1047,6 +1051,19 @@ function placeRoomLabels(){
     const on = selected === L.R.b || view.zoom >= 2.4; L.el.style.display = on ? '' : 'none'; if (!on) continue;
     v.copy(L.p).project(cam); L.el.style.left = (v.x*.5+.5)*innerWidth + 'px'; L.el.style.top = (-v.y*.5+.5)*innerHeight + 'px';
   }
+}
+// เครื่องเล่นใต้หลังคา: สไลเดอร์ ชิงช้า ม้าหมุน กระบะทราย
+function buildPlayset(){
+  const g = new THREE.Group(); g.position.set(PLAY_C[0], 0, PLAY_C[1]); scene.add(g);
+  const M = c => new THREE.MeshLambertMaterial({color: c}), add = (geo, mat, x, y, z, ry = 0, rx = 0) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); o.rotation.set(rx, ry, 0); o.castShadow = true; g.add(o); return o; };
+  add(new THREE.BoxGeometry(1.6, 1.4, 1.6), M('#f97316'), -1.5, .7, -5.5);                       // หอสไลเดอร์
+  add(new THREE.BoxGeometry(.9, .1, 3), M('#facc15'), -1.5, .75, -3.3, 0, -.45);                   // สไลเดอร์
+  for (const x of [1.2, 3]) for (const z of [-6.5, -3.5]) add(new THREE.CylinderGeometry(.06, .06, 2.2, 6), M('#2563eb'), x, 1.1, z);
+  add(new THREE.BoxGeometry(2.1, .1, .1), M('#2563eb'), 2.1, 2.2, -6.5); add(new THREE.BoxGeometry(2.1, .1, .1), M('#2563eb'), 2.1, 2.2, -3.5);
+  add(new THREE.BoxGeometry(.1, .1, 3.1), M('#2563eb'), 1.2, 2.2, -5); add(new THREE.BoxGeometry(.1, .1, 3.1), M('#2563eb'), 3, 2.2, -5);
+  for (const z of [-5.8, -4.2]) add(new THREE.BoxGeometry(.6, .06, .35), M('#ef4444'), 2.1, .55, z);   // ชิงช้า
+  add(new THREE.CylinderGeometry(1.3, 1.3, .15, 16), M('#22c55e'), 0, .35, 2);                      // ม้าหมุน
+  add(new THREE.BoxGeometry(3, .25, 3), M('#fde68a'), 0, .12, 6);                                   // กระบะทราย
 }
 function animFarm(dt, t){
   if (!spray) return;
