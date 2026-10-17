@@ -36,7 +36,7 @@ html,body{margin:0;height:100%;overflow:hidden;font-family:Sarabun,sans-serif;co
 .track{height:7px;border-radius:4px;background:var(--chip);overflow:hidden;display:flex}
 .track i{display:block;height:100%}
 .row span:last-child{text-align:right;color:var(--mute)}
-#right{right:16px;top:16px;width:230px}
+#right{right:16px;top:16px;width:290px}
 #feed{list-style:none;margin:8px 0 0;padding:0}
 #feed li{display:grid;grid-template-columns:28px 1fr auto;gap:6px;align-items:center;padding:4px 0;border-top:1px solid var(--line)}
 .av{width:26px;height:26px;border-radius:50%;background:#dbeafe;display:grid;place-items:center;font-size:10px;font-weight:700;color:#1e40af}
@@ -107,6 +107,12 @@ canvas{cursor:pointer}
 #bar .sp button.on{background:#111827;color:#fff}
 .lab{position:absolute;transform:translate(-50%,-100%);white-space:nowrap;background:#fff;border:1px solid var(--line);border-radius:8px;padding:3px 7px;font-size:11px;box-shadow:0 2px 6px rgba(0,0,0,.1);pointer-events:none;transition:opacity .3s}
 .lab b{font-weight:700}.lab i{font-style:normal;color:var(--mute);display:block;font-size:10px}
+.src{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.04em;border-radius:4px;padding:0 5px;line-height:15px;vertical-align:1px;white-space:nowrap}
+.src.sim{background:#e2e8f0;color:#475569}.src.sch{background:#dbeafe;color:#1d4ed8}.src.ver{background:#dcfce7;color:#15803d}.src.unk{background:#fff;color:#64748b;border:1px dashed #94a3b8}
+#tt .act{list-style:none;margin:0;padding:0}#tt .act li{display:grid;grid-template-columns:34px 1fr auto;gap:6px;align-items:start;padding:5px 0;border-top:1px solid var(--line);font-size:11.5px}
+#tt .act b.c{font-size:11px;color:var(--navy)}#tt .act small{display:block;color:var(--mute);font-size:10.5px}
+#tt .actnote{margin-top:6px;font-size:10px;color:var(--mute)}
+#srcl{margin-top:6px;font-size:10.5px;color:var(--mute)}
 .lab .bst{display:block;font-size:10px;font-weight:700;color:var(--s,#94a3b8)}.lab .bst::before{content:"● "}
 .lab.pick{border-color:var(--navy);box-shadow:0 0 0 2px var(--navy),0 2px 6px rgba(0,0,0,.1)}
 #legend{display:flex;flex-wrap:wrap;gap:3px 10px;margin-top:6px;font-size:10.5px;color:var(--mute)}#legend span::before{content:"● ";color:var(--s)}
@@ -197,6 +203,7 @@ canvas{cursor:pointer}
     <div>มาแล้ว<b id="kIn">0</b></div><div>ยังไม่มา<b id="kOut">184</b></div>
     <div>มาสาย<b id="kLate" style="color:var(--late)">0</b></div><div>ครูมาแล้ว<b id="kT">0/21</b></div>
   </div>
+  <div id="srcl"></div>
   <div class="cls" id="cls"></div>
   <div class="cls" id="travel"></div>
 </div>
@@ -506,8 +513,12 @@ for (const s of STUDENTS) {
   s.scan = s.real ?? Math.round(s.arr + walk(s.drop));   // ผลสแกนจริงจาก SIS ใช้เวลาจริงเสมอ
 }
 TEACHERS.forEach(t => { t.arr = t.runIn.arrive; t.scan = Math.round(t.arr + walk(t.drop, TSCAN_PT)); t.leave = t.runOut.depart - .3; });
-const SCANS = [...STUDENTS.filter(s=>s.scan!=null).map(s=>({t:s.scan, who:`${s.cls} เลขที่ ${s.no}`, cls:s.cls})),
-               ...TEACHERS.map(s=>({t:s.scan, who:fullName(s.name), cls:'ครู'}))].sort((a,b)=>a.t-b.t);
+// ประเภทแหล่งข้อมูล: SIMULATED = จำลอง · SCHEDULED = ตามตาราง · VERIFIED = ยืนยันจากระบบจริง · UNKNOWN = ไม่มีข้อมูลยืนยัน
+const SRC = {sim: ['SIMULATED', 'ข้อมูลจำลอง'], sch: ['SCHEDULED', 'ข้อมูลตามตาราง'], ver: ['VERIFIED', 'ข้อมูลที่ได้รับการยืนยันจากระบบโรงเรียน'], unk: ['UNKNOWN', 'ไม่มีข้อมูลยืนยัน']};
+const srcB = k => `<span class="src ${k}" title="${SRC[k][1]}">${SRC[k][0]}</span>`;
+// เวลาสแกนของครูเป็นค่าจำลองทั้งหมด จึงไม่แสดงชื่อจริงคู่กับเวลา (ไม่สร้างสถานะของบุคคลจริงขึ้นเอง)
+const SCANS = [...STUDENTS.filter(s=>s.scan!=null).map(s=>({t:s.scan, who:`${s.cls} เลขที่ ${s.no}`, cls:s.cls, src: s.real != null ? 'ver' : 'sim'})),
+               ...TEACHERS.map(s=>({t:s.scan, who:'ครู (ไม่แสดงชื่อ)', cls:'ครู', src:'sim'}))].sort((a,b)=>a.t-b.t);
 
 /* ---------- รอบนอกโรงเรียน: ถนนหน้าโรงเรียน + ซอยข้าง มีรถชาวบ้านผ่านบางเบา (ไม่หนาแน่น) ---------- */
 const FAR = 150, SOI_E = 57.4, SOI_W = 54;   // ซอยข้างโรงเรียน: เลนขาออก (ไปทางตะวันออก) / เลนขาเข้า
@@ -1279,11 +1290,11 @@ function select(name){
 let follow = null, findMark = null;
 const whoOf = a => a.kind === 't' ? fullName(a.ref.name) : `${a.cls} เลขที่ ${a.ref.no}`;
 function statusOf(a){
-  if (a.kind === 's' && a.ref.scan == null) return {where: 'ไม่ได้มาโรงเรียน', what: 'ขาดเรียนวันนี้'};
+  if (a.kind === 's' && a.ref.scan == null) return {where: 'ไม่ได้มาโรงเรียน', what: 'ขาดเรียนวันนี้', src: 'sim'};
   const [z, txt] = placeOfAgent(a, simMin);
-  if (!z) return {where: simMin < (a.ref.scan ?? 0) ? 'ยังไม่ถึงโรงเรียน' : 'กลับบ้านแล้ว', what: simMin < (a.ref.scan ?? 0) ? 'สแกนหน้าเวลา ' + fmt(a.ref.scan) : ''};
+  if (!z) return {where: simMin < (a.ref.scan ?? 0) ? 'ยังไม่ถึงโรงเรียน' : 'กลับบ้านแล้ว', what: simMin < (a.ref.scan ?? 0) ? 'สแกนหน้าเวลา ' + fmt(a.ref.scan) : '', src: 'sim'};
   const room = a.kind === 's' && typeof phaseAt(simMin)[2] === 'number' ? lesson(a.cls, phaseAt(simMin)[2]).room : null;
-  return {where: placeTh(z) + (room && ROOMS[room] ? ' · ' + ROOMS[room].th : ''), what: txt || ''};
+  return {where: placeTh(z) + (room && ROOMS[room] ? ' · ' + ROOMS[room].th : ''), what: txt || '', src: typeof phaseAt(simMin)[2] === 'number' ? 'sch' : 'sim'};
 }
 function placeMatches(q){   // ค้นหาอาคาร/ห้องเรียน
   const k = q.trim().toLowerCase(); if (!k) return [];
@@ -1302,7 +1313,7 @@ function findMatches(q){
 function renderFind(){
   const ul = $('fres'), q = $('fq').value, list = findMatches(q).slice(0, 40), pl = placeMatches(q);
   ul.innerHTML = !q.trim() ? '<li style="cursor:default;color:var(--mute)">พิมพ์ชื่อครู หรือชั้นเรียน แล้วแตะรายชื่อเพื่อดูตำแหน่งบนแผนที่</li>'
-    : list.length ? list.map(a => { const st = statusOf(a); return `<li data-i="${AGENTS.indexOf(a)}" class="${a === follow ? 'on' : ''}"><span class="av">${a.kind === 't' ? '👩‍🏫' : a.cls}</span><span><b>${whoOf(a)}</b><small>📍 ${st.where}</small><small>${st.what}</small></span></li>`; }).join('')
+    : list.length ? list.map(a => { const st = statusOf(a); return `<li data-i="${AGENTS.indexOf(a)}" class="${a === follow ? 'on' : ''}"><span class="av">${a.kind === 't' ? '👩‍🏫' : a.cls}</span><span><b>${whoOf(a)}</b><small>📍 ${st.src === 'sch' ? 'ตามตาราง' : 'จำลอง'}: ${st.where} ${srcB(st.src || 'unk')}</small><small>${st.what}</small></span></li>`; }).join('')
     : '<li style="cursor:default;color:var(--mute)">ไม่พบ ลองพิมพ์ชื่อครู หรือ ป.1–ป.6 / อ.2–อ.3</li>';
   if (pl.length) ul.insertAdjacentHTML('afterbegin', pl.map(x => `<li data-z="${x.place}"><span class="av">🏫</span><span><b>${x.label}</b><small>${x.sub}</small></span></li>`).join(''));
   if (pl.length) ul.querySelector('li[style*="cursor:default"]')?.remove();   // เจออาคาร/ห้องแล้ว ไม่ต้องขึ้น "ไม่พบ"
@@ -1406,6 +1417,20 @@ function setSpeed(s){ speed = s; [...$('speed').children].forEach(x=>x.className
 for (const [lab,s] of [['ช้า',.1],['×1',1],['×3',3],['×10',10]]) $('tSpeed').add(new Option('ความเร็ว ' + lab, s, false, s === speed));
 $('tSpeed').onchange = () => setSpeed(+$('tSpeed').value);
 $('tDash').onclick = () => openDash();
+// แผงสถานะกิจกรรม: ทำอะไร ที่ไหน ช่วงเวลาไหน วิชา ครูผู้รับผิดชอบ จำนวนนักเรียน และแหล่งข้อมูล
+function renderActivity(m){
+  const [t0, phase, where] = phaseAt(m), i = ROUTINE.findIndex(r => r[0] === t0), t1 = ROUTINE[i + 1]?.[0] ?? 990, span = `${fmt(t0)}–${fmt(t1)}`;
+  const nStu = c => { const n = CLASSES.find(x => x[0] === c)[1]; return `${n} คน ${srcB(FEED ? 'ver' : 'sim')}`; };
+  const tea = l => l.tea === 'ครูทุกคน' || l.tea === 'ครูอนุบาล' ? l.tea : fullName('ครู' + l.tea) + (l.co?.length ? ' + ' + l.co.map(t => fullName('ครู' + t)).join(', ') : '');
+  let rows;
+  if (typeof where === 'number') rows = CLASSES.map(([c]) => { const l = lesson(c, where), rm = l.room && ROOMS[l.room];
+    return `<li><b class="c">${c}</b><div><b>${l.sub}</b><small>📍 ${ZONES[l.where][0]}${rm ? ' · ' + rm.th : ''} · 🕘 ${span}</small><small>👩‍🏫 ${tea(l)} · 👥 ${nStu(c)}</small></div>${srcB('sch')}</li>`; });
+  else { const kg = kgAt(m), pl = typeof where === 'string' && ZONES[where] ? ZONES[where][0] : 'ทั่วโรงเรียน';
+    rows = [`<li><b class="c">ป.1–6</b><div><b>${phase}</b><small>📍 ${pl} · 🕘 ${span}</small><small>กิจวัตรตามที่ครูแจ้ง (ยังไม่ได้ตรวจกับตารางจริงของโรงเรียน)</small></div>${srcB('sim')}</li>`];
+    if (kg) rows.push(`<li><b class="c">อ.2–3</b><div><b>${kg[1]}</b><small>📍 ${ZONES[kg[2]]?.[0] || 'อาคารอนุบาล'}</small><small>กิจวัตรอนุบาลตามที่ครูแจ้ง</small></div>${srcB('sch')}</li>`); }
+  $('tt').innerHTML = `<div class="h" style="margin-bottom:4px">กิจกรรมตอนนี้ · วัน${DAYS[day]} ${fmt(m)}</div><ul class="act">${rows.join('')}</ul>
+    <div class="actnote">ตำแหน่งตามตารางไม่ใช่ตำแหน่งจริงของบุคคล · ผลเช็กชื่อไม่ได้ยืนยันว่าอยู่ห้องใดตอนนี้</div>`;
+}
 function update(force){
   const m = simMin, key = Math.floor(m) + '';
   if (!force && key === lastKey) return; lastKey = key;
@@ -1425,12 +1450,9 @@ function update(force){
   $('scanN').textContent = `${seen.length} ครั้ง`;
   $('feed').innerHTML = seen.slice(-5).reverse().map(s => {
     const lt = s.cls !== 'ครู' && s.t > LATE;
-    return `<li><span class="av">${s.cls==='ครู'?'ครู':s.cls}</span><span>${s.who}<small>สแกนหน้า ${fmt(s.t)} น.</small></span><span class="st" style="background:var(${lt?'--late':'--ok'})">${lt?'สาย':'ทันเวลา'}</span></li>`;
+    return `<li><span class="av">${s.cls==='ครู'?'ครู':s.cls}</span><span>${s.who}<small>สแกนหน้า ${fmt(s.t)} น. ${srcB(s.src)}</small></span><span class="st" style="background:var(${lt?'--late':'--ok'})">${lt?'สาย':'ทันเวลา'}</span></li>`;
   }).join('') || '<li style="grid-template-columns:1fr;color:var(--mute)">ยังไม่มีการสแกน</li>';
-  if (typeof where === 'number') {
-    $('tt').innerHTML = `<div class="h" style="margin-bottom:4px">${phase} · วัน${DAYS[day]}</div><table>` +
-      CLASSES.map(([c]) => { const l = lesson(c, where); return `<tr><td>${c}</td><td>${l.sub}<small>${l.tea === 'ครูทุกคน' || l.tea === 'ครูอนุบาล' ? l.tea : fullName('ครู' + l.tea)}${l.co?.length ? ' + ' + l.co.map(t => fullName('ครู' + t)).join(', ') : ''}</small></td><td>${ZONES[l.where][0]}</td></tr>`; }).join('') + '</table>';
-  } else $('tt').innerHTML = '';
+  renderActivity(m);
   if (selected) renderSel();
   const occ = occupancy(m);
   for (const [name,z] of Object.entries(zones)) {
@@ -1737,6 +1759,7 @@ function placeGroupChips(){
   }
 }
 $('hdrLogo').src = $('topLogo').src = $('splashLogo').src;
+$('srcl').innerHTML = `ตัวเลขการมาเรียน: ${srcB(FEED ? 'ver' : 'sim')} · ครู: ${srcB('sim')}`;
 $('legend').innerHTML = Object.values(BSTAT).map(([t, c]) => `<span style="--s:${c}">${t}</span>`).join('');
 { const md = $('tMode'); md.classList.toggle('sis', !!FEED); md.querySelector('span').textContent = FEED ? 'SIS + ข้อมูลจำลอง' : 'ข้อมูลจำลอง';
   md.title = FEED ? `เวลาสแกนหน้าจาก BANKHUM SIS (${FEED.date}) · ส่วนอื่นเป็นข้อมูลตามตาราง/จำลอง` : 'ทุกอย่างบนแผนที่เป็นข้อมูลจำลองหรือตามตารางเรียน ไม่ใช่ตำแหน่งจริงของบุคคล'; }
