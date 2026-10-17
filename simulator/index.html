@@ -107,6 +107,9 @@ canvas{cursor:pointer}
 #bar .sp button.on{background:#111827;color:#fff}
 .lab{position:absolute;transform:translate(-50%,-100%);white-space:nowrap;background:#fff;border:1px solid var(--line);border-radius:8px;padding:3px 7px;font-size:11px;box-shadow:0 2px 6px rgba(0,0,0,.1);pointer-events:none;transition:opacity .3s}
 .lab b{font-weight:700}.lab i{font-style:normal;color:var(--mute);display:block;font-size:10px}
+.lab .bst{display:block;font-size:10px;font-weight:700;color:var(--s,#94a3b8)}.lab .bst::before{content:"● "}
+.lab.pick{border-color:var(--navy);box-shadow:0 0 0 2px var(--navy),0 2px 6px rgba(0,0,0,.1)}
+#legend{display:flex;flex-wrap:wrap;gap:3px 10px;margin-top:6px;font-size:10.5px;color:var(--mute)}#legend span::before{content:"● ";color:var(--s)}
 .lab::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--c);margin-right:4px}
 .lab.off{opacity:.45}
 #top{position:fixed;left:0;right:0;top:0;height:var(--topbar);z-index:20;display:flex;align-items:center;gap:12px;padding:0 14px;box-sizing:border-box;background:var(--navy);color:#fff;box-shadow:0 2px 12px rgba(20,60,88,.25)}
@@ -190,6 +193,7 @@ canvas{cursor:pointer}
   <div class="h"><img class="logo" id="hdrLogo" alt="">โรงเรียนบ้านคุ้ม <span class="tag" id="feedTag">สแกนหน้า</span></div>
   <div class="clock" id="clock">07:00</div>
   <div id="phase">มาโรงเรียน</div>
+  <div id="legend" title="สีสถานะอาคาร: ตามตารางเรียน/กิจวัตร ไม่ได้ยืนยันว่ามีบุคคลอยู่จริง"></div>
   <div class="grid">
     <div>มาแล้ว<b id="kIn">0</b></div><div>ยังไม่มา<b id="kOut">184</b></div>
     <div>มาสาย<b id="kLate" style="color:var(--late)">0</b></div><div>ครูมาแล้ว<b id="kT">0/21</b></div>
@@ -209,7 +213,7 @@ canvas{cursor:pointer}
 <div id="hint">คลิกอาคารเพื่อดูว่าใครอยู่ข้างใน</div>
 <div id="note">ตารางเรียน ป.1–ป.6: ของจริง ภาคเรียนที่ 1/2569 · กิจวัตรอนุบาล: ตามที่ครูแจ้ง · ผลสแกนหน้า: ข้อมูลตัวอย่าง</div>
 <div id="findp" hidden role="dialog" aria-label="ค้นหานักเรียนหรือครู">
-  <div class="fh"><input id="fq" type="search" placeholder="พิมพ์ชื่อครู หรือชั้น เช่น ป.3 เลขที่ 5" autocomplete="off"><button class="x" id="fx" aria-label="ปิด">×</button></div>
+  <div class="fh"><input id="fq" type="search" placeholder="ค้นหาครู ชั้นเรียน อาคาร หรือห้อง เช่น ป.3, ห้องธุรการ" autocomplete="off"><button class="x" id="fx" aria-label="ปิด">×</button></div>
   <div class="chips" id="fchips"></div>
   <ul id="fres"></ul>
   <div class="src">ข้อมูลจากแบบจำลองนี้ (ตารางเรียน/ตารางสอนจริง · ชื่อนักเรียนยังเป็นเลขที่) · ยังไม่ได้เชื่อม SIS และระบบสารบรรณ</div>
@@ -222,7 +226,7 @@ canvas{cursor:pointer}
   <div class="rr"><div class="r2"><div class="sp" id="days"></div><span class="vsep"></span>
   <div class="sp" id="jumps"></div></div>
   <div class="r3"><div class="sp" id="speed"></div>
-  <div class="sp"><button id="xr" class="on">มองทะลุหลังคา</button><button id="home">มุมเดิม</button></div></div></div>
+  <div class="sp"><button id="xr" class="on">มองทะลุหลังคา</button><button id="home" title="ภาพรวมโรงเรียน · กลับมุมมองเริ่มต้น">🏫 ภาพรวม</button></div></div></div>
 </div>
 <script type="module">
 import * as THREE from 'three';
@@ -570,6 +574,9 @@ const fmt = m => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(Math.floo
 const phaseAt = m => { let p = ROUTINE[0]; for (const r of ROUTINE) if (m >= r[0]) p = r; return p; };
 const present = (m) => STUDENTS.filter(s => s.scan != null && s.scan <= m);
 
+// สถานะกิจกรรมของอาคาร (ตามตารางเรียน/กิจวัตร ไม่ใช่การยืนยันว่ามีคนอยู่จริง)
+const BSTAT = {class: ['มีกิจกรรมตามตาราง', '#16A34A'], general: ['กิจกรรมทั่วไป', '#0EA5E9'], change: ['กำลังเปลี่ยนคาบ', '#F59E0B'], none: ['ไม่มีข้อมูลกิจกรรม', '#94A3B8']};
+const periodStartAt = m => { let s = null; for (const t of PSTART) if (m >= t) s = t; return s; };
 function occupancy(m){
   const occ = {};
   for (const a of AGENTS) { if (a.kind !== 's') continue; const [z, txt] = placeOfAgent(a, m); if (!z || !zones[z]) continue;
@@ -635,8 +642,7 @@ function onModel(g) {
   addEventListener('keydown', e => { if (e.key === 'Escape' && !$('findp').hidden) openFind(false); });
   $('home').onclick = () => { view.touched = false; target.set(0,0,0); setZoom(1); };
   for (const [n, [th]] of Object.entries(ZONES)) if (zones[n]) $('tBld').add(new Option(th, n));
-  $('tBld').onchange = () => { const n = $('tBld').value; if (!n) { if (selected) select(selected); return; }
-    if (selected !== n) select(n); const z = zones[n]; view.touched = true; target.set(z.c.x, 0, z.c.z); setZoom(Math.max(view.zoom, 2)); };
+  $('tBld').onchange = () => { const n = $('tBld').value; if (!n) { if (selected) select(selected); return; } focusZone(n); };
   const fitBar = () => document.documentElement.style.setProperty('--barH', ($('bar').offsetHeight + 16) + 'px');
   fitBar(); addEventListener('resize', fitBar); $('xr').onclick = () => { xrayAll = !xrayAll; applyXrayAll(); };
   update(true); window.__ready = true; document.getElementById('splash').classList.add('hide'); setTimeout(() => document.getElementById('splash').remove(), 800);
@@ -1280,6 +1286,13 @@ function statusOf(a){
   const room = a.kind === 's' && typeof phaseAt(simMin)[2] === 'number' ? lesson(a.cls, phaseAt(simMin)[2]).room : null;
   return {where: placeTh(z) + (room && ROOMS[room] ? ' · ' + ROOMS[room].th : ''), what: txt || ''};
 }
+function placeMatches(q){   // ค้นหาอาคาร/ห้องเรียน
+  const k = q.trim().toLowerCase(); if (!k) return [];
+  const out = [];
+  for (const [n, z] of Object.entries(zones)) if (z.th.toLowerCase().includes(k)) out.push({place: n, label: z.th, sub: BSTAT[z.st || 'none'][0]});
+  for (const [rn, R] of Object.entries(ROOMS)) if (zones[R.b] && (rn + ' ' + R.th).toLowerCase().includes(k)) out.push({place: R.b, label: rn, sub: `${R.th} · ${zones[R.b].th}`});
+  return out.slice(0, 12);
+}
 function findMatches(q){
   q = q.trim().replace(/\s+/g, ' '); if (!q) return [];
   const m = q.match(/^(อ|ป)\.?\s*(\d)(?:\s*(?:เลขที่|no\.?|#)?\s*(\d+))?$/i);
@@ -1288,10 +1301,13 @@ function findMatches(q){
   return AGENTS.filter(a => a.kind === 't' && (fullName(a.ref.name) + ' ' + a.ref.name).toLowerCase().includes(k));
 }
 function renderFind(){
-  const ul = $('fres'), q = $('fq').value, list = findMatches(q).slice(0, 40);
+  const ul = $('fres'), q = $('fq').value, list = findMatches(q).slice(0, 40), pl = placeMatches(q);
   ul.innerHTML = !q.trim() ? '<li style="cursor:default;color:var(--mute)">พิมพ์ชื่อครู หรือชั้นเรียน แล้วแตะรายชื่อเพื่อดูตำแหน่งบนแผนที่</li>'
     : list.length ? list.map(a => { const st = statusOf(a); return `<li data-i="${AGENTS.indexOf(a)}" class="${a === follow ? 'on' : ''}"><span class="av">${a.kind === 't' ? '👩‍🏫' : a.cls}</span><span><b>${whoOf(a)}</b><small>📍 ${st.where}</small><small>${st.what}</small></span></li>`; }).join('')
     : '<li style="cursor:default;color:var(--mute)">ไม่พบ ลองพิมพ์ชื่อครู หรือ ป.1–ป.6 / อ.2–อ.3</li>';
+  if (pl.length) ul.insertAdjacentHTML('afterbegin', pl.map(x => `<li data-z="${x.place}"><span class="av">🏫</span><span><b>${x.label}</b><small>${x.sub}</small></span></li>`).join(''));
+  if (pl.length) ul.querySelector('li[style*="cursor:default"]')?.remove();   // เจออาคาร/ห้องแล้ว ไม่ต้องขึ้น "ไม่พบ"
+  for (const li of ul.querySelectorAll('li[data-z]')) li.onclick = () => { follow = null; focusZone(li.dataset.z); };
   for (const li of ul.querySelectorAll('li[data-i]')) li.onclick = () => { follow = AGENTS[+li.dataset.i]; view.touched = true; if (view.zoom < 2.2) setZoom(2.6); renderFind(); };
 }
 function openFind(on){
@@ -1361,6 +1377,7 @@ el.addEventListener('pointerup', e => {
   if (hit) { select(hit.object.userData.zone); if (selected) document.body.classList.add('sheet'); } else if (selected) select(selected);
 });
 window.__select = select;
+function focusZone(n){ if (!zones[n]) return; if (selected !== n) select(n); const z = zones[n]; view.touched = true; target.set(z.c.x, 0, z.c.z); setZoom(Math.max(view.zoom, 2)); document.body.classList.add('sheet'); }
 function applyXrayAll(){ for (const n in zones) setXray(n, xrayAll || n === selected); $('xr').className = xrayAll ? 'on' : ''; }
 
 /* ---------- UI ---------- */
@@ -1420,10 +1437,14 @@ function update(force){
   for (const [name,z] of Object.entries(zones)) {
     const o = occ[name];
     const L = typeof where === 'number' ? Object.entries(layout(m)).filter(([,k]) => k.b === name) : [];
-    const cut = s => s.length > 26 ? s.slice(0,25)+'…' : s;
-    z.el.innerHTML = `<b>${z.th}</b>` + (L.length ? L.map(([c,k]) => `<i>📖 ${c} ${cut(k.l.sub)} · ${k.l.tea}</i>`).join('')
-      : `<i>${o ? `${o.n} คน · ${cut([...o.txt][0])}` : 'ว่าง'}</i>`);
-    z.el.classList.toggle('off', !o); z.mat.opacity = o ? .26 : .06; z.lmat.opacity = o ? 1 : .3;
+    const cut = s => s.length > 26 ? s.slice(0,25)+'…' : s, ps = typeof where === 'number' ? periodStartAt(m) : null;
+    const st = L.length ? (ps != null && m < ps + LINE_MIN ? 'change' : 'class') : o ? 'general' : 'none'; z.st = st;
+    const [stTh, stCol] = BSTAT[st];
+    z.el.style.setProperty('--s', stCol);
+    z.el.innerHTML = `<b>${z.th}</b><span class="bst">${stTh}</span>` + (L.length ? L.map(([c,k]) => `<i>📖 ${c} ${cut(k.l.sub)} · ${k.l.tea}</i>`).join('')
+      : o ? `<i>${cut([...o.txt][0])} · ≈${o.n} คน (จำลอง)</i>` : '');
+    z.el.classList.toggle('off', st === 'none'); z.el.classList.toggle('pick', name === selected);
+    z.lmat.color.set(name === selected ? '#143C58' : stCol); z.mat.opacity = name === selected ? .36 : st === 'none' ? .06 : .24; z.lmat.opacity = st === 'none' && name !== selected ? .35 : 1;
   }
   const fz = zones.SmartFarm; if (fz) { const on = farmOn(m), nx = FARM_SCHED.find(s => s[0] > m);
     fz.el.innerHTML = `<b>${fz.th}</b><i>${on ? '🚿 กำลังรดน้ำ' + (farmManual ? ' (สั่งเอง)' : '') : nx ? 'รดน้ำรอบถัดไป ' + fmt(nx[0]) : 'วันนี้รดน้ำครบแล้ว'}</i>`;
@@ -1717,6 +1738,7 @@ function placeGroupChips(){
   }
 }
 $('hdrLogo').src = $('topLogo').src = $('splashLogo').src;
+$('legend').innerHTML = Object.values(BSTAT).map(([t, c]) => `<span style="--s:${c}">${t}</span>`).join('');
 { const md = $('tMode'); md.classList.toggle('sis', !!FEED); md.querySelector('span').textContent = FEED ? 'SIS + ข้อมูลจำลอง' : 'ข้อมูลจำลอง';
   md.title = FEED ? `เวลาสแกนหน้าจาก BANKHUM SIS (${FEED.date}) · ส่วนอื่นเป็นข้อมูลตามตาราง/จำลอง` : 'ทุกอย่างบนแผนที่เป็นข้อมูลจำลองหรือตามตารางเรียน ไม่ใช่ตำแหน่งจริงของบุคคล'; }
 function openDash(){ toast('ครู', '<b>Dashboard</b> · อยู่ระหว่างพัฒนา'); }
