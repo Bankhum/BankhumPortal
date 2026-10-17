@@ -201,6 +201,7 @@ canvas{cursor:pointer}
 @media (max-height:520px){#right{max-height:calc(100vh - var(--barH,112px) - 70px)}}
 @media (max-height:520px) and (min-width:600px){#bar{flex-direction:row;align-items:center}#bar .r1{flex:0 0 42%}#bar .rr{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0}#left{padding:4px 10px}#left .clock{font-size:18px}}
 #nogl{position:fixed;inset:0;z-index:99;display:grid;place-items:center;background:#143C58;color:#fff;font:15px/1.6 system-ui,sans-serif;padding:16px;text-align:center}#nogl>div{max-width:420px}#nogl b{font-size:18px}#nogl button{margin-top:8px;padding:8px 18px;border:0;border-radius:8px;background:#fff;color:#143C58;font-weight:600;cursor:pointer}
+#dash .lgn{display:inline-block;margin-top:8px;padding:7px 14px;border-radius:8px;background:var(--navy);color:#fff;text-decoration:none;font-weight:600}#dash .who{font-size:13px;margin:4px 0}#dash .who a{margin-left:6px;color:var(--blue)}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
 </head>
@@ -376,6 +377,7 @@ const DataAdapter = {
     } catch (e) { this.status = 'error'; this.message = 'ติดต่อ SIS ไม่ได้'; return null; }
   },
 };
+const AUTH_P = loadAuth();
 const FEED = await DataAdapter.loadTodayScans();
 if (FEED) FEED.fetched = DataAdapter.updated.toLocaleTimeString('th-TH', {hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'});
 const SCAN_REAL = new Map();   // 'ป.1#12' → {m: นาที, status, girl}
@@ -1867,7 +1869,48 @@ function renderDash(){
     <div><h4>การใช้อาคารทั้งวัน (จำนวนคาบ-ชั้น)</h4><div class="bars" role="table" aria-label="จำนวนคาบเรียนต่ออาคาร">${Object.entries(use).sort((a, b) => b[1] - a[1]).map(([n, v]) => `<div role="row" title="${ZONES[n][0]}: ${v} คาบ-ชั้น จาก ${tot}"><span role="cell">${ZONES[n][0]}</span><span role="cell"><i style="width:${v/mx*100}%"></i></span><span role="cell">${v}</span></div>`).join('') || '<div class="lock">ไม่มีข้อมูล</div>'}</div><small style="color:var(--mute)">นับจากตารางเรียนวัน${DAYS[d]} ${srcB('sch')}</small></div>
   </div>
   <div><h4>สรุปกิจกรรมรายวัน · วัน${DAYS[d]}</h4><div class="scroll"><table><tr><th>ชั้น</th>${PERIODS.map(x => `<th>${x.th}<br><small>${fmt(x.t0)}</small></th>`).join('')}</tr>${CLASSES.filter(([c]) => !fc || c === fc).map(([c]) => `<tr><td><b>${c}</b></td>${PERIODS.map(x => { const l = lessonOn(c, x.p, d); return `<td style="${keep(c, l) ? '' : 'opacity:.3'}">${l.sub}<br><small>${ZONES[l.where][0]}</small></td>`; }).join('')}</tr>`).join('')}</table></div></div>
-  <div class="lock">🔒 ข้อมูลละเอียด (สถิติการมาเรียนรายห้อง รายงานสำหรับผู้บริหาร) จะแสดงเฉพาะผู้ที่เข้าสู่ระบบด้วยอีเมลโรงเรียนตามสิทธิ์ ระบบสิทธิ์อยู่ระหว่างออกแบบ</div>`;
+  <div id="staff"></div>`;
+  renderStaff();
+}
+/* ---------- Staff section (Phase 8): roles come from the server; the page only shows what /sim-api returns ---------- */
+const esc = x => String(x ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+const ROLE_TH = {PUBLIC:'ผู้เยี่ยมชม', TEACHER:'ครู', EXECUTIVE:'ผู้บริหาร', ADMIN:'ผู้ดูแลระบบ'};
+let AUTH = {role:'PUBLIC', login_available:false}, staffData = null, auditData = null;
+async function loadAuth(){
+  try { const ac = new AbortController(); setTimeout(() => ac.abort(), 8000);
+    const r = await fetch('/sim-auth/me', {signal:ac.signal, cache:'no-store'}); if (r.ok) return await r.json(); } catch {}
+  return null;
+}
+AUTH_P.then(a => {
+  if (a && a.role) AUTH = a;
+  const lg = new URLSearchParams(location.search).get('login'); if (!lg) return;
+  history.replaceState(null, '', location.pathname);
+  const msg = {ok:'เข้าสู่ระบบแล้ว', denied:'เข้าได้เฉพาะบัญชี @bankhum.ac.th', failed:'เข้าสู่ระบบไม่สำเร็จ ลองอีกครั้ง', unconfigured:'ยังไม่ได้ตั้งค่าการเข้าสู่ระบบ'}[lg];
+  if (msg) { openDash(); const el = $('staff'); if (el) el.insertAdjacentHTML('afterbegin', `<div class="lock" role="status">${msg}</div>`); }
+});
+async function getJ(u){ try { const r = await fetch(u, {cache:'no-store'}); return {code:r.status, ...(await r.json().catch(() => ({})))}; } catch { return {code:0}; } }
+async function renderStaff(refresh){
+  const el = $('staff'); if (!el) return;
+  if (AUTH.role === 'PUBLIC') {
+    el.innerHTML = `<div class="lock">🔒 สถิติการมาเรียนรายห้องจาก SIS แสดงเฉพาะครูและผู้บริหารที่เข้าสู่ระบบด้วยบัญชี Google ของโรงเรียน (@bankhum.ac.th) ระบบไม่ถามรหัสผ่านเอง
+      ${AUTH.login_available ? '<br><a class="lgn" href="/sim-auth/login">🔐 เข้าสู่ระบบด้วยอีเมลโรงเรียน</a>' : '<br><small>ยังไม่ได้ตั้งค่าการเข้าสู่ระบบบนเซิร์ฟเวอร์</small>'}</div>`;
+    return;
+  }
+  const who = `<div class="who">👤 ${esc(AUTH.name || AUTH.email)} · <b>${ROLE_TH[AUTH.role] || esc(AUTH.role)}</b> <a href="/sim-auth/logout">ออกจากระบบ</a></div>`;
+  if (refresh || !staffData) { el.innerHTML = who + '<div class="lock">กำลังโหลดข้อมูลจาก SIS…</div>'; staffData = await getJ('/sim-api/attendance');
+    if (AUTH.role === 'ADMIN') auditData = await getJ('/sim-api/audit'); }
+  const a = staffData;
+  let h = who + `<h4>การมาเรียนวันนี้รายห้อง (จาก SIS) ${a.ok ? srcB('ver') : srcB('unk')}</h4>`;
+  if (a.code === 401) { AUTH = {role:'PUBLIC', login_available:true}; return renderStaff(); }
+  if (!a.ok) h += `<div class="lock">${a.status === 'unconfigured' ? 'ยังไม่ได้เปิดใช้การเชื่อม SIS' : 'SIS ไม่พร้อมใช้งาน ' + esc(a.error || '')} · ไม่แสดงตัวเลขแทน</div>`;
+  else {
+    const T = a.classes.reduce((t, c) => { for (const k of ['enrolled','present','late','leave','absent','no_record']) t[k] = (t[k] || 0) + c[k]; return t; }, {});
+    const row = (n, c) => `<tr><td><b>${n}</b></td><td>${c.enrolled}</td><td>${c.present}</td><td>${c.late}</td><td>${c.leave}</td><td>${c.absent}</td><td>${c.no_record}</td></tr>`;
+    h += `<div class="scroll"><table><tr><th>ห้อง</th><th>ทั้งหมด</th><th>มา</th><th>สาย</th><th>ลา/ป่วย</th><th>ขาด</th><th>ยังไม่มีบันทึก</th></tr>${a.classes.map(c => row(esc(c.cls) + (c.room ? '/' + esc(c.room) : ''), c)).join('')}${row('รวม', T)}</table></div>
+      <small style="color:var(--mute)">SIS วันที่ ${esc(a.date)} · Last updated ${new Date(a.fetched_at).toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit', timeZone:'Asia/Bangkok'})} · ข้อมูลเช็กชื่อไม่ใช่หลักฐานว่าบุคคลอยู่ ณ ห้องใดในเวลาปัจจุบัน</small>`;
+  }
+  if (AUTH.role === 'ADMIN' && auditData) h += `<h4>บันทึกการเข้าใช้ (audit log)</h4>${auditData.stored ? `<div class="scroll"><table><tr><th>เวลา</th><th>ผู้ใช้</th><th>บทบาท</th><th>การกระทำ</th></tr>${auditData.rows.map(r => `<tr><td>${new Date(r.ts).toLocaleString('th-TH', {timeZone:'Asia/Bangkok'})}</td><td>${esc(r.email || '—')}</td><td>${esc(r.role)}</td><td>${esc(r.action)} ${esc(r.detail)}</td></tr>`).join('')}</table></div>` : '<div class="lock">ยังไม่ได้ผูกฐานข้อมูล SIM_AUDIT บันทึกอยู่ใน log ของ Cloudflare Functions</div>'}`;
+  el.innerHTML = h;
 }
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sim-sw.js').catch(() => {});
 document.addEventListener('visibilitychange', () => { if (!document.hidden) clock.getDelta(); });
