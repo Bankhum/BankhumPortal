@@ -53,7 +53,7 @@ window.BANKHUM_MENU = [
       { th: 'ข้อมูลบุคลากร', en: 'Staff information', icon: 'contact' },
       { th: 'การลาและลงเวลาปฏิบัติงาน', en: 'Leave & time attendance', icon: 'clock-3', url: 'https://zlink.minervaiot.com/login', statId: 'attendance', statName: 'ระบบลงเวลาครู', keywords: 'ลงเวลา ลา zlink attendance' },
       { th: 'แจ้งผลการเลื่อนขั้นเงินเดือน', en: 'Salary increment results', icon: 'badge-dollar-sign', url: 'https://money.bankhum.ac.th/', statId: 'salary', statName: 'ระบบแจ้งผลการเลื่อนขั้นเงินเดือน', keywords: 'เงินเดือน เลื่อนขั้น salary money bkmoney' },
-      { th: 'PA (ข้อตกลงในการพัฒนางาน)', en: 'PA (Performance agreement)', icon: 'handshake', keywords: 'pa วpa ข้อตกลง' },
+      { th: 'PA (ข้อตกลงในการพัฒนางาน)', en: 'PA (Performance agreement)', icon: 'handshake', url: 'https://pa.bankhum.ac.th/', statId: 'pa', statName: 'BANKHUM PA FLOW ระบบบริหารจัดการ PA', keywords: 'pa วpa ข้อตกลง ข้อตกลงในการพัฒนางาน ส่งเอกสาร ติดตามสถานะ ผลการประเมิน performance agreement' },
       { th: 'SAR ครู (รายงานประเมินตนเอง)', en: 'Teacher SAR', icon: 'file-text', keywords: 'sar' },
       { th: 'ประเมินครูและบุคลากร', en: 'Teacher & staff evaluation', icon: 'star' },
       { th: 'ประเมินลูกจ้าง', en: 'Employee evaluation', icon: 'user-cog' }
