@@ -116,6 +116,7 @@ window.BANKHUM_MENU = [
     th: 'ผู้บริหาร', en: 'Executive', code: 'Executive Dashboard', short: 'ผู้บริหาร', shortEn: 'Executive',
     items: [
       { th: 'สถิติการใช้งานระบบ', en: 'System usage statistics', icon: 'chart-no-axes-combined', url: '#dashboard', internal: true, keywords: 'สถิติ stats dashboard' },
+      { th: 'บริหารจัดการ PA (BANKHUM PA FLOW)', en: 'PA management (BANKHUM PA FLOW)', icon: 'handshake', url: 'https://pa.bankhum.ac.th/', statId: 'pa', statName: 'BANKHUM PA FLOW ระบบบริหารจัดการ PA', keywords: 'pa วpa ข้อตกลงในการพัฒนางาน ประเมิน ส่งเอกสาร ติดตามสถานะ performance agreement' },
       { th: 'ภาพรวมนักเรียนและการมาเรียน', en: 'Students & attendance overview', icon: 'users-round' },
       { th: 'ภาพรวมงบประมาณ', en: 'Budget overview', icon: 'chart-pie' },
       { th: 'สถานะโครงการ', en: 'Project status', icon: 'square-kanban' },

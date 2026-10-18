@@ -7,14 +7,14 @@
 <meta content="#c9c3b8" name="theme-color"/>
 <meta content="ศูนย์รวมระบบและบริการออนไลน์ โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)" name="description"/>
 <title>Bankhum School Portal</title>
-<link href="favicon-32.png?v=34" rel="icon" sizes="32x32" type="image/png"/>
-<link href="favicon.ico?v=34" rel="shortcut icon"/>
-<link href="icon-192.png?v=34" rel="apple-touch-icon"/>
-<link href="manifest.webmanifest?v=34" rel="manifest"/>
+<link href="favicon-32.png?v=35" rel="icon" sizes="32x32" type="image/png"/>
+<link href="favicon.ico?v=35" rel="shortcut icon"/>
+<link href="icon-192.png?v=35" rel="apple-touch-icon"/>
+<link href="manifest.webmanifest?v=35" rel="manifest"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="style.css?v=34" rel="stylesheet"/>
+<link href="style.css?v=35" rel="stylesheet"/>
 </head>
 <body>
 <div class="app-shell">
@@ -230,19 +230,19 @@
 (function(){
   try {
     const KEY='bankhumPortalBuild';
-    const BUILD='34';
+    const BUILD='35';
     const old=localStorage.getItem(KEY);
     if(old!==BUILD){
       localStorage.setItem(KEY,BUILD);
-      if('caches' in window){caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('bankhum-portal-')&&k!=='bankhum-portal-v34').map(k=>caches.delete(k))));}
+      if('caches' in window){caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('bankhum-portal-')&&k!=='bankhum-portal-v35').map(k=>caches.delete(k))));}
       if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.update()));}
     }
   } catch(e){}
 })();
 </script>
 <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
-<script src="config.js?v=34"></script>
-<script src="menu.js?v=34"></script>
-<script src="app.js?v=34"></script>
+<script src="config.js?v=35"></script>
+<script src="menu.js?v=35"></script>
+<script src="app.js?v=35"></script>
 </body>
 </html>
