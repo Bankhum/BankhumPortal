@@ -660,3 +660,10 @@ html:not([data-theme="dark"]) .section-kicker{color:#5f574b}
 html:not([data-theme="dark"]) .launcher-section .section-heading p,
 html:not([data-theme="dark"]) .quick-head span{color:#4f483e}
 @media (prefers-reduced-motion:no-preference){html:not([data-theme="dark"]) body::before{animation:none}}
+
+/* ===== V37 indigo group colour (เว็บไซต์ครู) ===== */
+.c-indigo{--c:#4f46e5;--c-soft:color-mix(in srgb,var(--c) 11%,#fff);--c-line:color-mix(in srgb,var(--c) 26%,#fff);--c-ink:color-mix(in srgb,var(--c) 82%,#000)}
+html[data-theme="dark"] .c-indigo{--c-soft:color-mix(in srgb,var(--c) 20%,#0f2019);--c-line:color-mix(in srgb,var(--c) 38%,#1b2e27);--c-ink:color-mix(in srgb,var(--c) 55%,#fff)}
+/* last tile alone in a row → span the full row */
+.module-launcher .launcher-tile:last-child:nth-child(3n+1){grid-column:1/-1}
+@media (max-width:700px){.module-launcher .launcher-tile:last-child:nth-child(3n+1){flex-direction:row;justify-content:center;text-align:left;min-height:64px}}
