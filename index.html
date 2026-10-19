@@ -1411,7 +1411,7 @@ function buildP12Lane(){
   const g = new THREE.Group(); g.name = 'P12Lane'; scene.add(g);
   const M = c => new THREE.MeshLambertMaterial({color: c}), add = (geo, mat, x, y, z, par = g) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; par.add(o); return o; };
   const B = (w, h, d, c, x, y, z, par = g) => add(new THREE.BoxGeometry(w, h, d), typeof c === 'string' ? M(c) : c, x, y, z, par);
-  const TREES = [-38.4, -34.1, -29.9, -25.6, -21.3, -17, -12.7, -8.4], TZ = -18.2, SALA = [-38.6, -34.7, -30.8, -26.9, -23, -19.1, -15.2, -11.3], SZ = -10.7;
+  const TREES = [-38.4, -34.1, -29.9, -25.6, -21.3, -17, -12.7, -8.4], TZ = -18.2, SALA = [-38.6, -34.7, -30.8, -26.9, -23, -19.1, -15.2, -11.3], SZ = -15.3;   // ศาลาวางชิดแนวต้นไม้ริมถนน (ตามที่ครูชี้)
   fixP12Site();
   // กระถางปูนกลมสีขาวรอบโคนต้นไม้ + พุ่มเข็ม/ไม้ประดับ
   const potG = new THREE.CylinderGeometry(.78, .82, .5, 18), bushG = new THREE.SphereGeometry(.55, 9, 7), dotG = new THREE.SphereGeometry(.09, 5, 4);
