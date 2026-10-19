@@ -1316,7 +1316,7 @@ function buildMarket(bx, gable, mat){   // ตลาดสด: ลานคอ�
 }
 
 function buildFence(){ // รั้วรอบโรงเรียน เว้นช่องประตูรถเข้า/ออกด้านถนน
-  fenceBuilt = true; buildOutside(); buildRoad(); buildGarden(); const {x0, x1, z0, z1} = FENCE, H = 1.6, segs = [];
+  fenceBuilt = true; buildOutside(); buildRoad(); buildGarden(); buildP12Lane(); const {x0, x1, z0, z1} = FENCE, H = 1.6, segs = [];
   const gaps = [[GATE_IN_Z - 4, GATE_IN_Z + 4], [GATE_OUT_Z - 4, GATE_OUT_Z + 4]];
   let z = z0; for (const [a, b] of gaps.sort((p, q) => p[0] - q[0])) { segs.push([x0, z, x0, a]); z = b; } segs.push([x0, z, x0, z1]);
   segs.push([x0, z1, x1, z1], [x1, z1, x1, z0], [x1, z0, x0, z0]);
@@ -1337,6 +1337,62 @@ function buildFence(){ // รั้วรอบโรงเรียน เว�
    รั้วระแนงขาว-เขียว เสาเขียว, ป้ายผลงาน/รางวัลเรียงริมรั้ว, ป้ายชื่อโรงเรียนสีดำบนกำแพงเขียวมิ้นต์ (พ.ศ. 2548),
    ทางเท้าปูกระเบื้อง, ศาลาแปดเหลี่ยมขาว-เขียว 2 หลังข้างประตู, ขอบทางแดง-ขาว, ป้ายบอกทาง, โรงเรือนตาข่ายพรางแสง, ตึกแถว 3 ชั้นข้างโรงเรียน */
 const SIGN_Z = 7;   // ป้ายชื่อโรงเรียน: กลางแนวรั้วหน้าโรงเรียน ระหว่างสวนดอกไม้กับประตูทางเข้า
+// ถนนหน้าอาคาร ป.1 ป.2 (ตามรูปจริง school-photos/05-อาคาร-ป1-ป2): ฝั่งสนามมีแนวต้นไม้ในกระถางปูนกลมสีขาวริมขอบทางแดง-ขาว,
+// ศาลาทรงไทยหลากสี (น้ำตาล ฟ้า ชมพู เขียว) และยางรถทาสีเรียงริมสนาม · ฝั่งอาคารมีเส้นประเหลืองริมถนน และซุ้มระแนงขาว "ขอบคุณที่มาเยือน" ท้ายอาคาร
+let p12Fixed = false;
+function fixP12Site(){   // ศาลาเดิมในโมเดล (กล่องขาวหลังคาน้ำตาล) แทนด้วยศาลาทรงไทย, ต้นไม้แนวถนนสีเขียวเข้มตามรูปจริง · ส่วนนี้ของโมเดลโหลดทีหลัง จึงลองซ้ำทุกเฟรมจนเจอ
+  let n = 0; scene.traverse(o => { if (o.name === 'poly_11' || o.name === 'poly_12') { o.visible = false; n++; }
+    if (o.name === 'poly_10' && o.material) { o.material = o.material.clone(); o.material.color.set('#4f8f3c'); n++; } });
+  return p12Fixed = n >= 3;
+}
+function buildP12Lane(){
+  const g = new THREE.Group(); g.name = 'P12Lane'; scene.add(g);
+  const M = c => new THREE.MeshLambertMaterial({color: c}), add = (geo, mat, x, y, z, par = g) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; par.add(o); return o; };
+  const B = (w, h, d, c, x, y, z, par = g) => add(new THREE.BoxGeometry(w, h, d), typeof c === 'string' ? M(c) : c, x, y, z, par);
+  const TREES = [-38.4, -34.1, -29.9, -25.6, -21.3, -17, -12.7, -8.4], TZ = -18.2, SALA = [-38.6, -34.7, -30.8, -26.9, -23, -19.1, -15.2, -11.3], SZ = -10.7;
+  fixP12Site();
+  // กระถางปูนกลมสีขาวรอบโคนต้นไม้ + พุ่มเข็ม/ไม้ประดับ
+  const potG = new THREE.CylinderGeometry(.78, .82, .5, 18), bushG = new THREE.SphereGeometry(.55, 9, 7), dotG = new THREE.SphereGeometry(.09, 5, 4);
+  const potM = M('#f1f5f4'), bushM = M('#3f8a35'), ixM = M('#f97316');
+  for (const [i, x] of TREES.entries()) { add(potG, potM, x, .25, TZ + .3); const b = add(bushG, bushM, x + .3, .62, TZ + .5); b.scale.y = .7;
+    if (i % 2 === 0) for (let k = 0; k < 6; k++) add(dotG, ixM, x + .3 + Math.cos(k)*.45, .75 + (k % 2)*.12, TZ + .5 + Math.sin(k)*.45); }
+  // ศาลาทรงไทยไม้ หลังคาจั่วสูงซ้อนสองชั้น มีม้านั่งพนักพิง
+  const SC = ['#8b4a2b', '#5aa9dc', '#f2b8c6', '#2f9e6a'];
+  for (const [i, x] of SALA.entries()) {
+    const c = SC[i % 4], s = new THREE.Group(); s.position.set(x, 0, SZ); g.add(s);
+    B(2.9, .35, 2.9, '#cfc8bd', 0, .17, 0, s); B(2.6, .1, 2.6, c, 0, .62, 0, s);   // ฐานปูน + พื้นไม้
+    for (const px of [-1.15, 1.15]) for (const pz of [-1.15, 1.15]) B(.14, 2.2, .14, c, px, 1.45, pz, s);
+    for (const pz of [-1.05, 1.05]) { B(2.2, .08, .45, c, 0, 1.05, pz, s); B(2.2, .5, .06, c, 0, 1.35, pz + Math.sign(pz)*.22, s); }   // ม้านั่ง + พนักพิง
+    B(2.9, .12, 2.9, c, 0, 2.58, 0, s);   // ชายคา/ระบายไม้ฉลุ
+    const r1 = add(new THREE.ConeGeometry(2.25, .7, 4), M('#5a3b2a'), 0, 2.98, 0, s); r1.rotation.y = Math.PI/4;
+    const r2 = add(new THREE.ConeGeometry(1.35, 1.25, 4), M('#4a3022'), 0, 3.85, 0, s); r2.rotation.y = Math.PI/4; r2.scale.z = .75;
+  }
+  // ยางรถยนต์ทาสีตั้งเรียงริมสนามหลังแนวศาลา
+  const tyre = new THREE.InstancedMesh(new THREE.TorusGeometry(.3, .12, 6, 12), new THREE.MeshLambertMaterial({color: '#ffffff'}), 64); tyre.castShadow = true;
+  const TC = ['#ef4444', '#f8fafc', '#3b82f6', '#22c55e', '#facc15', '#94a3b8'].map(c => new THREE.Color(c)), mm = new THREE.Matrix4(); let n = 0;
+  for (let x = -41; x <= -9 && n < 64; x += .62, n++) { mm.makeTranslation(x, .2, SZ + 2.1); tyre.setMatrixAt(n, mm); tyre.setColorAt(n, TC[n % TC.length]); }
+  tyre.count = n; g.add(tyre);
+  // เส้นประเหลืองริมถนนฝั่งอาคาร
+  const dash = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, .16), new THREE.MeshBasicMaterial({color: '#facc15'}), 40); n = 0;
+  for (let x = -47; x <= -14.5 && n < 40; x += 2, n++) { mm.makeRotationX(-Math.PI/2).setPosition(x, .11, LANE - 1.45); dash.setMatrixAt(n, mm); }
+  dash.count = n; g.add(dash);
+  // ซุ้มระแนงขาว "ขอบคุณที่มาเยือน" ระหว่างท้ายอาคาร ป.1 ป.2 กับเรือนไม้ มีไม้เลื้อยและโอ่งดินเผาที่โคนเสา
+  const lc = document.createElement('canvas'); lc.width = lc.height = 128; { const c = lc.getContext('2d'); c.strokeStyle = '#f8fafc'; c.lineWidth = 9;
+    for (let k = -128; k < 256; k += 32) { c.beginPath(); c.moveTo(k, 0); c.lineTo(k + 128, 128); c.stroke(); c.beginPath(); c.moveTo(k + 128, 0); c.lineTo(k, 128); c.stroke(); } }
+  const lt = new THREE.CanvasTexture(lc); lt.colorSpace = THREE.SRGBColorSpace; lt.wrapS = lt.wrapT = THREE.RepeatWrapping; lt.repeat.set(3, 1);
+  const latM = new THREE.MeshLambertMaterial({map: lt, transparent: true, alphaTest: .4, side: THREE.DoubleSide});
+  const pg = new THREE.Group(); pg.position.set(-12.45, 0, -26.4); g.add(pg);
+  for (const px of [-1.3, 1.3]) for (const pz of [-1.6, 1.6]) B(.2, 2.7, .2, '#e7e5e4', px, 1.35, pz, pg);
+  const top = new THREE.Mesh(new THREE.PlaneGeometry(2.9, 3.5), latM); top.rotation.x = -Math.PI/2; top.position.y = 2.75; pg.add(top);
+  for (const pz of [-1.6, 1.6]) { const f = new THREE.Mesh(new THREE.PlaneGeometry(2.9, .7), latM); f.position.set(0, 2.4, pz); pg.add(f); }
+  for (const px of [-1.3, 1.3]) { const f = new THREE.Mesh(new THREE.PlaneGeometry(3.5, .7), latM); f.rotation.y = Math.PI/2; f.position.set(px, 2.4, 0); pg.add(f); }
+  const sc = document.createElement('canvas'); sc.width = 256; sc.height = 48; { const c = sc.getContext('2d'); c.fillStyle = '#ffffff'; c.fillRect(0, 0, 256, 48); c.fillStyle = '#0f766e'; c.font = 'bold 30px sans-serif'; c.textAlign = 'center'; c.fillText('ขอบคุณที่มาเยือน', 128, 35); }
+  const st = new THREE.CanvasTexture(sc); st.colorSpace = THREE.SRGBColorSpace;
+  const sg = new THREE.Mesh(new THREE.PlaneGeometry(2, .38), new THREE.MeshLambertMaterial({map: st})); sg.position.set(0, 2.25, 1.64); pg.add(sg);
+  const vM = M('#4d8b31'); for (let k = 0; k < 7; k++) { const v = add(new THREE.SphereGeometry(.5, 7, 5), vM, -1.2 + (k % 4)*.8, 2.9, -1.3 + Math.floor(k/4)*1.9 + (k % 2)*.3, pg); v.scale.y = .4; }
+  const jarG = new THREE.SphereGeometry(.38, 10, 8), jarM = M('#9a5b34');
+  for (const [px, pz] of [[-1.3, 2.1], [-.7, 2.1], [1.3, 2.1], [1.6, 1.5]]) { const j = add(jarG, jarM, px, .3, pz, pg); j.scale.y = .85; }
+}
 function buildFrontage(segs){
   const {x0, z0, z1} = FENCE, g = new THREE.Group(); g.name = 'Frontage'; scene.add(g);
   const M = c => new THREE.MeshLambertMaterial({color: c}), B = (w, h, d, c, x, y, z, par = g) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), typeof c === 'string' ? M(c) : c); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; par.add(m); return m; };
@@ -2161,7 +2217,7 @@ function frame(){
   if (playing) { simMin += dt * speed; if (simMin > 990) simMin = 355; slider.value = simMin; update(); }
   const ang = view.touched ? view.yaw : (view.yaw = Math.PI/4 + Math.sin(t*0.08)*0.25);
   cam.position.set(target.x+Math.sin(ang)*150, 120, target.z+Math.cos(ang)*150); cam.lookAt(target);
-  moveVehicles(Math.min(dt,.3)); moveAgents(Math.min(dt,.3)); classFeed(dt); animFarm(Math.min(dt,.3), t); animGarden(Math.min(dt,.3), t); followFind(Math.min(dt,.3));
+  moveVehicles(Math.min(dt,.3)); moveAgents(Math.min(dt,.3)); classFeed(dt); animFarm(Math.min(dt,.3), t); animGarden(Math.min(dt,.3), t); if (!p12Fixed && fenceBuilt) fixP12Site(); followFind(Math.min(dt,.3));
   placeGroupChips(); placeRoomLabels();
   renderer.render(scene,cam);
   for (const z of Object.values(zones)) { v.copy(z.p).project(cam); z.el.style.left = (v.x*.5+.5)*innerWidth+'px'; z.el.style.top = (-v.y*.5+.5)*innerHeight+'px'; }
