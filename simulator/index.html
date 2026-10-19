@@ -1282,7 +1282,8 @@ function buildFence(){ // รั้วรอบโรงเรียน เว�
   let z = z0; for (const [a, b] of gaps.sort((p, q) => p[0] - q[0])) { segs.push([x0, z, x0, a]); z = b; } segs.push([x0, z, x0, z1]);
   segs.push([x0, z1, x1, z1], [x1, z1, x1, z0], [x1, z0, x0, z0]);
   const mat = new THREE.MeshLambertMaterial({color: '#64748b'}), posts = [];
-  for (const [ax, az, bx, bz] of segs) {
+  buildFrontage(segs.filter(([ax, , bx]) => ax === x0 && bx === x0));   // ด้านหน้า (ติดถนน) เป็นรั้วไม้ระแนงสีเขียวตามภาพจริง
+  for (const [ax, az, bx, bz] of segs.filter(([ax, , bx]) => !(ax === x0 && bx === x0))) {
     const L = Math.hypot(bx-ax, bz-az), n = Math.max(1, Math.round(L / 3));
     for (let i = 0; i <= n; i++) posts.push([ax + (bx-ax)*i/n, az + (bz-az)*i/n]);
     for (const y of [.5, 1.35]) { const r = new THREE.Mesh(new THREE.BoxGeometry(.08, .08, L), mat); r.position.set((ax+bx)/2, y, (az+bz)/2); r.rotation.y = Math.atan2(bx-ax, bz-az); scene.add(r); }
@@ -1292,6 +1293,90 @@ function buildFence(){ // รั้วรอบโรงเรียน เว�
   const im = new THREE.InstancedMesh(new THREE.BoxGeometry(.18, H, .18).translate(0, H/2, 0), mat, posts.length);
   posts.forEach(([x, z], i) => { dummy.position.set(x, 0, z); dummy.rotation.set(0, 0, 0); dummy.scale.setScalar(1); dummy.updateMatrix(); im.setMatrixAt(i, dummy.matrix); });
   im.castShadow = true; scene.add(im);
+}
+/* ---------- หน้าโรงเรียนตามภาพถ่ายจริง (school-photos/01-ภาพรวม-ประตู-รั้ว) ----------
+   รั้วระแนงขาว-เขียว เสาเขียว, ป้ายผลงาน/รางวัลเรียงริมรั้ว, ป้ายชื่อโรงเรียนสีดำบนกำแพงเขียวมิ้นต์ (พ.ศ. 2548),
+   ทางเท้าปูกระเบื้อง, ศาลาแปดเหลี่ยมขาว-เขียว 2 หลังข้างประตู, ขอบทางแดง-ขาว, ป้ายบอกทาง, โรงเรือนตาข่ายพรางแสง, ตึกแถว 3 ชั้นข้างโรงเรียน */
+function buildFrontage(segs){
+  const {x0, z0, z1} = FENCE, g = new THREE.Group(); g.name = 'Frontage'; scene.add(g);
+  const M = c => new THREE.MeshLambertMaterial({color: c}), B = (w, h, d, c, x, y, z, par = g) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), typeof c === 'string' ? M(c) : c); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; par.add(m); return m; };
+  const tex = (w, h, draw) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; };
+  const GREEN = '#139172', MINT = '#7fd6bd', PICKET = '#eef8f3';
+  // รั้วระแนง: เสาเขียวทุก 3 ม. ราวบน-ล่างสีเขียว ระแนงสีขาวอมเขียวถี่ ๆ
+  const pk = [], pl = [];
+  for (const [, az, , bz] of segs) {
+    const L = bz - az, rail = M(GREEN);
+    for (const y of [.35, 1.15]) { const r = new THREE.Mesh(new THREE.BoxGeometry(.08, .1, Math.abs(L)), rail); r.position.set(x0, y, (az+bz)/2); g.add(r); }
+    for (let d = 0; d <= Math.abs(L) + .01; d += 3) pl.push(az + Math.sign(L)*d);
+    for (let d = .18; d < Math.abs(L); d += .3) pk.push(az + Math.sign(L)*d);
+  }
+  const ip = new THREE.InstancedMesh(new THREE.BoxGeometry(.06, 1.25, .14).translate(0, .72, 0), M(PICKET), pk.length);
+  pk.forEach((z, i) => { dummy.position.set(x0 - .05, 0, z); dummy.rotation.set(0, 0, 0); dummy.scale.setScalar(1); dummy.updateMatrix(); ip.setMatrixAt(i, dummy.matrix); });
+  const iq = new THREE.InstancedMesh(new THREE.BoxGeometry(.32, 1.6, .32).translate(0, .8, 0), M(GREEN), pl.length);
+  pl.forEach((z, i) => { dummy.position.set(x0, 0, z); dummy.updateMatrix(); iq.setMatrixAt(i, dummy.matrix); });
+  ip.castShadow = iq.castShadow = true; g.add(ip, iq);
+  // ทางเท้าปูกระเบื้องริมถนนหน้าโรงเรียน (เว้นปากทางเข้า-ออก)
+  const tile = tex(64, 64, (c, w, h) => { c.fillStyle = '#b9b1a4'; c.fillRect(0, 0, w, h); c.strokeStyle = '#9c9488'; c.lineWidth = 2; c.strokeRect(1, 1, w/2 - 2, h/2 - 2); c.strokeRect(w/2 + 1, 1, w/2 - 2, h/2 - 2); c.strokeRect(1, h/2 + 1, w/2 - 2, h/2 - 2); c.strokeRect(w/2 + 1, h/2 + 1, w/2 - 2, h/2 - 2); });
+  tile.wrapS = tile.wrapT = THREE.RepeatWrapping;
+  for (const [a, b] of [[z0 - 6, GATE_OUT_Z - 4.5], [GATE_OUT_Z + 4.5, GATE_IN_Z - 4.5], [GATE_IN_Z + 4.5, z1 + 6]]) {
+    const L = b - a, t = tile.clone(); t.needsUpdate = true; t.repeat.set(1, L/1.6);
+    const sw = new THREE.Mesh(new THREE.BoxGeometry(1.5, .12, L), new THREE.MeshLambertMaterial({map: t})); sw.position.set(-65.55, -.05, (a+b)/2); sw.receiveShadow = true; g.add(sw);
+  }
+  // ป้ายผลงาน/รางวัล เรียงริมรั้วด้านใน หันหน้าออกถนน (รูปในป้ายเป็นลายทั่วไป ไม่ใช่ภาพบุคคล)
+  const boardTex = i => tex(128, 72, (c, w, h) => { c.fillStyle = '#ffffff'; c.fillRect(0, 0, w, h); c.fillStyle = ['#1d4ed8', '#0f766e', '#7c3aed', '#b91c1c'][i % 4]; c.fillRect(0, 0, w, 14);
+    c.fillStyle = '#cbd5e1'; for (let k = 0; k < 3; k++) c.fillRect(10 + k*38, 22, 30, 28); c.fillStyle = '#94a3b8'; c.fillRect(10, 56, w - 20, 4); c.fillRect(10, 63, w - 50, 3); });
+  const boardZ = []; for (const [a, b] of [[z0 + 3, GATE_OUT_Z - 6], [GATE_OUT_Z + 6, GATE_IN_Z - 6], [GATE_IN_Z + 6, 34]]) for (let z = a; z <= b; z += 4.2) boardZ.push(z);
+  boardZ.forEach((z, i) => { const bd = new THREE.Group(); bd.position.set(x0 + .9, 0, z); g.add(bd);
+    for (const dz of [-1.15, 1.15]) B(.09, 2.8, .09, '#78716c', 0, 1.4, dz, bd);
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.35), new THREE.MeshLambertMaterial({map: boardTex(i)})); face.position.set(-.06, 2.05, 0); face.rotation.y = -Math.PI/2; bd.add(face);
+    B(.06, 1.35, 2.4, '#e5e7eb', 0, 2.05, 0, bd); });
+  // ป้ายชื่อโรงเรียน: กำแพงเขียวมิ้นต์ ขอบบนโค้ง ป้ายดำตัวอักษรทอง พุ่มไม้ด้านหน้า
+  const sg = new THREE.Group(); sg.position.set(x0 + .6, 0, 44); g.add(sg);
+  B(.5, .45, 9.4, '#9a6b4f', 0, .22, 0, sg);   // ฐานอิฐ
+  const wallShape = new THREE.Shape(); wallShape.moveTo(-4.5, 0); wallShape.lineTo(4.5, 0); wallShape.lineTo(4.5, 1.7);
+  for (let k = 0; k <= 20; k++) { const t = k/20, zz = 4.5 - t*9; wallShape.lineTo(zz, 1.7 + Math.sin(t*Math.PI)*0.9 + Math.sin(t*Math.PI*4)*0.12); }
+  wallShape.lineTo(-4.5, 0);
+  const wall = new THREE.Mesh(new THREE.ExtrudeGeometry(wallShape, {depth: .35, bevelEnabled: false}), M(MINT)); wall.rotation.y = Math.PI/2; wall.position.set(.17, .45, 0); wall.castShadow = true; sg.add(wall);
+  const nameTex = tex(512, 300, (c, w, h) => { c.fillStyle = '#111111'; c.fillRect(0, 0, w, h); c.strokeStyle = '#c9a227'; c.lineWidth = 6; c.strokeRect(8, 8, w - 16, h - 16);
+    c.fillStyle = '#e6c25a'; c.textAlign = 'center'; c.font = 'bold 54px sans-serif'; c.fillText('โรงเรียนบ้านคุ้ม', w/2, 82); c.font = '36px sans-serif'; c.fillText('(ประสารราษฎร์วิทยา)', w/2, 132);
+    c.font = 'bold 44px serif'; c.fillText('Bankhum School', w/2, 190); c.font = '30px sans-serif'; c.fillText('อำเภอสอง จังหวัดแพร่', w/2, 240); c.font = '20px sans-serif'; c.fillText('2548', w - 46, h - 22); });
+  const board = new THREE.Mesh(new THREE.PlaneGeometry(4.3, 2.5), new THREE.MeshLambertMaterial({map: nameTex})); board.rotation.y = -Math.PI/2; board.position.set(-.1, 2.0, 0); sg.add(board);
+  B(.14, 2.7, 4.5, '#1f2937', .02, 2.0, 0, sg);
+  const peak = new THREE.Mesh(new THREE.ExtrudeGeometry(new THREE.Shape([new THREE.Vector2(-1.1, 0), new THREE.Vector2(1.1, 0), new THREE.Vector2(0, .75)]), {depth: .14, bevelEnabled: false}), M('#1f2937'));
+  peak.rotation.y = Math.PI/2; peak.position.set(-.05, 3.36, 0); sg.add(peak); B(.06, .45, .06, '#c9a227', 0, 4.25, 0, sg);   // หน้าจั่วเล็กเหนือป้าย
+  const hedge = new THREE.Mesh(new THREE.BoxGeometry(.8, .55, 8.6), M('#4d7c0f')); hedge.position.set(-.85, .28, 0); hedge.castShadow = true; sg.add(hedge);
+  // ศาลาแปดเหลี่ยมสีขาว-เขียว 2 หลังข้างประตูทางเข้า-ออก
+  const gazebo = (x, z) => { const gz = new THREE.Group(); gz.position.set(x, 0, z); g.add(gz);
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(1.9, 1.9, .35, 8), M('#e5e7eb')); base.position.y = .17; base.receiveShadow = true; gz.add(base);
+    for (let k = 0; k < 8; k++) { const a = k/8*Math.PI*2 + Math.PI/8; B(.14, 2.3, .14, '#f8fafc', Math.cos(a)*1.65, 1.5, Math.sin(a)*1.65, gz); }
+    const rail = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.7, .55, 8, 1, true), new THREE.MeshLambertMaterial({color: '#f1f5f9', side: THREE.DoubleSide})); rail.position.y = .65; gz.add(rail);
+    const bench = new THREE.Mesh(new THREE.CylinderGeometry(1.35, 1.35, .1, 8), M(GREEN)); bench.position.y = .7; gz.add(bench);
+    const r1 = new THREE.Mesh(new THREE.ConeGeometry(2.5, 1.2, 8), M(GREEN)); r1.position.y = 3.25; r1.castShadow = true; gz.add(r1);
+    const eave = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.3, .22, 8, 1, true), new THREE.MeshLambertMaterial({color: '#ffffff', side: THREE.DoubleSide})); eave.position.y = 2.6; gz.add(eave);
+    const r2 = new THREE.Mesh(new THREE.ConeGeometry(.9, .7, 8), M(GREEN)); r2.position.y = 4.0; gz.add(r2);
+    B(.5, .4, .5, '#f8fafc', 0, 3.75, 0, gz); };
+  gazebo(x0 + 3.2, GATE_IN_Z + 7.2); gazebo(x0 + 3.2, GATE_OUT_Z - 7.8);
+  // ขอบทางสีแดง-ขาว ตามปากทางเข้า-ออก และป้ายบอกทางไม้
+  const kerbR = M('#dc2626'), kerbW = M('#f8fafc');
+  for (const gz of [GATE_IN_Z, GATE_OUT_Z]) for (const side of [-1, 1]) for (let k = 0; k < 9; k++) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(.6, .2, .3), k % 2 ? kerbW : kerbR); m.position.set(x0 + .6 + k*.62, .02, gz + side*3.6); g.add(m); }
+  const sp = new THREE.Group(); sp.position.set(x0 + 1.4, 0, GATE_IN_Z - 4.4); g.add(sp);
+  B(.14, 2.6, .14, '#7c2d12', 0, 1.3, 0, sp);
+  [[2.35, .4], [2.0, -.4], [1.65, .3], [1.3, -.3]].forEach(([y, off]) => B(.05, .26, 1.1, '#7c2d12', 0, y, off, sp));
+  B(.3, .25, .3, '#a16207', 0, 2.65, 0, sp);
+  // โรงเรือนตาข่ายพรางแสงสีเขียว หลังรั้วด้านซ้ายของประตูทางเข้า
+  const net = new THREE.MeshLambertMaterial({color: '#14b8a6', transparent: true, opacity: .55, side: THREE.DoubleSide});
+  const gh = new THREE.Group(); gh.position.set(-58.6, 0, 42.6); g.add(gh);
+  for (const px of [-2.6, 2.6]) for (const pz of [-3, 0, 3]) B(.1, 2.6, .1, '#9ca3af', px, 1.3, pz, gh);
+  const top = new THREE.Mesh(new THREE.BoxGeometry(5.4, .05, 6.4), net); top.position.y = 2.6; gh.add(top);
+  for (const [w, d, x, z] of [[5.4, .05, 0, -3.2], [5.4, .05, 0, 3.2], [.05, 6.4, -2.7, 0], [.05, 6.4, 2.7, 0]]) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, 2.4, d), net); m.position.set(x, 1.3, z); gh.add(m); }
+  // ตึกแถวเก่า 3 ชั้น ติดโรงเรียนด้านทิศใต้ ริมถนนหน้าโรงเรียน
+  const shopCols = ['#e7e2d6', '#d6d3cb', '#ece7d9', '#d9d2c3', '#e2ddd2'];
+  for (let k = 0; k < 5; k++) { const z = -55 - k*4.6, sh = new THREE.Group(); sh.position.set(-56.5, 0, z); g.add(sh);
+    B(10, 9.6, 4.5, shopCols[k], 0, 4.8, 0, sh); B(10.2, .5, 4.6, '#a8a29e', 0, 9.8, 0, sh);
+    B(.08, 2.6, 3.6, '#6b7280', -5.03, 1.3, 0, sh);   // ประตูเหล็กม้วน
+    for (const fl of [1, 2]) { B(1.1, .12, 4.4, '#9ca3af', -5.5, fl*3.2, 0, sh); B(.06, 1.3, 2.8, '#334155', -5.03, fl*3.2 + 1.2, 0, sh); B(.06, .9, 4.4, '#cbd5e1', -6, fl*3.2 + .5, 0, sh); }
+    B(.08, .7, 3.4, ['#dc2626', '#2563eb', '#16a34a', '#f59e0b', '#6b7280'][k], -5.05, 2.95, 0, sh); }   // ป้ายร้าน
 }
 function moveVehicles(dt){
   if (!fenceBuilt) buildFence();
