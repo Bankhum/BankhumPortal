@@ -455,6 +455,7 @@ function posAt(s){
   const f = Math.min(1, Math.max(0, (s - CUM[i-1]) / (CUM[i] - CUM[i-1])));
   return [MAIN[i-1][0] + (MAIN[i][0]-MAIN[i-1][0])*f, MAIN[i-1][1] + (MAIN[i][1]-MAIN[i-1][1])*f];
 }
+const FIELD = {x0: -51.6, x1: -17.4, z0: -9, z1: 24.2};   // สนามฟุตบอล ขยายเต็มพื้นที่หลังย้ายโดมไปชิดรั้ว (ตามที่ครูขอ)
 const ASSEMBLY = {x0: -17.1, x1: -0.4, z0: -5.9, z1: 15.6};   // ลานปูนสีเทาหน้าเสาธง (ที่เข้าแถว)
 const LEN = {truck: 8.6, van: 6.6, car: 5.6, moto: 2.4, bike: 1.8};
 function addVeh(type, color, trips, label){ const v = {type, color, trips, label, riders: 0, runs: []}; VEH.push(v); return v; }
@@ -706,12 +707,15 @@ function onModel(g) {
     o.castShadow = o.receiveShadow = true;
     const m = o.material; if (m && m.color) { const hsl={}; m.color.getHSL(hsl); m.color.setHSL(hsl.h, hsl.s*0.85, Math.min(.9, hsl.l*1.02+.04)); m.roughness = .85; }
   }});
+  // จุดสแกนหน้า (GATE) อิงตำแหน่งเดิมของอาคารสีขาวหน้าโรงเรียน แล้วค่อยขยับอาคารนั้นไปชิดรั้วด้านหน้า
+  const sign = root.getObjectByName('School_Sign'); if (sign) { GATE.copy(new THREE.Box3().setFromObject(sign).getCenter(new THREE.Vector3())).setY(0).add(new THREE.Vector3(-4,0,0)); sign.position.x -= 5; }
+  root.getObjectByName('Goal')?.removeFromParent(); root.getObjectByName('Goal001')?.removeFromParent();   // ประตูเดิมเล็ก แทนด้วยประตูฟุตบอลใน buildField
   for (const [name,[th,col]] of Object.entries(ZONES)) {
     const VB = {SmartFarm: FARM, Restroom: WC}[name];
     const obj = VB ? null : root.getObjectByName(name === 'Field' ? 'Football' : name); if (!obj && !VB) continue;
     const box = obj ? new THREE.Box3().setFromObject(obj) : new THREE.Box3(new THREE.Vector3(VB.x0, 0, VB.z0), new THREE.Vector3(VB.x1, name === 'Restroom' ? 2.4 : 1.2, VB.z1)); const size = box.getSize(new THREE.Vector3()); const c = box.getCenter(new THREE.Vector3());
     if (name === 'Flagpole') { size.set(ASSEMBLY.x1 - ASSEMBLY.x0, 1.5, ASSEMBLY.z1 - ASSEMBLY.z0); c.set((ASSEMBLY.x0 + ASSEMBLY.x1)/2, 0, (ASSEMBLY.z0 + ASSEMBLY.z1)/2); box.min.y = 0; }
-    if (name === 'Field') { size.set(22, 1, 26); box.min.y = 0; }
+    if (name === 'Field') { size.set(FIELD.x1 - FIELD.x0, 1, FIELD.z1 - FIELD.z0); c.set((FIELD.x0 + FIELD.x1)/2, 0, (FIELD.z0 + FIELD.z1)/2); box.min.y = 0; }
     size.x += 1.2; size.z += 1.2; size.y += 1;
     const geo = new THREE.BoxGeometry(size.x,size.y,size.z);
     const mat = new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.18,depthWrite:false});
@@ -727,7 +731,7 @@ function onModel(g) {
   const dome = root.getObjectByName('Playground_Dome');
   if (dome) { dome.rotation.y = Math.PI/2; dome.position.x = PLAY_C[0]; dome.position.z = PLAY_C[1]; buildPlayset(); }
   const tent = root.getObjectByName('Museum_Walk'); if (tent) tent.removeFromParent();   // เอาเต็นท์หลังคาโค้งสีน้ำเงินออก (ตามที่ครูขอ)
-  const sign = root.getObjectByName('School_Sign'); if (sign) GATE.copy(new THREE.Box3().setFromObject(sign).getCenter(new THREE.Vector3())).setY(0).add(new THREE.Vector3(-4,0,0));
+  buildField();
   buildFarm(); buildRestroom(root); buildMushroom(root); buildFloors(); initAgents(root); applyXrayAll();
   $('info').onclick = () => document.body.classList.toggle('sheet');
   $('find').onclick = () => openFind($('findp').hidden); $('fx').onclick = () => openFind(false); $('fq').oninput = renderFind;
@@ -910,14 +914,14 @@ const teacherFront = (r, pose) => pose === 'sit' ? new THREE.Vector3(r.cx, r.y, 
   : pose === 'run' || pose === 'circle' ? new THREE.Vector3(r.cx, r.y, r.cz) : new THREE.Vector3(r.cx, r.y, r.cz - r.d*.55);
 // ตำแหน่ง + ท่าทาง ณ เวลา m
 // เวลาว่าง: นักเรียนกระจายเล่นหลายที่ ทั้งสนาม ลานกีฬา ระเบียงอาคาร ใต้อาคาร โดมเครื่องเล่น และอาคารเอนกประสงค์
-const PLAY_SPOTS = [[-29,-2,8,10,'run','สนามฟุตบอล'],[-8,4,6,7,'run','ลานกีฬา'],[-30,-22.6,13,.5,'circle','ระเบียงอาคาร ป.1 ป.2'],
+const PLAY_SPOTS = [[-34.4,7.5,13,13,'run','สนามฟุตบอล'],[-8,4,6,7,'run','ลานกีฬา'],[-30,-22.6,13,.5,'circle','ระเบียงอาคาร ป.1 ป.2'],
   [24.6,6,.7,14,'circle','ใต้อาคารเฉลิมพระเกียรติ'],[21.2,-29,.6,10,'circle','ระเบียงอาคารไม้'],[17,32,5,8,'run','อาคารเอนกประสงค์'],[-47.4,14.5,3.5,6.5,'run','สนามเด็กเล่นมีหลังคา']];
 function freePlay(a, m){
   const sp = PLAY_SPOTS[(a.i * 5 + (a.ref.no || 0)) % PLAY_SPOTS.length], w = m*1.3 + a.i*1.7, r = sp[4] === 'run' ? 2.2 : .4;
   return {p: new THREE.Vector3(sp[0] + (a.ox-.5)*2*sp[2] + Math.sin(w)*r, 0, sp[1] + (a.oz-.5)*2*sp[3] + Math.cos(w*.9)*r), pose: sp[4]};
 }
 // สนามเด็กเล่นมีหลังคา: หมุนหลังคาโค้งเป็นแนวขวาง (ตามที่ครูขอ) ไม่ให้ทับถนน
-const PLAY_C = [-47.4, 14.5];
+const PLAY_C = [-57.5, 12.2];   // โดมสนามเด็กเล่นชิดรั้วด้านหน้า (ตามที่ครูชี้) เพื่อขยายสนามฟุตบอล
 function kgTarget(a, m, kg){
   const z = kg[2], pose = kg[3], mates = a.kgMates ??= STUDENTS.filter(s => isKG(s.cls) && s.scan != null);
   if (a.kind === 't') {
@@ -1552,7 +1556,7 @@ function buildFrontage(segs){
     if (palm) { B(.14, 2.6, .14, '#a8a29e', px, 1.7, pz); for (let k = 0; k < 7; k++) { const lf = new THREE.Mesh(new THREE.BoxGeometry(.18, .05, 1.4), M('#4d9a2f')); lf.position.set(px + Math.sin(k*.9)*.6, 2.9, pz + Math.cos(k*.9)*.6); lf.rotation.set(-.5*Math.cos(k*.9), k*.9, .5*Math.sin(k*.9)); lf.castShadow = true; g.add(lf); } }
   }
   // ป้ายบอกทางไม้ที่ทางเข้า (ขอบทางแดง-ขาวย้ายไปอยู่ริมถนนในโรงเรียน ดู buildRoad)
-  const sp = new THREE.Group(); sp.position.set(x0 + 1.4, 0, GATE_IN_Z - 4.4); g.add(sp);
+  const sp = new THREE.Group(); sp.position.set(x0 + 1.4, 0, GATE_IN_Z + 4.4); g.add(sp);
   B(.14, 2.6, .14, '#7c2d12', 0, 1.3, 0, sp);
   [[2.35, .4], [2.0, -.4], [1.65, .3], [1.3, -.3]].forEach(([y, off]) => B(.05, .26, 1.1, '#7c2d12', 0, y, off, sp));
   B(.3, .25, .3, '#a16207', 0, 2.65, 0, sp);
@@ -2040,6 +2044,26 @@ function placeRoomLabels(){
   }
 }
 // เครื่องเล่นใต้หลังคา: สไลเดอร์ ชิงช้า ม้าหมุน กระบะทราย
+function buildField(){
+  const {x0, x1, z0, z1} = FIELD, W = x1 - x0, D = z1 - z0, cx = (x0 + x1)/2, cz = (z0 + z1)/2, g = new THREE.Group(); g.name = 'FootballField'; scene.add(g);
+  const cv = document.createElement('canvas'); cv.width = 1024; cv.height = Math.round(1024*D/W); const c = cv.getContext('2d'), k = cv.width/W;
+  for (let i = 0; i < 12; i++) { c.fillStyle = i % 2 ? '#5fa83f' : '#68b347'; c.fillRect(i*cv.width/12, 0, cv.width/12 + 1, cv.height); }
+  c.strokeStyle = '#f8fafc'; c.lineWidth = 4; const m = 1.2*k, L = (x, y, w, h) => c.strokeRect(x, y, w, h);
+  L(m, m, cv.width - 2*m, cv.height - 2*m); c.beginPath(); c.moveTo(cv.width/2, m); c.lineTo(cv.width/2, cv.height - m); c.stroke();
+  c.beginPath(); c.arc(cv.width/2, cv.height/2, 4.5*k, 0, 7); c.stroke();
+  for (const sd of [0, 1]) { const bx = sd ? cv.width - m - 8*k : m, gx = sd ? cv.width - m - 3*k : m; L(bx, cv.height/2 - 9*k, 8*k, 18*k); L(gx, cv.height/2 - 4.5*k, 3*k, 9*k); }
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  const turf = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshLambertMaterial({map: t})); turf.rotation.x = -Math.PI/2; turf.position.set(cx, .05, cz); turf.receiveShadow = true; g.add(turf);
+  const wM = new THREE.MeshLambertMaterial({color: '#f8fafc'}), netM = new THREE.MeshLambertMaterial({color: '#e2e8f0', transparent: true, opacity: .45, side: THREE.DoubleSide});
+  for (const sd of [-1, 1]) {   // ประตูฟุตบอล 5×2 ม. มีตาข่าย
+    const gx = cx + sd*(W/2 - 1.2), q = new THREE.Group(); q.position.set(gx, 0, cz); g.add(q);
+    for (const pz of [-2.5, 2.5]) { const po = new THREE.Mesh(new THREE.BoxGeometry(.12, 2, .12), wM); po.position.set(0, 1, pz); po.castShadow = true; q.add(po); }
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(.12, .12, 5.1), wM); bar.position.y = 2; bar.castShadow = true; q.add(bar);
+    const back = new THREE.Mesh(new THREE.PlaneGeometry(5, 2), netM); back.rotation.y = Math.PI/2; back.position.set(sd*1.1, 1, 0); back.rotation.z = 0; q.add(back);
+    for (const pz of [-2.5, 2.5]) { const sn = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 2), netM); sn.position.set(sd*.55, 1, pz); q.add(sn); }
+    const top = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 5), netM); top.rotation.x = -Math.PI/2; top.position.set(sd*.55, 2, 0); q.add(top);
+  }
+}
 function buildPlayset(){
   const g = new THREE.Group(); g.position.set(PLAY_C[0], 0, PLAY_C[1]); scene.add(g);
   const M = c => new THREE.MeshLambertMaterial({color: c}), add = (geo, mat, x, y, z, ry = 0, rx = 0) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); o.rotation.set(rx, ry, 0); o.castShadow = true; g.add(o); return o; };
