@@ -1365,7 +1365,7 @@ function buildFrontage(segs){
   // ป้ายผลงาน/รางวัล เรียงริมรั้วด้านใน หันหน้าออกถนน (รูปในป้ายเป็นลายทั่วไป ไม่ใช่ภาพบุคคล)
   const boardTex = i => tex(128, 72, (c, w, h) => { c.fillStyle = '#ffffff'; c.fillRect(0, 0, w, h); c.fillStyle = ['#1d4ed8', '#0f766e', '#7c3aed', '#b91c1c'][i % 4]; c.fillRect(0, 0, w, 14);
     c.fillStyle = '#cbd5e1'; for (let k = 0; k < 3; k++) c.fillRect(10 + k*38, 22, 30, 28); c.fillStyle = '#94a3b8'; c.fillRect(10, 56, w - 20, 4); c.fillRect(10, 63, w - 50, 3); });
-  const boardZ = []; for (const [a, b] of [[z0 + 3, GATE_OUT_Z - 6], [GATE_OUT_Z + 6, GATE_IN_Z - 6], [GATE_IN_Z + 6, 44]]) for (let z = a; z <= b; z += 4.2) if (Math.abs(z - SIGN_Z) > 6 && !(z > 11 && z < 22)) boardZ.push(z);
+  const boardZ = []; for (const [a, b] of [[z0 + 3, GATE_OUT_Z - 6], [GATE_OUT_Z + 6, GATE_IN_Z - 6], [GATE_IN_Z + 6, 44]]) for (let z = a; z <= b; z += 4.2) if (Math.abs(z - SIGN_Z) > 6 && !(z > -24 && z < -10)) boardZ.push(z);
   boardZ.forEach((z, i) => { const bd = new THREE.Group(); bd.position.set(x0 + .9, 0, z); g.add(bd);
     for (const dz of [-1.15, 1.15]) B(.09, 2.8, .09, '#78716c', 0, 1.4, dz, bd);
     const face = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.35), new THREE.MeshLambertMaterial({map: boardTex(i)})); face.position.set(-.06, 2.05, 0); face.rotation.y = -Math.PI/2; bd.add(face);
@@ -1396,24 +1396,24 @@ function buildFrontage(segs){
     const r2 = new THREE.Mesh(new THREE.ConeGeometry(.9, .7, 8), M(GREEN)); r2.position.y = 4.0; gz.add(r2);
     B(.5, .4, .5, '#f8fafc', 0, 3.75, 0, gz); };
   gazebo(x0 + 3.2, GATE_IN_Z + 7.2); gazebo(x0 + 3.2, GATE_OUT_Z - 7.8);
-  // ซุ้มไม้เลื้อยสีขาวริมรั้ว (โต๊ะ ม้านั่ง) ข้างประตูทางเข้า: แผงโซลาร์บนเสาซุ้ม, กล่อง IoT + แบตเตอรี่ 3K + ป้าย "IoT in Smartfarm & Clean Energy", ท่อน้ำ PVC สีฟ้าไปสวน
-  const pg = new THREE.Group(); pg.position.set(x0 + 2.1, 0, 15.3); g.add(pg);
-  const pad = new THREE.Mesh(new THREE.BoxGeometry(3.4, .12, 7), M('#cfcac0')); pad.position.y = .02; pad.receiveShadow = true; pg.add(pad);
-  B(.18, .3, 7, '#9a5b3f', 1.75, .1, 0, pg);   // ขอบอิฐ
-  for (const px of [-1.2, 1.2]) for (const pz of [-3.1, -1, 1.1, 3.1]) B(.16, 2.6, .16, '#f8fafc', px, 1.3, pz, pg);
-  for (const pz of [-3.1, -1, 1.1, 3.1]) B(2.7, .12, .12, '#f8fafc', 0, 2.6, pz, pg);
-  for (const px of [-1.2, 1.2]) B(.12, .12, 6.6, '#f8fafc', px, 2.66, 0, pg);
+  // ซุ้มไม้เลื้อยสีขาวริมรั้ว (โต๊ะ ม้านั่ง) มุมระหว่างถนนขาออกกับสวนดอกไม้ (ตามที่ครูชี้): แผงโซลาร์บนเสาซุ้ม, กล่อง IoT + แบตเตอรี่ 3K + ป้าย "IoT in Smartfarm & Clean Energy", ท่อน้ำ PVC สีฟ้าไปสวน
+  const pg = new THREE.Group(); pg.position.set(x0 + 1.6, 0, -17.8); g.add(pg);
+  const pad = new THREE.Mesh(new THREE.BoxGeometry(3, .12, 5), M('#cfcac0')); pad.position.y = .02; pad.receiveShadow = true; pg.add(pad);
+  B(.18, .3, 5, '#9a5b3f', 1.55, .1, 0, pg);   // ขอบอิฐ
+  for (const px of [-1.1, 1.1]) for (const pz of [-2.2, 0, 2.2]) B(.16, 2.6, .16, '#f8fafc', px, 1.3, pz, pg);
+  for (const pz of [-2.2, 0, 2.2]) B(2.5, .12, .12, '#f8fafc', 0, 2.6, pz, pg);
+  for (const px of [-1.1, 1.1]) B(.12, .12, 4.7, '#f8fafc', px, 2.66, 0, pg);
   const vineM = M('#3f8f2f'), vine2 = M('#5aa83b');
-  for (let k = 0; k < 14; k++) { const v = new THREE.Mesh(new THREE.SphereGeometry(.75 + (k % 3)*.15, 7, 5), k % 2 ? vineM : vine2); v.position.set(((k*37) % 5)/5*2.2 - 1.1, 2.85 + (k % 2)*.15, -3.1 + k*.47); v.scale.y = .55; v.castShadow = true; pg.add(v); }
-  for (const pz of [-1.6, 1.6]) { B(.9, .08, 1.5, '#64748b', 0, .75, pz, pg); B(.12, .7, .12, '#64748b', 0, .37, pz, pg);
+  for (let k = 0; k < 10; k++) { const v = new THREE.Mesh(new THREE.SphereGeometry(.7 + (k % 3)*.15, 7, 5), k % 2 ? vineM : vine2); v.position.set(((k*37) % 5)/5*2 - 1, 2.85 + (k % 2)*.15, -2.2 + k*.49); v.scale.y = .55; v.castShadow = true; pg.add(v); }
+  for (const pz of [0]) { B(.9, .08, 1.5, '#64748b', 0, .75, pz, pg); B(.12, .7, .12, '#64748b', 0, .37, pz, pg);
     for (const bx of [-.75, .75]) B(.35, .08, 1.4, '#1e3a8a', bx, .45, pz, pg); }   // โต๊ะหิน + ม้านั่ง
   const cellsC = document.createElement('canvas'); cellsC.width = 64; cellsC.height = 40; { const c = cellsC.getContext('2d'); c.fillStyle = '#0f2a5a'; c.fillRect(0, 0, 64, 40); c.strokeStyle = '#9fb4d9';
     for (let i = 1; i < 6; i++) { c.beginPath(); c.moveTo(i*64/6, 0); c.lineTo(i*64/6, 40); c.stroke(); } for (let j = 1; j < 4; j++) { c.beginPath(); c.moveTo(0, j*10); c.lineTo(64, j*10); c.stroke(); } }
   const ct = new THREE.CanvasTexture(cellsC); ct.colorSpace = THREE.SRGBColorSpace;
-  const pvp = new THREE.Group(); pvp.position.set(1.2, 3.35, 3.1); pvp.rotation.set(0, 0, .4); pg.add(pvp);
-  B(.12, .7, .12, '#9ca3af', 1.2, 2.95, 3.1, pg);
+  const pvp = new THREE.Group(); pvp.position.set(1.1, 3.35, 2.2); pvp.rotation.set(0, 0, .4); pg.add(pvp);
+  B(.12, .7, .12, '#9ca3af', 1.1, 2.95, 2.2, pg);
   const panel = new THREE.Mesh(new THREE.BoxGeometry(1.1, .05, .8), [0, 0, new THREE.MeshLambertMaterial({map: ct}), 0, 0, 0].map(m => m || M('#cbd5e1'))); panel.castShadow = true; pvp.add(panel);
-  const iot = new THREE.Group(); iot.position.set(1.2, 0, -3.1); pg.add(iot);
+  const iot = new THREE.Group(); iot.position.set(1.1, 0, -2.2); pg.add(iot);
   B(.5, .6, .28, '#e2e8f0', .2, 1.45, 0, iot);   // กล่องควบคุมฝาใส
   B(.32, .42, .22, '#facc15', .2, .9, .32, iot);   // แบตเตอรี่ 3K
   const sgn = tex(96, 128, (c, w, h) => { c.fillStyle = '#111827'; c.fillRect(0, 0, w, h); c.fillStyle = '#ffffff'; c.font = 'bold 30px sans-serif'; c.fillText('IoT', 8, 100); c.font = '9px sans-serif'; c.fillText('IN SMARTFARM', 8, 114); c.fillText('& CLEAN ENERGY', 8, 124);
@@ -1421,15 +1421,15 @@ function buildFrontage(segs){
   const sgm = new THREE.Mesh(new THREE.PlaneGeometry(.5, .66), new THREE.MeshLambertMaterial({map: sgn})); sgm.position.set(.36, 1.3, -.4); sgm.rotation.y = Math.PI/2; iot.add(sgm);
   gLed = new THREE.Mesh(new THREE.SphereGeometry(.06, 8, 6), new THREE.MeshBasicMaterial({color: '#334155'})); gLed.position.set(.46, 1.6, 0); iot.add(gLed);
   const pvc = M('#38bdf8');   // ท่อน้ำ PVC สีฟ้า เดินเลียบรั้วไปที่สวนดอกไม้
-  const p1 = new THREE.Mesh(new THREE.CylinderGeometry(.07, .07, 1.6, 6), pvc); p1.position.set(x0 + 3.5, .8, 12.2); g.add(p1);
-  const run = 12.2 - GARDEN.z1, p2 = new THREE.Mesh(new THREE.BoxGeometry(.14, .14, run), pvc); p2.position.set(x0 + 3.5, .1, 12.2 - run/2); g.add(p2);
-  // ศาลพระภูมิบนฐานสีเขียวข้างประตูทางเข้า
-  const sh = new THREE.Group(); sh.position.set(x0 + 1.6, 0, GATE_IN_Z - 4.1); g.add(sh);
+  const p1 = new THREE.Mesh(new THREE.CylinderGeometry(.07, .07, 1.6, 6), pvc); p1.position.set(x0 + 3, .8, -19.6); g.add(p1);
+  const run = GARDEN.z0 + .3 - -19.6, p2 = new THREE.Mesh(new THREE.BoxGeometry(.14, .14, run), pvc); p2.position.set(x0 + 3, .1, -19.6 + run/2); g.add(p2);
+  // ศาลพระภูมิบนฐานสีเขียว ริมรั้วหน้าสวนดอกไม้ ถัดจากซุ้ม
+  const sh = new THREE.Group(); sh.position.set(x0 + 1, 0, GARDEN.z0 + 1.6); sh.rotation.y = Math.PI/2; g.add(sh);
   B(2.4, .5, 1.6, '#2dd4bf', 0, .25, 0, sh); B(2.2, .08, 1.4, '#e0f2fe', 0, .52, 0, sh);
   for (const [dx, h, c] of [[-.5, 1.4, '#f5f5f4'], [.55, 1.1, '#fbbf24']]) { B(.12, h, .12, '#e5e7eb', dx, .5 + h/2, 0, sh); B(.6, .5, .6, c, dx, .5 + h + .25, 0, sh);
     const r = new THREE.Mesh(new THREE.ConeGeometry(.5, .6, 4), M('#b45309')); r.rotation.y = Math.PI/4; r.position.set(dx, .5 + h + .8, 0); sh.add(r); }
-  // ปาล์มในกระถางกลมสีขาว และกระถางต้นไม้ ริมขอบทางแดง-ขาวหลังประตูทางเข้า
-  for (const [px, pz, palm] of [[x0 + 5.6, 17.6, true], [x0 + 5.6, 14.2, false], [x0 + 5.6, 11, false]]) {
+  // ปาล์มในกระถางกลมสีขาว และกระถางต้นไม้ ริมขอบทางแดง-ขาวของถนนขาออก ระหว่างซุ้มกับสวน
+  for (const [px, pz, palm] of [[x0 + 4.4, -16.2, true], [x0 + 6, -15.9, false]]) {
     const pot = new THREE.Mesh(new THREE.CylinderGeometry(.55, .5, .45, 14), M('#f8fafc')); pot.position.set(px, .22, pz); g.add(pot);
     const soilP = new THREE.Mesh(new THREE.CylinderGeometry(.48, .48, .05, 12), M(palm ? '#7c5a3a' : '#4d7c0f')); soilP.position.set(px, .46, pz); g.add(soilP);
     if (palm) { B(.14, 2.6, .14, '#a8a29e', px, 1.7, pz); for (let k = 0; k < 7; k++) { const lf = new THREE.Mesh(new THREE.BoxGeometry(.18, .05, 1.4), M('#4d9a2f')); lf.position.set(px + Math.sin(k*.9)*.6, 2.9, pz + Math.cos(k*.9)*.6); lf.rotation.set(-.5*Math.cos(k*.9), k*.9, .5*Math.sin(k*.9)); lf.castShadow = true; g.add(lf); } }
