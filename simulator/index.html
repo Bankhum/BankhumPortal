@@ -1316,7 +1316,7 @@ function buildMarket(bx, gable, mat){   // ตลาดสด: ลานคอ�
 }
 
 function buildFence(){ // รั้วรอบโรงเรียน เว้นช่องประตูรถเข้า/ออกด้านถนน
-  fenceBuilt = true; buildOutside(); buildRoad(); buildGarden(); buildP12Lane(); const {x0, x1, z0, z1} = FENCE, H = 1.6, segs = [];
+  fenceBuilt = true; buildOutside(); buildRoad(); buildGarden(); buildP12Lane(); buildKgPool(); const {x0, x1, z0, z1} = FENCE, H = 1.6, segs = [];
   const gaps = [[GATE_IN_Z - 4, GATE_IN_Z + 4], [GATE_OUT_Z - 4, GATE_OUT_Z + 4]];
   let z = z0; for (const [a, b] of gaps.sort((p, q) => p[0] - q[0])) { segs.push([x0, z, x0, a]); z = b; } segs.push([x0, z, x0, z1]);
   segs.push([x0, z1, x1, z1], [x1, z1, x1, z0], [x1, z0, x0, z0]);
@@ -1343,7 +1343,69 @@ let p12Fixed = false;
 function fixP12Site(){   // ศาลาเดิมในโมเดล (กล่องขาวหลังคาน้ำตาล) แทนด้วยศาลาทรงไทย, ต้นไม้แนวถนนสีเขียวเข้มตามรูปจริง · ส่วนนี้ของโมเดลโหลดทีหลัง จึงลองซ้ำทุกเฟรมจนเจอ
   let n = 0; scene.traverse(o => { if (o.name === 'poly_11' || o.name === 'poly_12') { o.visible = false; n++; }
     if (o.name === 'poly_10' && o.material) { o.material = o.material.clone(); o.material.color.set('#4f8f3c'); n++; } });
-  return p12Fixed = n >= 3;
+  scene.traverse(o => { if (/^box330(_2|_3)?$/.test(o.name)) { o.visible = false; n++; } });   // กล่องสระเดิมในโมเดล แทนด้วยสระยกพื้นตามรูป
+  return p12Fixed = n >= 6;
+}
+// ถนนหน้าอาคารอนุบาล และสระว่ายน้ำ (ตามรูปจริง school-photos/06-อาคารอนุบาล, 10-สระว่ายน้ำ)
+function buildKgPool(){
+  const g = new THREE.Group(); g.name = 'KgPool'; scene.add(g);
+  const M = c => new THREE.MeshLambertMaterial({color: c}), add = (geo, mat, x, y, z, par = g) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; par.add(o); return o; };
+  const B = (w, h, d, c, x, y, z, par = g) => add(new THREE.BoxGeometry(w, h, d), typeof c === 'string' ? M(c) : c, x, y, z, par);
+  const cvTex = (w, h, draw) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; };
+  const RZ = 27.5, Y = .11, mm = new THREE.Matrix4();
+  // เส้นประเหลืองริมถนนฝั่งอาคารอนุบาล
+  const dash = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, .16), new THREE.MeshBasicMaterial({color: '#facc15'}), 16); let n = 0;
+  for (let x = -45; x <= -21 && n < 16; x += 2, n++) { mm.makeRotationX(-Math.PI/2).setPosition(x, Y, RZ + 1.45); dash.setMatrixAt(n, mm); }
+  dash.count = n; g.add(dash);
+  // ลูกระนาดทาสีแดง-ขาว 2 จุด และทางม้าลายสามมิติ (ขาว-เทา) กลางอาคาร
+  const bumpT = cvTex(128, 16, (c, w, h) => { for (let i = 0; i < 8; i++) { c.fillStyle = i % 2 ? '#dc2626' : '#f8fafc'; c.fillRect(i*w/8, 0, w/8, h); } });
+  for (const bx of [-46.5, -21.5]) { const b = add(new THREE.BoxGeometry(.7, .08, 5), [M('#e5e7eb'), M('#e5e7eb'), new THREE.MeshLambertMaterial({map: bumpT}), M('#e5e7eb'), M('#e5e7eb'), M('#e5e7eb')], bx, Y, RZ); b.material[2].map.rotation = Math.PI/2; b.material[2].map.center.set(.5, .5); }
+  for (let k = 0; k < 6; k++) { const z = RZ - 2 + k*.8; B(2.2, .02, .42, '#f8fafc', -34, Y, z); B(2.2, .021, .18, '#6b7280', -34, Y, z + .3); }
+  // ภาพวาดโลกใต้ทะเลบนผนังระเบียงอาคารอนุบาล + ข้อความ "อนุบาลบ้านคุ้ม"
+  const sea = cvTex(1024, 96, (c, w, h) => { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#7dd3fc'); gr.addColorStop(1, '#0284c7'); c.fillStyle = gr; c.fillRect(0, 0, w, h);
+    const fish = ['#f97316', '#facc15', '#f472b6', '#22c55e', '#a78bfa'];
+    for (let i = 0; i < 40; i++) { const x = (i*97) % w, y = 20 + (i*37) % 60; c.fillStyle = fish[i % 5]; c.beginPath(); c.ellipse(x, y, 9, 5, 0, 0, 7); c.fill(); c.beginPath(); c.moveTo(x - 8, y); c.lineTo(x - 15, y - 5); c.lineTo(x - 15, y + 5); c.fill(); }
+    c.fillStyle = '#16a34a'; for (let x = 10; x < w; x += 60) { c.fillRect(x, h - 26, 4, 26); c.fillRect(x + 8, h - 18, 4, 18); }
+    c.fillStyle = '#f472b6'; c.beginPath(); c.arc(700, 45, 18, 0, 7); c.fill();
+    c.font = 'bold 26px sans-serif'; c.lineWidth = 5; c.strokeStyle = '#0c4a6e'; c.strokeText('อนุบาลบ้านคุ้ม', 360, 40); c.fillStyle = '#fef08a'; c.fillText('อนุบาลบ้านคุ้ม', 360, 40); });
+  const mural = new THREE.Mesh(new THREE.PlaneGeometry(21.6, 1.5), new THREE.MeshLambertMaterial({map: sea})); mural.position.set(-34.4, 1.0, 28.44); mural.rotation.y = Math.PI; g.add(mural);
+  // ป้าย "อาคาร ต" ทรงหกเหลี่ยมขาวขอบเขียว ที่หัวอาคาร
+  const sT = cvTex(160, 64, (c, w, h) => { c.fillStyle = '#5eead4'; c.beginPath(); c.moveTo(14, 0); c.lineTo(w - 14, 0); c.lineTo(w, h/2); c.lineTo(w - 14, h); c.lineTo(14, h); c.lineTo(0, h/2); c.fill();
+    c.fillStyle = '#f8fafc'; c.beginPath(); c.moveTo(20, 6); c.lineTo(w - 20, 6); c.lineTo(w - 8, h/2); c.lineTo(w - 20, h - 6); c.lineTo(20, h - 6); c.lineTo(8, h/2); c.fill();
+    c.fillStyle = '#dc2626'; c.font = 'bold 30px sans-serif'; c.textAlign = 'center'; c.fillText('อาคาร ต', w/2, 43); });
+  for (const px of [-45.9, -44.9]) B(.08, 1.6, .08, '#1e3a8a', px, .8, 29.4);
+  const sg = new THREE.Mesh(new THREE.PlaneGeometry(1.6, .64), new THREE.MeshLambertMaterial({map: sT, transparent: true, side: THREE.DoubleSide})); sg.position.set(-45.4, 1.5, 29.35); sg.rotation.y = Math.PI; g.add(sg);
+  // ต้นไม้ต้นเล็กกลางสนามริมถนน
+  B(.18, 2, .18, '#6b4f3a', -49, 1, 21.5); const cr = add(new THREE.IcosahedronGeometry(1.4, 0), M('#4d8b31'), -49, 2.9, 21.5); cr.scale.y = .8;
+  // สระว่ายน้ำยกพื้น: ผนังปูนทาสีฟ้าลายเด็กว่ายน้ำ "BANKHUM SWIMMING POOL", บันไดเหล็ก, หลังคาโค้งเมทัลชีท, ถังกรองน้ำ, รั้วตาข่าย, ป้ายสีน้ำเงิน
+  const px0 = -9.6, pz0 = 37.3, PL = 12, PW = 5, PH = 1.3;
+  B(PL + 6, .1, PW + 5, '#cfc8bd', px0 + 1, .05, pz0);   // ลานปูน
+  const wallT = cvTex(1024, 110, (c, w, h) => { c.fillStyle = '#2563eb'; c.fillRect(0, 0, w, h); c.fillStyle = '#60a5fa'; for (let x = 0; x < w; x += 40) { c.beginPath(); c.arc(x, h - 10, 22, Math.PI, 0); c.fill(); }
+    for (let i = 0; i < 9; i++) { const x = 60 + i*110; c.fillStyle = '#fde2c4'; c.beginPath(); c.arc(x, 48, 14, 0, 7); c.fill(); c.fillStyle = '#111827'; c.fillRect(x - 14, 34, 28, 7); c.fillStyle = '#fde2c4'; c.fillRect(x + 12, 30, 6, 22); }
+    c.font = 'bold italic 34px sans-serif'; c.lineWidth = 6; c.strokeStyle = '#1e3a8a'; c.textAlign = 'center'; c.strokeText('BANKHUM SWIMMING POOL', w/2, 80); c.fillStyle = '#fde047'; c.fillText('BANKHUM SWIMMING POOL', w/2, 80); });
+  const wallM = new THREE.MeshLambertMaterial({map: wallT}), sideM = M('#2563eb'), topM = M('#e0f2fe');
+  B(PL, PH, .25, [sideM, sideM, topM, sideM, wallM, wallM], px0, PH/2, pz0 - PW/2);
+  B(PL, PH, .25, [sideM, sideM, topM, sideM, wallM, wallM], px0, PH/2, pz0 + PW/2);
+  for (const sx of [-1, 1]) B(.25, PH, PW, sideM, px0 + sx*PL/2, PH/2, pz0);
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(PL - .3, PW - .3), new THREE.MeshLambertMaterial({color: '#38bdf8', transparent: true, opacity: .85})); water.rotation.x = -Math.PI/2; water.position.set(px0, PH - .2, pz0); g.add(water);
+  for (let k = 0; k < 4; k++) B(.6, .1, 1.4, '#d1d5db', px0 - PL/2 - .4 - k*.32, PH - .3 - k*.32, pz0 - 1.2);   // บันไดขึ้นสระ
+  for (const dz of [-1.9, -.5]) B(.05, .9, .05, '#9ca3af', px0 - PL/2 - .9, PH, pz0 - 1.2 + dz*.5);
+  for (const sx of [-1, 1]) for (let k = 0; k < 4; k++) B(.12, 3.6, .12, '#9ca3af', px0 - PL/2 + .3 + k*(PL - .6)/3, 1.8, pz0 + sx*(PW/2 + .6));
+  const roof = new THREE.Mesh(new THREE.CylinderGeometry(4.2, 4.2, PL + 1, 24, 1, true, Math.PI/2 - .62, 1.24), new THREE.MeshLambertMaterial({color: '#d4d4d8', side: THREE.DoubleSide})); roof.rotation.z = Math.PI/2; roof.position.set(px0, 0, pz0); roof.position.y = 3.6 - 4.2*Math.cos(.62) + .05; roof.castShadow = true; g.add(roof);
+  for (const dx of [0, 1.1]) { const t = add(new THREE.CylinderGeometry(.45, .45, 1.6, 12), M('#111827'), px0 + PL/2 + 1.2 + dx, .8, pz0 + 1.6); }   // ถังกรองน้ำ
+  // รั้วตาข่ายรอบสระ เว้นช่องประตูด้านถนน
+  const meshT = cvTex(32, 32, (c) => { c.strokeStyle = '#cbd5e1'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, 0); c.lineTo(32, 32); c.moveTo(32, 0); c.lineTo(0, 32); c.stroke(); });
+  meshT.wrapS = meshT.wrapT = THREE.RepeatWrapping;
+  const fx0 = -23, fx1 = .6, fz0 = 31.5, fz1 = 43, FH = 1.8;
+  const fence = (ax, az, bx, bz) => { const L = Math.hypot(bx - ax, bz - az); const t = meshT.clone(); t.needsUpdate = true; t.repeat.set(L*3, FH*3);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(L, FH), new THREE.MeshLambertMaterial({map: t, transparent: true, alphaTest: .3, side: THREE.DoubleSide})); m.position.set((ax + bx)/2, FH/2, (az + bz)/2); m.rotation.y = -Math.atan2(bz - az, bx - ax); g.add(m);
+    for (let d = 0; d <= L + .01; d += 2.4) B(.06, FH + .1, .06, '#94a3b8', ax + (bx - ax)*d/L, (FH + .1)/2, az + (bz - az)*d/L); };
+  fence(fx0, fz0, -14, fz0); fence(-11.5, fz0, fx1, fz0); fence(fx1, fz0, fx1, fz1); fence(fx0, fz0, fx0, fz1);
+  // ป้ายสีน้ำเงิน "สระว่ายน้ำ ร.ร.บ้านคุ้ม" และป้ายระเบียบการใช้สระ ที่ประตู
+  const pT = cvTex(256, 48, (c, w, h) => { c.fillStyle = '#1d4ed8'; c.fillRect(0, 0, w, h); c.strokeStyle = '#f8fafc'; c.lineWidth = 3; c.strokeRect(3, 3, w - 6, h - 6); c.fillStyle = '#f8fafc'; c.font = 'bold 26px sans-serif'; c.textAlign = 'center'; c.fillText('สระว่ายน้ำ ร.ร.บ้านคุ้ม', w/2, 33); });
+  for (const dx of [-1, 1]) B(.07, 2.6, .07, '#6b7280', -12.75 + dx*1.1, 1.3, fz0 - .1);
+  const ps = new THREE.Mesh(new THREE.PlaneGeometry(2.4, .45), new THREE.MeshLambertMaterial({map: pT, side: THREE.DoubleSide})); ps.position.set(-12.75, 2.5, fz0 - .14); ps.rotation.y = Math.PI; g.add(ps);
+  B(1, 1.3, .04, '#bae6fd', -15, 1.1, fz0 - .08);
 }
 function buildP12Lane(){
   const g = new THREE.Group(); g.name = 'P12Lane'; scene.add(g);
