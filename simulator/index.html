@@ -825,7 +825,9 @@ function uniformOf(a){
   return uniformBase(a);
 }
 function uniformBase(a){
-  if (a.kind === 't') return {shirt:'#cbd5e1', bottom:'#334155', scarf:null, hat:null, skirt:false};
+  // ครู: วันจันทร์ชุดกากี วันอื่นชุดสุภาพ (เสื้อสีอ่อนหลายสี กางเกง/กระโปรงสีเข้ม) ตามที่ครูบอก
+  if (a.kind === 't') return day === 0 ? {shirt:'#b39a63', bottom:'#a38a57', scarf:null, hat:null, skirt:false}
+    : {shirt:['#f8fafc', '#bfdbfe', '#fbcfe8', '#fef3c7', '#ddd6fe', '#d1fae5'][a.ref.no % 6], bottom:['#1f2937', '#334155', '#44403c'][a.ref.no % 3], scarf:null, hat:null, skirt:false};
   const k = a.cls.startsWith('อ'), girl = isGirl(a.ref);
   if (day === UNIFORM_DAY.scout) return k ? {shirt:UNI.white, bottom:UNI.navy, scarf:UNI.scoutYellow, hat:UNI.kCap, skirt:girl}
                                          : {shirt:UNI.white, bottom:UNI.navy, scarf:UNI.scoutPink, hat: girl ? null : UNI.scoutHat, skirt:girl};
