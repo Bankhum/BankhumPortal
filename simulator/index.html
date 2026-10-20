@@ -1348,7 +1348,8 @@ function fixP12Site(){   // ศาลาเดิมในโมเดล (ก�
   let n = 0; scene.traverse(o => { if (o.name === 'poly_11' || o.name === 'poly_12') { o.visible = false; n++; }
     if (o.name === 'poly_10' && o.material) { o.material = o.material.clone(); o.material.color.set('#4f8f3c'); n++; } });
   scene.traverse(o => { if (/^box330(_2|_3)?$/.test(o.name)) { o.visible = false; n++; } });   // กล่องสระเดิมในโมเดล แทนด้วยสระยกพื้นตามรูป
-  return p12Fixed = n >= 6;
+  scene.traverse(o => { if (o.name === 'poly_14' && o.material && !o.userData.mango) { o.material = o.material.clone(); o.material.color.set('#2f6b2a'); o.userData.mango = 1; n++; } });   // ต้นมะม่วง 2 ต้นข้างสนามเปตอง (ใบเขียวเข้ม)
+  return p12Fixed = n >= 7;
 }
 // ถนนหน้าอาคารอนุบาล และสระว่ายน้ำ (ตามรูปจริง school-photos/06-อาคารอนุบาล, 10-สระว่ายน้ำ)
 function buildKgPool(){
@@ -1379,6 +1380,17 @@ function buildKgPool(){
     c.fillStyle = '#dc2626'; c.font = 'bold 30px sans-serif'; c.textAlign = 'center'; c.fillText('อาคาร ต', w/2, 43); });
   for (const px of [-45.9, -44.9]) B(.08, 1.6, .08, '#1e3a8a', px, .8, 29.4);
   const sg = new THREE.Mesh(new THREE.PlaneGeometry(1.6, .64), new THREE.MeshLambertMaterial({map: sT, transparent: true, side: THREE.DoubleSide})); sg.position.set(-45.4, 1.5, 29.35); sg.rotation.y = Math.PI; g.add(sg);
+  // สนามเปตอง 2 ลู่ (ทราย ขอบไม้) ข้างต้นมะม่วง ริมถนนหน้าลานเสาธง (ตามที่ครูบอก)
+  const pc = new THREE.Group(); pc.position.set(-13, 0, 19.5); g.add(pc);
+  B(7.6, .08, 6.4, '#d6c3a0', 0, .04, 0, pc);
+  for (const dz of [-3.2, 0, 3.2]) B(7.8, .2, .14, '#7c5a3a', 0, .1, dz, pc);
+  for (const dx of [-3.85, 3.85]) B(.14, .2, 6.5, '#7c5a3a', dx, .1, 0, pc);
+  const ballG = new THREE.SphereGeometry(.09, 10, 8), ballM = new THREE.MeshStandardMaterial({color: '#cbd5e1', metalness: .8, roughness: .3});
+  for (const [bx, bz] of [[2.2, -1.4], [2.5, -1.9], [1.9, -1.1], [-2.4, 1.5], [-2.0, 1.9], [-2.6, 1.2]]) add(ballG, ballM, bx, .17, bz, pc);
+  add(new THREE.SphereGeometry(.05, 8, 6), M('#ef4444'), 2.6, .14, -1.6, pc); add(new THREE.SphereGeometry(.05, 8, 6), M('#facc15'), -2.6, .14, 1.6, pc);
+  // ลูกมะม่วงบนต้นมะม่วง 2 ต้น
+  const mgG = new THREE.SphereGeometry(.13, 6, 5), mgM = M('#a3c94a');
+  for (const tx of [-7.2, -2.3]) for (let k = 0; k < 10; k++) { const a = k*2.4, r = 1.3 + (k % 3)*.25; const mg = add(mgG, mgM, tx + Math.cos(a)*r, 2.3 + (k % 4)*.35, 20.7 + Math.sin(a)*r); mg.scale.y = 1.4; }
   // ต้นไม้ต้นเล็กกลางสนามริมถนน
   B(.18, 2, .18, '#6b4f3a', -49, 1, 21.5); const cr = add(new THREE.IcosahedronGeometry(1.4, 0), M('#4d8b31'), -49, 2.9, 21.5); cr.scale.y = .8;
   // สระว่ายน้ำยกพื้น: ผนังปูนทาสีฟ้าลายเด็กว่ายน้ำ "BANKHUM SWIMMING POOL", บันไดเหล็ก, หลังคาโค้งเมทัลชีท, ถังกรองน้ำ, รั้วตาข่าย, ป้ายสีน้ำเงิน
