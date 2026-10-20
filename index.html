@@ -732,7 +732,8 @@ function onModel(g) {
   root.children.forEach(o => { if (/^(Student|Teacher)_/.test(o.name)) o.visible = false; });
   const dome = root.getObjectByName('Playground_Dome');
   if (dome) { dome.rotation.y = Math.PI/2; dome.position.x = PLAY_C[0]; dome.position.z = PLAY_C[1]; buildPlayset(); }
-  const tent = root.getObjectByName('Museum_Walk'); if (tent) tent.removeFromParent();   // เอาเต็นท์หลังคาโค้งสีน้ำเงินออก (ตามที่ครูขอ)
+  const tent = root.getObjectByName('Museum_Walk'); if (tent) tent.removeFromParent();
+  const solar = root.getObjectByName('Solar_Pergola'); if (solar) solar.removeFromParent();   // ซุ้มหลังคาขาวแผงโซลาร์ที่หัวอาคาร ป.1 ป.2 ไม่มีจริง (ครูให้เอาออก)   // เอาเต็นท์หลังคาโค้งสีน้ำเงินออก (ตามที่ครูขอ)
   buildField(); buildChalerm();
   buildFarm(); buildRestroom(root); buildMushroom(root); buildFloors(); buildClassFx(); initAgents(root); applyXrayAll();
   $('info').onclick = () => document.body.classList.toggle('sheet');
@@ -1898,6 +1899,18 @@ function buildClassFx(){
     const sx = r.cx - W/2 + .35;                                                             // ชั้นวางหนังสือข้างห้อง
     bx(.35, 1.1, Math.min(D*.4, 2.4), shelf, sx, .55, r.cz + D*.15);
     for (let i = 0; i < 6; i++) bx(.2, .26, .12, book[i % 4], sx + .05, .2 + (i % 2)*.48 + .12, r.cz + D*.15 - .8 + Math.floor(i/2)*.6);
+    // โต๊ะ-เก้าอี้นักเรียนครบทุกที่นั่ง (ตำแหน่งเดียวกับที่นักเรียนนั่ง) ห้องจึงไม่โล่งตอนพัก/เลิกเรียน
+    const n = STUDENTS.filter(s => s.cls === c && s.scan != null).length, mm = new THREE.Matrix4();
+    const dk = new THREE.InstancedMesh(new THREE.BoxGeometry(.95, .08, .6).translate(0, .62, 0), M('#b45309'), n * 3), ch = new THREE.InstancedMesh(new THREE.BoxGeometry(.42, .05, .38).translate(0, .4, 0), M('#1e40af'), n * 2);
+    for (let i = 0; i < n; i++) {
+      const q = slotOf(r, 'sit', i, n, .5, .5);
+      dk.setMatrixAt(i*3, mm.makeTranslation(q.x, y, q.z - .55));
+      dk.setMatrixAt(i*3 + 1, mm.makeScale(.07, 7.5, .1).setPosition(q.x - .4, y - 4.35, q.z - .55));   // ขาโต๊ะ (สเกลกล่องเดิมเป็นแท่ง)
+      dk.setMatrixAt(i*3 + 2, mm.makeScale(.07, 7.5, .1).setPosition(q.x + .4, y - 4.35, q.z - .55));
+      ch.setMatrixAt(i*2, mm.makeTranslation(q.x, y, q.z + .05));
+      ch.setMatrixAt(i*2 + 1, mm.makeScale(1, 9, .15).setPosition(q.x, y - 2.95, q.z + .25));   // พนักพิง
+    }
+    dk.castShadow = ch.castShadow = true; g.add(dk, ch);
     g.visible = false; scene.add(g); classFx[c] = g;
     const el = document.createElement('div'); el.className = 'rlab'; el.textContent = 'ห้อง ' + c; $('labels').appendChild(el);
     roomLabs.push({el, R: {b: HOMEROOM[c]}, p: new THREE.Vector3(r.cx, y + 2.6, r.cz)});
