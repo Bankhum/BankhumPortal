@@ -224,6 +224,32 @@ canvas{cursor:pointer}
  #now{display:none!important}
  #left .grid div{min-height:34px}
 }
+/* ---- สไตล์โมเดลจำลอง (ตามคลิปตัวอย่าง): ปุ่มกล้อง แผงแสงและบรรยากาศ แถบจุดแนะนำ ---- */
+#vtools{position:fixed;left:50%;top:calc(var(--topbar) + 40px);transform:translateX(-50%);display:flex;gap:5px;z-index:6;max-width:calc(100vw - 560px);overflow-x:auto;scrollbar-width:none}
+#vtools button,#tour button,#atm .seg button{border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(8px);border-radius:8px;padding:5px 10px;font:inherit;font-size:12px;color:var(--ink);cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+#vtools button.on,#tour button.on,#atm .seg button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+#vtools .ic{padding:5px 8px}
+#tour{position:fixed;left:50%;bottom:calc(var(--barH,112px) + 4px);transform:translateX(-50%);display:flex;gap:4px;padding:4px;border-radius:999px;background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);box-shadow:0 4px 18px rgba(0,0,0,.08);max-width:calc(100vw - 32px);overflow-x:auto;scrollbar-width:none;z-index:5}
+#tour button{border:0;box-shadow:none;background:transparent;border-radius:999px;padding:5px 11px}
+#tour button i{font-style:normal;font-size:10px;opacity:.65;margin-right:4px}
+#atm{position:fixed;right:16px;top:calc(var(--topbar) + 76px);width:290px;max-height:calc(100vh - var(--topbar) - var(--barH,112px) - 140px);overflow:auto;z-index:7;font-size:12px}
+#atm .h button{border:1px solid var(--line);background:var(--chip);border-radius:6px;cursor:pointer;font:inherit;font-size:11px;padding:2px 8px}
+#atm .seg{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0 4px}
+#atm .seg button{box-shadow:none;padding:4px 8px;font-size:11.5px}
+#atm h5{margin:10px 0 2px;font-size:10.5px;color:var(--mute);font-weight:600;border-top:1px solid var(--line);padding-top:7px}
+#atm label{display:block;margin:5px 0 0}
+#atm label span{display:flex;justify-content:space-between}#atm label span b{font-weight:400;color:var(--mute);font-variant-numeric:tabular-nums}
+#atm input[type=range]{width:100%;accent-color:#9a3b2e;margin:2px 0 0}
+#atm label.ck{display:flex;gap:6px;align-items:center}
+body.clean #left,body.clean #right,body.clean #now,body.clean #hint,body.clean #note,body.clean #toasts,body.clean #labels,body.clean #title{display:none!important}
+body.night #hint,body.night #note{color:#cbd5e1}
+@media (max-width:760px),(max-height:520px){
+ #vtools{left:auto;right:6px;transform:none;top:auto;bottom:calc(var(--barH,112px) + 52px);flex-direction:column;max-width:none}
+ #vtools .tx{display:none}
+ #tour{bottom:calc(var(--barH,112px) + 4px);left:8px;right:8px;transform:none;max-width:none;border-radius:12px}
+ #atm{left:8px;right:8px;width:auto;top:calc(var(--topbar) + 8px);max-height:55vh}
+ body.sheet #tour,body.sheet #vtools{display:none}
+}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
 </head>
@@ -262,6 +288,33 @@ canvas{cursor:pointer}
 <div id="title">BANKHUM CAMPUS SIM<small>ระบบจำลองและแสดงสถานะกิจกรรมภายในโรงเรียน · โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)</small></div>
 <div id="now"></div>
 <div id="toasts" aria-live="polite"></div>
+<div id="vtools" role="toolbar" aria-label="มุมกล้องและบรรยากาศ">
+  <button id="vWide" title="มุมกว้าง เห็นทั้งโรงเรียน">🔭<span class="tx"> มุมกว้าง</span></button>
+  <button id="vSpin" title="หมุนโมเดลรอบ ๆ ช้า ๆ">🔄<span class="tx"> หมุนโมเดล</span></button>
+  <button id="vTour" title="กล้องพาเที่ยวทีละอาคาร">🎥<span class="tx"> กล้องตามอาคาร</span></button>
+  <button id="vAtm" title="แสง เงา และบรรยากาศ">☀️<span class="tx"> แสง เงา</span></button>
+  <button id="vShot" class="ic" title="บันทึกภาพหน้าจอ" aria-label="บันทึกภาพหน้าจอ">📷</button>
+  <button id="vClean" class="ic" title="ซ่อน/แสดงแผงข้อมูล" aria-label="ซ่อนแผงข้อมูล">🙈</button>
+</div>
+<div class="panel" id="atm" hidden role="dialog" aria-label="แสง เงา และบรรยากาศ">
+  <div class="h">แสง เงา และบรรยากาศ <button id="atmX">ปิด</button></div>
+  <div class="seg" id="atmPre"></div>
+  <h5>ไฟและแสงเรือง</h5>
+  <label><span>ไฟหน้าต่าง เสาไฟ และไฟทาง <b id="vLamps"></b></span><input type="range" id="aLamps" min="0" max="1.5" step=".05"></label>
+  <h5>ฝนและหมอก</h5>
+  <label class="ck"><input type="checkbox" id="aRain"> ฝนตก</label>
+  <label><span>ความหนาแน่นของฝน <b id="vRainD"></b></span><input type="range" id="aRainD" min=".1" max="1" step=".05"></label>
+  <label class="ck"><input type="checkbox" id="aFog"> เปิดหมอก</label>
+  <label><span>ความหนาแน่นของหมอก <b id="vFogD"></b></span><input type="range" id="aFogD" min=".1" max="1" step=".05"></label>
+  <h5>แสงอาทิตย์และเงา</h5>
+  <label><span>ทิศแสงหลัก <b id="vAz"></b></span><input type="range" id="aAz" min="-180" max="180" step="1"></label>
+  <label><span>มุมสูงแสงหลัก <b id="vEl"></b></span><input type="range" id="aEl" min="4" max="85" step="1"></label>
+  <label><span>ความเข้มแสงหลัก <b id="vSunI"></b></span><input type="range" id="aSunI" min="0" max="3.5" step=".05"></label>
+  <label><span>แสงเติมจากท้องฟ้า <b id="vSkyI"></b></span><input type="range" id="aSkyI" min="0" max="2.5" step=".05"></label>
+  <h5>สี</h5>
+  <label class="ck"><input type="checkbox" id="aWarm"> โทนสีโมเดลจำลอง (หลังคาอิฐ ผนังครีม)</label>
+</div>
+<div id="tour" role="navigation" aria-label="จุดแนะนำ"></div>
 <div id="hint">คลิกอาคารเพื่อดูว่าใครอยู่ข้างใน</div>
 <div id="note">ตารางเรียน ป.1–ป.6: ของจริง ภาคเรียนที่ 1/2569 · กิจวัตรอนุบาล: ตามที่ครูแจ้ง · ผลสแกนหน้า: ข้อมูลตัวอย่าง</div>
 <div id="findp" hidden role="dialog" aria-label="ค้นหานักเรียนหรือครู">
@@ -2550,9 +2603,224 @@ function frame(){
   cam.position.set(target.x+Math.sin(ang)*150, 120, target.z+Math.cos(ang)*150); cam.lookAt(target);
   moveVehicles(Math.min(dt,.3)); moveAgents(Math.min(dt,.3)); classFeed(dt); animFarm(Math.min(dt,.3), t); animGarden(Math.min(dt,.3), t); if (!p12Fixed && fenceBuilt) fixP12Site(); if (!parkFixed && fenceBuilt) buildParkingSite(); followFind(Math.min(dt,.3));
   placeGroupChips(); placeRoomLabels(); showClassFx();
+  if (window.__ready) { initLook(); animLook(Math.min(dt,.3), t); }
   renderer.render(scene,cam);
   for (const z of Object.values(zones)) { v.copy(z.p).project(cam); z.el.style.left = (v.x*.5+.5)*innerWidth+'px'; z.el.style.top = (-v.y*.5+.5)*innerHeight+'px'; }
   declutter();   // ทุกเฟรม หลังวางตำแหน่งป้ายครบแล้ว (อ่านขนาดป้ายครั้งเดียวต่อเฟรม)
+}
+/* ---------- สไตล์โมเดลจำลอง (ตามคลิปตัวอย่างที่ครูส่งมา) ----------
+   โทนสีอบอุ่น (หลังคาอิฐ ผนังครีม พื้นเขียวหม่น) · แสงตามช่วงเวลา เช้า/กลางวัน/เย็น/ย่ำค่ำ/กลางคืน ไฟหน้าต่าง เสาไฟ ฝน หมอก
+   · ปุ่มกล้อง มุมกว้าง หมุนโมเดล กล้องตามอาคาร ถ่ายภาพ ซ่อนแผง · แถบจุดแนะนำด้านล่าง กดแล้วกล้องบินไปที่จุดนั้น
+   · ต้นไม้ low-poly หลายแบบ ต้นมะพร้าว ร่มกับโต๊ะในตลาด เสาไฟริมถนน */
+const WARM_GLB = {Roof_Grey:'#b4583d', Roof_DarkGrey:'#93452f', Roof_Green:'#7f9f5a', Wall_White:'#f0e7d6', Wall_Blue:'#9bb0b8', Concrete:'#c6baa5', Paving:'#d6c8b0',
+  Asphalt:'#57534f', Court_Grey:'#85807a', Grass:'#93a76a', Grass_Field:'#86a35a', Leaf:'#4f7c3e', Leaf_Light:'#80a453', Steel:'#aaa59c', Dirt:'#a88b68', Fence_Green:'#5f8a45'};
+const WIN_GLB = new Set(['Window_Teal', 'Window_Blue', 'Glass_Teal']);
+const CREAM = new THREE.Color('#f2e4cc');
+const LOOK = {mode: 'auto', lamps: 0, rain: false, rainD: .5, fog: false, fogD: .35, az: -37, el: 50, sunI: 2.2, skyI: 1.5, warm: true};
+// ค่าแสงแต่ละช่วง: สีแสงอาทิตย์ ความเข้ม มุมสูง ทิศ · สีท้องฟ้า/พื้น ความเข้ม · สีพื้นหลัง 2 สี · ไฟ
+const ATM = {
+  morning: {th:'เช้า',     sunC:'#ffd6a3', sunI:1.9, el:18, az:-70, skyC:'#ffe8cc', gndC:'#b9a27f', skyI:1.25, bg:['#f4e4cf','#e9dccb'], lamps:0},
+  day:     {th:'กลางวัน',  sunC:'#fff4e2', sunI:2.3, el:50, az:-37, skyC:'#fff7ec', gndC:'#b8a88c', skyI:1.5,  bg:['#efe9df','#e6dfd2'], lamps:0},
+  evening: {th:'เย็น',     sunC:'#ffb274', sunI:1.8, el:14, az:60,  skyC:'#ffd8ae', gndC:'#a98d73', skyI:1.05, bg:['#efd6bd','#e2cdb9'], lamps:.35},
+  dusk:    {th:'ย่ำค่ำ',   sunC:'#b9a6d6', sunI:.55, el:6,  az:75,  skyC:'#8f93c6', gndC:'#3c3552', skyI:.6,  bg:['#545a82','#3d3f63'], lamps:.9},
+  night:   {th:'กลางคืน',  sunC:'#8fa8e6', sunI:.35, el:40, az:-120,skyC:'#4b5b8c', gndC:'#161b2c', skyI:.32, bg:['#18213a','#0f1628'], lamps:1.1},
+};
+const atmCur = {sunC: new THREE.Color(), skyC: new THREE.Color(), gndC: new THREE.Color(), bg0: new THREE.Color(), bg1: new THREE.Color()};
+// ตามเวลาจำลอง: 05:55 เช้า → 08:00 กลางวัน → 15:00 กลางวัน → 16:30 เย็น
+const AUTO_KEYS = [[355, 'morning'], [480, 'day'], [900, 'day'], [990, 'evening']];
+function atmBlend(m){
+  let a = AUTO_KEYS[0], b = AUTO_KEYS[AUTO_KEYS.length - 1];
+  for (let i = 0; i < AUTO_KEYS.length - 1; i++) if (m >= AUTO_KEYS[i][0] && m <= AUTO_KEYS[i+1][0]) { a = AUTO_KEYS[i]; b = AUTO_KEYS[i+1]; break; }
+  const f = b[0] > a[0] ? THREE.MathUtils.clamp((m - a[0])/(b[0] - a[0]), 0, 1) : 0;
+  return [ATM[a[1]], ATM[b[1]], f];
+}
+const lerp = THREE.MathUtils.lerp, _c1 = new THREE.Color(), _c2 = new THREE.Color();
+function atmApplyPreset(p, q = p, f = 0, setSliders = true){
+  atmCur.sunC.copy(_c1.set(p.sunC)).lerp(_c2.set(q.sunC), f); atmCur.skyC.copy(_c1.set(p.skyC)).lerp(_c2.set(q.skyC), f); atmCur.gndC.copy(_c1.set(p.gndC)).lerp(_c2.set(q.gndC), f);
+  atmCur.bg0.copy(_c1.set(p.bg[0])).lerp(_c2.set(q.bg[0]), f); atmCur.bg1.copy(_c1.set(p.bg[1])).lerp(_c2.set(q.bg[1]), f);
+  if (setSliders) Object.assign(LOOK, {sunI: lerp(p.sunI, q.sunI, f), el: lerp(p.el, q.el, f), az: lerp(p.az, q.az, f), skyI: lerp(p.skyI, q.skyI, f), lamps: lerp(p.lamps, q.lamps, f)});
+}
+atmApplyPreset(ATM.day);
+let hemi = null; scene.traverse(o => { if (o.isHemisphereLight) hemi = o; });
+const sunDir = new THREE.Vector3();
+let warmT = 0, atmUiT = 0, rainFx = null, lampFx = null;
+const winMats = new Set();
+// โทนสีโมเดลจำลอง: เปลี่ยนสีวัสดุตามชื่อ (โมเดลหลัก) หรือปรับให้อุ่นขึ้นเล็กน้อย (ของที่สร้างในหน้าเว็บ) · เก็บสีเดิมไว้คืนได้
+function warmScan(){
+  const seen = new Set();
+  scene.traverse(o => {
+    if (!o.isMesh && !o.isInstancedMesh) return;
+    for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+      if (!m || !m.color || seen.has(m) || m.isMeshBasicMaterial || m.isLineBasicMaterial || m.isSpriteMaterial || m.userData.noWarm) continue;
+      seen.add(m);
+      if (!m.userData.c0) {
+        m.userData.c0 = m.color.clone();
+        const hex = m.color.getHexString();
+        if (WIN_GLB.has(m.name) || hex === '1e293b') { winMats.add(m); if (m.emissive) m.userData.e0 = m.emissive.clone(); }
+      }
+      if (m.transparent && m.opacity < .6) continue;   // ของโปร่งแสง (มองทะลุหลังคา) ไม่ต้องเปลี่ยน
+      const want = LOOK.warm ? 1 : 0; if (m.userData.warm === want) continue; m.userData.warm = want;
+      if (!want) { m.color.copy(m.userData.c0); continue; }
+      if (WARM_GLB[m.name]) { m.color.set(WARM_GLB[m.name]); continue; }
+      const hsl = {}; m.color.copy(m.userData.c0).getHSL(hsl); m.color.setHSL(hsl.h, hsl.s*.78, hsl.l); m.color.lerp(CREAM, .12);
+    }
+  });
+  // ของที่มองทะลุ (clone ตอนเลือกอาคาร) ใช้สีจากวัสดุเดิมอยู่แล้ว
+}
+// เสาไฟ: ริมถนนหน้าโรงเรียน ริมถนนในโรงเรียน (ตามเส้นทางรถ) และรอบตลาด · กลางคืนมีวงแสงบนพื้น
+function buildLamps(){
+  const pts = [];
+  for (let z = -136; z <= 136; z += 17) pts.push([-77, z]);
+  for (let x = 84; x <= 140; x += 17) pts.push([x, 62.6]);
+  let acc = 9;
+  for (let i = 1; i < MAIN.length; i++) {
+    const [ax, az] = MAIN[i-1], [bx, bz] = MAIN[i], L = Math.hypot(bx-ax, bz-az); if (!L) continue;
+    const nx = (bz-az)/L, nz = -(bx-ax)/L;
+    for (let d = acc; d < L; d += 15) { const x = ax + (bx-ax)*d/L + nx*3.1, z = az + (bz-az)*d/L + nz*3.1; if (x > FENCE.x0 + 1 && x < FENCE.x1 - 1 && z > FENCE.z0 + 1 && z < FENCE.z1 - 1) pts.push([x, z]); acc = d + 15 - L; }
+    if (acc > L) acc -= L; else acc = Math.max(0, acc);
+  }
+  pts.push([MARKET.x0 + 1, MARKET.z0 + 1], [MARKET.x0 + 1, MARKET.z1 - 1], [MARKET.x1 - 1, MARKET.z0 + 1], [MARKET.x1 - 1, MARKET.z1 - 1]);
+  const n = pts.length, poleM = new THREE.MeshLambertMaterial({color: '#4b5563'});
+  const pole = new THREE.InstancedMesh(new THREE.CylinderGeometry(.09, .12, 4.6, 6).translate(0, 2.3, 0), poleM, n);
+  const bulbM = new THREE.MeshLambertMaterial({color: '#fef3c7', emissive: new THREE.Color('#ffc46b'), emissiveIntensity: 0}); bulbM.userData.noWarm = true;
+  const bulb = new THREE.InstancedMesh(new THREE.SphereGeometry(.32, 8, 6).translate(0, 4.7, 0), bulbM, n);
+  const tex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gr.addColorStop(0, 'rgba(255,214,140,1)'); gr.addColorStop(.5, 'rgba(255,190,110,.35)'); gr.addColorStop(1, 'rgba(255,190,110,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
+  const glowM = new THREE.MeshBasicMaterial({map: tex, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending});
+  const glow = new THREE.InstancedMesh(new THREE.PlaneGeometry(9, 9).rotateX(-Math.PI/2).translate(0, .05, 0), glowM, n);
+  pts.forEach(([x, z], i) => { dummy.position.set(x, 0, z); dummy.rotation.set(0, 0, 0); dummy.scale.setScalar(1); dummy.updateMatrix(); pole.setMatrixAt(i, dummy.matrix); bulb.setMatrixAt(i, dummy.matrix); glow.setMatrixAt(i, dummy.matrix); });
+  pole.castShadow = true; glow.renderOrder = 2; scene.add(pole, bulb, glow);
+  lampFx = {bulbM, glowM};
+}
+// ต้นไม้ low-poly หลายแบบ (พุ่มกลมเหลี่ยม ทรงกรวย มะพร้าว) ในชุมชนรอบโรงเรียน + ร่มกับโต๊ะในตลาด
+function buildScenery(){
+  let sd = 77; const r = () => (sd = (sd*16807) % 2147483647) / 2147483647;
+  const mat = c => new THREE.MeshLambertMaterial({color: c, flatShading: true});
+  const trunkM = mat('#7a5233'), leafs = ['#5b8a3c', '#6f9a45', '#4c7a3a', '#86a75a'].map(mat), palmM = mat('#6d9b3f');
+  const placed = [];
+  const blocked = (x, z) => (x > FENCE.x0 - 3 && x < FENCE.x1 + 3 && z > FENCE.z0 - 3 && z < FENCE.z1 + 3) || (x > -79 && x < -61) || (z > 47 && z < 65 && x > 70)
+    || (x > MARKET.x0 - 3 && x < MARKET.x1 + 3 && z > MARKET.z0 - 3 && z < MARKET.z1 + 3) || HOUSES.some(h => Math.abs(h[0] - x) < 8 && Math.abs(h[1] - z) < 8) || placed.some(p => Math.hypot(p[0] - x, p[1] - z) < 6) || Math.abs(x) > FAR - 4 || Math.abs(z) > FAR - 4;
+  for (let i = 0, k = 0; i < 400 && k < 70; i++) {
+    const x = -FAR + r()*2*FAR, z = -FAR + r()*2*FAR; if (blocked(x, z)) continue; placed.push([x, z]); k++;
+    const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = r()*6.28; const s = .8 + r()*.6; g.scale.setScalar(s); scene.add(g);
+    const kind = k % 4, tr = new THREE.Mesh(new THREE.CylinderGeometry(.18, .28, kind === 3 ? 6 : 2.4, 6), trunkM); tr.position.y = kind === 3 ? 3 : 1.2; tr.castShadow = true; g.add(tr);
+    if (kind === 3) {   // มะพร้าว: ลำต้นเอียงเล็กน้อย ทางใบแผ่ออก
+      tr.rotation.z = .12;
+      for (let j = 0; j < 7; j++) { const f = new THREE.Mesh(new THREE.ConeGeometry(.45, 3.4, 4), palmM); f.position.set(.35, 6, 0); f.rotation.set(0, j*.9, 0); f.rotateZ(1.9); f.translateY(1.5); f.castShadow = true; g.add(f); }
+    } else if (kind === 2) {   // ทรงกรวยซ้อน
+      for (let j = 0; j < 2; j++) { const c = new THREE.Mesh(new THREE.ConeGeometry(1.9 - j*.5, 2.4, 7), leafs[(k + j) % 4]); c.position.y = 3 + j*1.3; c.castShadow = true; g.add(c); }
+    } else {   // พุ่มกลมเหลี่ยม 1–3 ก้อน
+      const nb = 1 + (k % 3);
+      for (let j = 0; j < nb; j++) { const c = new THREE.Mesh(new THREE.IcosahedronGeometry(1.5 + r()*.6, 0), leafs[(k + j) % 4]); c.position.set((j - (nb-1)/2)*1.1, 3.1 + (j % 2)*.6, (j % 2 ? .5 : -.3)); c.castShadow = true; g.add(c); }
+    }
+  }
+  // ร่มกับโต๊ะกลม (ลานนั่งกินในตลาด)
+  const {x0, x1, z0, z1} = MARKET, cz = (z0 + z1)/2, umbC = ['#f4efe6', '#c0392b', '#f4efe6', '#d97706'];
+  [[x1 - 9, cz - 4], [x1 - 9, cz + 4], [x1 - 15, cz]].forEach(([x, z], i) => {
+    const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
+    const tb = new THREE.Mesh(new THREE.CylinderGeometry(.9, .9, .08, 10), mat('#8b5a2b')); tb.position.y = .78; tb.castShadow = true; g.add(tb);
+    const lg = new THREE.Mesh(new THREE.CylinderGeometry(.08, .08, .78, 6), trunkM); lg.position.y = .39; g.add(lg);
+    for (let j = 0; j < 4; j++) { const st = new THREE.Mesh(new THREE.CylinderGeometry(.28, .28, .45, 8), mat('#a16207')); st.position.set(Math.cos(j*1.57)*1.4, .22, Math.sin(j*1.57)*1.4); st.castShadow = true; g.add(st); }
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(.05, .05, 2.6, 6), mat('#e5e7eb')); pole.position.y = 1.3; g.add(pole);
+    const um = new THREE.Mesh(new THREE.ConeGeometry(2, .7, 8), mat(umbC[i % umbC.length])); um.position.y = 2.75; um.castShadow = true; g.add(um);
+  });
+}
+// ฝน: เส้นสั้น ๆ ตกลงรอบจุดที่กล้องมอง
+function buildRain(){
+  const N = LOWEND ? 900 : 2200, pos = new Float32Array(N*6), sp = new Float32Array(N);
+  for (let i = 0; i < N; i++) { const x = (Math.random() - .5)*200, y = Math.random()*90, z = (Math.random() - .5)*200; pos.set([x, y, z, x + .25, y + 1.6, z], i*6); sp[i] = 55 + Math.random()*25; }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const m = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({color: '#dbe4ee', transparent: true, opacity: .5, depthWrite: false})); m.frustumCulled = false; m.visible = false; scene.add(m);
+  rainFx = {m, pos, sp, N};
+}
+// กล้องบิน: เลื่อนจุดมอง ซูม และมุมหมุนไปหาเป้าหมายแบบนุ่มนวล
+let fly = null, spin = false, autoTour = false, tourI = 0, tourT = 0;
+const TOUR = [
+  ['ภาพรวม', () => ({p: new THREE.Vector3(0, 0, 0), z: 1, yaw: Math.PI/4})],
+  ['ประตูโรงเรียน', () => ({p: GATE.clone().setY(0), z: 3, yaw: -Math.PI/3})],
+  ['อาคารเฉลิมพระเกียรติ', () => ({zone: 'Chalerm_Building', z: 2.6, yaw: Math.PI/4 + .4})],
+  ['ลานเสาธง สนาม', () => ({zone: 'Field', z: 1.9, yaw: Math.PI/5})],
+  ['อาคาร ป.1 ป.2', () => ({zone: 'P1P2_Classroom', z: 2.6, yaw: Math.PI/3})],
+  ['อนุบาล สระว่ายน้ำ', () => ({zone: 'Kindergarten', z: 2.3, yaw: Math.PI/4 - .4})],
+  ['โรงอาหาร', () => ({zone: 'Canteen', z: 2.8, yaw: Math.PI/4})],
+  ['แปลงเกษตร', () => ({zone: 'SmartFarm', z: 2.8, yaw: Math.PI/2})],
+  ['ตลาดชุมชน', () => ({p: new THREE.Vector3((MARKET.x0 + MARKET.x1)/2, 0, (MARKET.z0 + MARKET.z1)/2), z: 2.4, yaw: -Math.PI/4})],
+];
+function goStop(i, fromTour){
+  const s = TOUR[i][1](); tourI = i; roomView = null;
+  let p = s.p;
+  if (s.zone && zones[s.zone]) { const zc = zones[s.zone].c; p = new THREE.Vector3(zc.x, 0, zc.z); if (innerWidth > 760 && selected !== s.zone) select(s.zone); }
+  else if (selected && innerWidth > 760 && i === 0) select(selected);
+  if (!p) return;
+  fly = {p, z: s.z, yaw: s.yaw}; view.touched = true; if (!fromTour) { autoTour = false; spin = false; }
+  for (const b of $('tour').children) b.classList.toggle('on', +b.dataset.i === i);
+  lookButtons();
+}
+function lookButtons(){ $('vSpin').classList.toggle('on', spin); $('vTour').classList.toggle('on', autoTour); $('vAtm').classList.toggle('on', !$('atm').hidden); $('vClean').classList.toggle('on', document.body.classList.contains('clean')); }
+const angTo = (a, b) => { let d = (b - a) % (2*Math.PI); if (d > Math.PI) d -= 2*Math.PI; if (d < -Math.PI) d += 2*Math.PI; return d; };
+function animLook(dt, t){
+  // กล้อง
+  if (autoTour && (tourT += dt) > 7) { tourT = 0; goStop((tourI + 1) % TOUR.length, true); }
+  if (fly) {
+    const k = 1 - Math.exp(-dt*2.6);
+    target.lerp(fly.p, k); setZoom(view.zoom + (fly.z - view.zoom)*k); view.yaw += angTo(view.yaw, fly.yaw)*k;
+    if (target.distanceTo(fly.p) < .05 && Math.abs(view.zoom - fly.z) < .01 && Math.abs(angTo(view.yaw, fly.yaw)) < .002) fly = null;
+  }
+  if (spin || autoTour) { view.touched = true; if (!fly || autoTour) view.yaw += dt*(autoTour ? .05 : .18); if (fly && autoTour) fly.yaw += dt*.05; }
+  // แสง
+  if (LOOK.mode === 'auto') { const [a, b, f] = atmBlend(simMin); atmApplyPreset(a, b, f); }
+  const rainK = LOOK.rain ? LOOK.rainD : 0, dim = 1 - .45*rainK;
+  const az = THREE.MathUtils.degToRad(LOOK.az), el = THREE.MathUtils.degToRad(LOOK.el);
+  sunDir.set(Math.sin(az)*Math.cos(el), Math.sin(el), Math.cos(az)*Math.cos(el));
+  sun.position.copy(sunDir).multiplyScalar(160); sun.color.copy(atmCur.sunC); sun.intensity = LOOK.sunI*dim;
+  if (hemi) { hemi.color.copy(atmCur.skyC); hemi.groundColor.copy(atmCur.gndC); hemi.intensity = LOOK.skyI*(1 - .2*rainK); }
+  _c1.copy(atmCur.bg0).lerp(_c2.set('#9aa3ad'), .35*rainK); _c2.copy(atmCur.bg1).lerp(new THREE.Color('#8c95a0'), .35*rainK);
+  const rs = document.documentElement.style, h0 = '#' + _c1.getHexString(), h1 = '#' + _c2.getHexString();
+  if (rs.getPropertyValue('--bg1') !== h0) { rs.setProperty('--bg1', h0); rs.setProperty('--bg2', h1); }
+  const dark = (_c1.r + _c1.g + _c1.b)/3 < .45; document.body.classList.toggle('night', dark);
+  if (LOOK.fog) {
+    if (!scene.fog) scene.fog = new THREE.Fog(0xffffff, 100, 400);
+    scene.fog.color.copy(_c1).lerp(_c2, .5); scene.fog.near = 230 - 120*LOOK.fogD; scene.fog.far = scene.fog.near + 40 + 260*(1 - LOOK.fogD);
+  } else if (scene.fog) scene.fog = null;
+  // ไฟหน้าต่าง เสาไฟ
+  const L = LOOK.lamps;
+  for (const m of winMats) if (m.emissive) { m.emissive.set('#ffc56e'); m.emissiveIntensity = L*.85; }
+  if (lampFx) { lampFx.bulbM.emissiveIntensity = L*2.2; lampFx.glowM.opacity = Math.min(1, L*.75); lampFx.glowM.visible = L > .02; }
+  // ฝน
+  if (rainFx) {
+    rainFx.m.visible = rainK > 0; rainFx.m.material.opacity = .25 + .45*rainK; rainFx.m.geometry.setDrawRange(0, Math.floor(rainFx.N*rainK)*2);
+    if (rainK > 0) { const {pos, sp, N} = rainFx; for (let i = 0; i < N; i++) { const o = i*6; let y = pos[o+1] - sp[i]*dt; if (y < 0) y += 90; pos[o+1] = y; pos[o+4] = y + 1.6; }
+      rainFx.m.geometry.attributes.position.needsUpdate = true; rainFx.m.position.set(target.x, 0, target.z); }
+  }
+  if ((warmT -= dt) < 0) { warmT = 1.5; warmScan(); }
+  if ((atmUiT -= dt) < 0 && !$('atm').hidden) { atmUiT = .4; atmSync(); }
+}
+const A_SL = {aLamps: ['lamps', v => v.toFixed(2)], aRainD: ['rainD', v => v.toFixed(2)], aFogD: ['fogD', v => v.toFixed(2)], aAz: ['az', v => Math.round(v) + '°'], aEl: ['el', v => Math.round(v) + '°'], aSunI: ['sunI', v => v.toFixed(2)], aSkyI: ['skyI', v => v.toFixed(2)]};
+function atmSync(){
+  for (const [id, [k, f]] of Object.entries(A_SL)) { const el = $(id); if (document.activeElement !== el) el.value = LOOK[k]; $('v' + id.slice(1)).textContent = f(LOOK[k]); }
+  $('aRain').checked = LOOK.rain; $('aFog').checked = LOOK.fog; $('aWarm').checked = LOOK.warm;
+  for (const b of $('atmPre').children) b.classList.toggle('on', b.dataset.k === LOOK.mode);
+}
+function initLook(){
+  if (window.__lookInit) return; window.__lookInit = true;
+  buildLamps(); buildScenery(); buildRain(); warmScan();
+  const pre = $('atmPre'); pre.innerHTML = `<button data-k="auto" title="เปลี่ยนตามเวลาจำลอง">⏱ ตามเวลา</button>` + Object.entries(ATM).map(([k, p]) => `<button data-k="${k}">${p.th}</button>`).join('');
+  for (const b of pre.children) b.onclick = () => { LOOK.mode = b.dataset.k; if (ATM[LOOK.mode]) atmApplyPreset(ATM[LOOK.mode]); atmSync(); };
+  for (const [id, [k]] of Object.entries(A_SL)) $(id).oninput = e => { LOOK[k] = +e.target.value; if (!['rainD', 'fogD'].includes(k) && LOOK.mode === 'auto') LOOK.mode = 'custom'; atmSync(); };
+  $('aRain').onchange = e => { LOOK.rain = e.target.checked; }; $('aFog').onchange = e => { LOOK.fog = e.target.checked; };
+  $('aWarm').onchange = e => { LOOK.warm = e.target.checked; warmT = 0; };
+  $('atmX').onclick = () => { $('atm').hidden = true; lookButtons(); };
+  $('vAtm').onclick = () => { $('atm').hidden = !$('atm').hidden; atmSync(); lookButtons(); };
+  $('vWide').onclick = () => { autoTour = false; spin = false; goStop(0); fly.z = .78; };
+  $('vSpin').onclick = () => { spin = !spin; if (spin) { autoTour = false; fly = null; } lookButtons(); };
+  $('vTour').onclick = () => { autoTour = !autoTour; spin = false; tourT = 0; if (autoTour) goStop((tourI + 1) % TOUR.length, true); lookButtons(); };
+  $('vClean').onclick = () => { document.body.classList.toggle('clean'); lookButtons(); };
+  $('vShot').onclick = () => { renderer.render(scene, cam); const a = document.createElement('a'); a.download = `bankhum-campus-${fmt(simMin).replace(':', '')}.png`; a.href = renderer.domElement.toDataURL('image/png'); a.click(); };
+  $('tour').innerHTML = TOUR.map(([th], i) => `<button data-i="${i}"><i>${String(i + 1).padStart(2, '0')}</i>${th}</button>`).join('');
+  for (const b of $('tour').children) b.onclick = () => goStop(+b.dataset.i);
+  el.addEventListener('pointerdown', () => { fly = null; if (autoTour || spin) { autoTour = spin = false; lookButtons(); } });
+  el.addEventListener('wheel', () => { fly = null; });
+  $('home').addEventListener('click', () => { fly = null; autoTour = spin = false; for (const b of $('tour').children) b.classList.toggle('on', b.dataset.i === '0'); lookButtons(); });
 }
 /* ป้ายบนแผนที่ไม่ให้ซ้อนกัน: วางตามลำดับความสำคัญ ป้ายที่ทับป้ายที่สำคัญกว่าจะซ่อนไว้ก่อน (ซูมเข้าแล้วจะกลับมา) */
 function declutter(){
