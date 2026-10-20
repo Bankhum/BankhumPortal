@@ -1130,6 +1130,7 @@ function targetOf(a, m){
     if (a.kind === 's') {
       const k = L[a.cls], r = subRect(k.z, k.i, k.n), pose = poseOf(k.z, k.l.sub);
       const mates = a.cohort ??= STUDENTS.filter(s => s.cls === a.cls && s.scan != null);
+      if (k.z === COMP) { const st = compStations(), j = mates.indexOf(a.ref) + k.i*Math.floor(st.length/k.n); if (j < st.length) return {p: st[j].clone(), pose}; }   // นั่งหน้าเครื่องคอมพิวเตอร์
       return {p: slotOf(r, pose, mates.indexOf(a.ref), mates.length, a.ox, a.oz), pose};
     }
     const ts = tslot(a.ref.name.slice(3), where), mine = Object.entries(L).find(([c, k]) => 'ครู'+k.l.tea === a.ref.name || ts?.[1] === c || (a.ref.name.startsWith('ครูอนุบาล') && c === 'อ.'+a.ref.name.slice(-1)));
@@ -1854,10 +1855,11 @@ function renderFind(){
     : list.length ? list.map(a => { const st = statusOf(a); return `<li data-i="${AGENTS.indexOf(a)}" class="${a === follow ? 'on' : ''}"><span class="av">${a.kind === 't' ? '👩‍🏫' : a.cls}</span><span><b>${whoOf(a)}</b><small>📍 ${st.src === 'sch' ? 'ตามตาราง' : 'จำลอง'}: ${st.where} ${srcB(st.src || 'unk')}</small><small>${st.what}</small></span></li>`; }).join('')
     : '<li style="cursor:default;color:var(--mute)">ไม่พบ ลองพิมพ์ชื่อครู หรือ ป.1–ป.6 / อ.2–อ.3</li>';
   const cm = q.trim().match(/^(?:ห้อง\s*)?(อ|ป)\.?\s*(\d)/); if (cm && HOMEROOM[`${cm[1]}.${cm[2]}`]) ul.insertAdjacentHTML('afterbegin', `<li data-c="${cm[1]}.${cm[2]}"><span class="av">🚪</span><span><b>เข้าห้องเรียน ${cm[1]}.${cm[2]}</b><small>ซูมเข้าในห้อง ดูกระดาน โต๊ะครู โต๊ะนักเรียน</small></span></li>`);
+  if (/คอม/.test(q)) ul.insertAdjacentHTML('afterbegin', `<li data-c="${COMP}"><span class="av">🚪</span><span><b>เข้าห้องคอมพิวเตอร์</b><small>ชั้น 2 อาคารเทคโนโลยี · ดูโต๊ะคอม กระดาน โต๊ะครู</small></span></li>`);
   if (pl.length) ul.insertAdjacentHTML('afterbegin', pl.map(x => `<li data-z="${x.place}"><span class="av">🏫</span><span><b>${x.label}</b><small>${x.sub}</small></span></li>`).join(''));
   if (pl.length) ul.querySelector('li[style*="cursor:default"]')?.remove();   // เจออาคาร/ห้องแล้ว ไม่ต้องขึ้น "ไม่พบ"
   for (const li of ul.querySelectorAll('li[data-c]')) li.onclick = () => { openFind(false); enterClass(li.dataset.c); };
-  if (cm) ul.querySelector('li[style*="cursor:default"]')?.remove();
+  if (cm || /คอม/.test(q)) ul.querySelector('li[style*="cursor:default"]')?.remove();
   for (const li of ul.querySelectorAll('li[data-z]')) li.onclick = () => { follow = null; focusZone(li.dataset.z); };
   for (const li of ul.querySelectorAll('li[data-i]')) li.onclick = () => { follow = AGENTS[+li.dataset.i]; view.touched = true; if (view.zoom < 2.2) setZoom(2.6); renderFind(); };
 }
@@ -1889,7 +1891,7 @@ function renderSel(){
     <ul>${Object.entries(by).map(([k,n]) => { const [c,t] = k.split('|'); return `<li><b>${c}</b> ${n} คน<small>${t}</small></li>`; }).join('')}
     ${te.map(a => `<li>👩‍🏫 ${fullName(a.ref.name)}<small>${placeOfAgent(a, simMin)[1]}</small></li>`).join('')}
     ${here.length ? '' : '<li style="color:var(--mute)">ตอนนี้ไม่มีใครอยู่</li>'}</ul>
-    ${roomsIn(selected).map(c => `<button class="enter" data-c="${c}">🚪 เข้าห้อง ${c}</button>`).join('')}`;
+    ${roomsIn(selected).map(c => `<button class="enter" data-c="${c}">🚪 เข้า${SPECIAL[c] ? c : 'ห้อง ' + c}</button>`).join('')}`;
   el.querySelector('.x').onclick = () => select(selected);
   for (const b of el.querySelectorAll('.enter')) b.onclick = () => enterClass(b.dataset.c);
 }
@@ -1933,8 +1935,18 @@ window.__select = select;
 function focusZone(n){ if (!zones[n]) return; if (selected !== n) select(n); const z = zones[n]; view.touched = true; target.set(z.c.x, 0, z.c.z); setZoom(Math.max(view.zoom, 2)); document.body.classList.add('sheet'); }
 /* ---------- เข้าห้องเรียน: ซูมเข้าไปในห้อง เห็นกระดาน โต๊ะครู ชั้นวางของ และนักเรียนนั่งโต๊ะ ---------- */
 let roomView = null; const classFx = {};
-const classRect = c => { const key = HOMEROOM_ROOM[c] || HOMEROOM[c], share = CLASSES.filter(([k]) => (HOMEROOM_ROOM[k] || HOMEROOM[k]) === key).map(([k]) => k); return subRect(key, share.indexOf(c), share.length); };
-const roomsIn = b => CLASSES.map(([c]) => c).filter(c => HOMEROOM[c] === b && keyRect(HOMEROOM_ROOM[c] || HOMEROOM[c]));
+// ห้องพิเศษที่เข้าไปดูได้ (ไม่ใช่ห้องประจำชั้น): ห้องคอมพิวเตอร์
+const COMP = 'ห้องคอมพิวเตอร์', SPECIAL = {[COMP]: 'Technology_Building'};
+const fxB = c => SPECIAL[c] || HOMEROOM[c];
+// ที่นั่งหน้าเครื่องคอม: 4 แถว แถวละ 10 เครื่อง (ซ้าย 5 ขวา 5 ทางเดินกลาง) หันหน้าเข้ากระดาน
+function compStations(){
+  if (compStations.v) return compStations.v;
+  const R = ROOMS[COMP], z0 = R.c.z - R.sz/2, v = [];
+  for (let row = 0; row < 4; row++) for (let i = 0; i < 10; i++) { const s = i < 5 ? -1 : 1, k = i % 5; v.push(new THREE.Vector3(R.c.x + s*(1 + k*.8), R.y, z0 + 2.75 + row*1.1)); }
+  return compStations.v = v;
+}
+const classRect = c => { if (SPECIAL[c]) return subRect(c, 0, 1); const key = HOMEROOM_ROOM[c] || HOMEROOM[c], share = CLASSES.filter(([k]) => (HOMEROOM_ROOM[k] || HOMEROOM[k]) === key).map(([k]) => k); return subRect(key, share.indexOf(c), share.length); };
+const roomsIn = b => [...CLASSES.map(([c]) => c).filter(c => HOMEROOM[c] === b && keyRect(HOMEROOM_ROOM[c] || HOMEROOM[c])), ...Object.keys(SPECIAL).filter(c => SPECIAL[c] === b)];
 function buildClassFx(){
   const M = c => new THREE.MeshLambertMaterial({color: c});
   const wood = M('#92400e'), board = M('#f8fafc'), frame = M('#475569'), floor = M('#e7d8bf'), shelf = M('#a16207'), book = [M('#2563eb'), M('#dc2626'), M('#16a34a'), M('#f59e0b')];
@@ -1969,9 +1981,42 @@ function buildClassFx(){
     const el = document.createElement('div'); el.className = 'rlab'; el.textContent = 'ห้อง ' + c; $('labels').appendChild(el);
     roomLabs.push({el, R: {b: HOMEROOM[c]}, p: new THREE.Vector3(r.cx, y + 2.6, r.cz)});
   }
+  buildCompFx();
+}
+// ห้องคอมพิวเตอร์ (แบบพื้นฐาน รอปรับตามรูปจริง): กระดาน + จอทีวี, โต๊ะครูพร้อมคอม, โต๊ะคอมยาว 4 แถว 40 เครื่อง, แอร์
+function buildCompFx(){
+  const M = c => new THREE.MeshLambertMaterial({color: c}), R = ROOMS[COMP], y = R.y, g = new THREE.Group();
+  const W = R.sx, D = R.sz, cx = R.c.x, cz = R.c.z, z0 = cz - D/2;
+  const bx = (w, h, d, m, x, yy, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y + yy, z); o.castShadow = true; g.add(o); return o; };
+  const desk = M('#e5e7eb'), leg = M('#64748b'), dark = M('#111827'), screen = new THREE.MeshBasicMaterial({color: '#60a5fa'}), frame = M('#475569');
+  bx(W - .3, .03, D - .3, M('#cbd5e1'), cx, .03, cz).castShadow = false;                        // พื้นกระเบื้อง
+  bx(3.6, 1.3, .08, frame, cx, 1.55, z0 + .2); bx(3.44, 1.16, .1, M('#f8fafc'), cx, 1.55, z0 + .22);   // ไวท์บอร์ด
+  bx(1.5, .88, .08, dark, cx - 3, 1.7, z0 + .2); bx(1.4, .78, .02, screen, cx - 3, 1.7, z0 + .25);       // จอทีวี
+  bx(1.1, .32, .25, M('#f1f5f9'), cx + 3.2, 2.6, z0 + .2);                                       // แอร์
+  const tx = cx + 3.2, tz = z0 + 1.4;                                                            // โต๊ะครู + คอม
+  bx(1.4, .06, .7, M('#92400e'), tx, .76, tz); bx(1.3, .7, .05, M('#78350f'), tx, .4, tz + .3);
+  bx(.55, .34, .04, dark, tx, 1.0, tz + .15); bx(.5, .29, .01, screen, tx, 1.0, tz + .12);
+  bx(.45, .06, .45, M('#1e3a8a'), tx, .45, tz - .65);
+  const st = compStations(), mm = new THREE.Matrix4(), n = st.length;
+  const I = (geo, mat, k) => { const o = new THREE.InstancedMesh(geo, mat, k); o.castShadow = true; g.add(o); return o; };
+  const mon = I(new THREE.BoxGeometry(.5, .32, .04), dark, n), scr = I(new THREE.BoxGeometry(.45, .27, .01), screen, n), stand = I(new THREE.BoxGeometry(.06, .16, .06), dark, n);
+  const kb = I(new THREE.BoxGeometry(.42, .02, .14), M('#1f2937'), n), cpu = I(new THREE.BoxGeometry(.18, .4, .42), M('#334155'), n), ch = I(new THREE.BoxGeometry(.42, .05, .4), M('#1d4ed8'), n), back = I(new THREE.BoxGeometry(.42, .45, .05), M('#1d4ed8'), n);
+  st.forEach((q, i) => {
+    const dz = q.z - .55;
+    mon.setMatrixAt(i, mm.makeTranslation(q.x, y + 1.02, dz - .15)); scr.setMatrixAt(i, mm.makeTranslation(q.x, y + 1.02, dz - .125));
+    stand.setMatrixAt(i, mm.makeTranslation(q.x, y + .86, dz - .17)); kb.setMatrixAt(i, mm.makeTranslation(q.x, y + .8, dz + .1));
+    cpu.setMatrixAt(i, mm.makeTranslation(q.x + .25, y + .2, dz - .05));
+    ch.setMatrixAt(i, mm.makeTranslation(q.x, y + .42, q.z + .05)); back.setMatrixAt(i, mm.makeTranslation(q.x, y + .7, q.z + .27));
+  });
+  for (const row of new Set(st.map(q => q.z))) for (const s of [-1, 1]) {                       // โต๊ะยาวแถวละ 2 ตัว
+    const x = cx + s*2.6, dz = row - .55;
+    bx(4.1, .05, .6, desk, x, .76, dz);
+    for (const lx of [-1.95, 0, 1.95]) bx(.05, .74, .5, leg, x + lx, .37, dz);
+  }
+  g.visible = false; scene.add(g); classFx[COMP] = g;
 }
 function showClassFx(){
-  for (const c in classFx) classFx[c].visible = roomView ? roomView === c : view.zoom >= 2.4 || selected === HOMEROOM[c];
+  for (const c in classFx) classFx[c].visible = roomView ? roomView === c : view.zoom >= 2.4 || selected === fxB(c);
   if (cutFor !== roomView) cutaway(roomView);
 }
 // ตอนอยู่ในห้อง: ซ่อนหลังคา ผนัง ต้นไม้ที่บังห้อง (เฉพาะของที่สูงเกินระดับเข่า ทับพื้นที่ห้อง) ออกจากห้องแล้วคืนเหมือนเดิม
@@ -1990,7 +2035,7 @@ function cutaway(c){
   });
 }
 function enterClass(c){
-  const b = HOMEROOM[c]; if (!classFx[c]) return;
+  const b = fxB(c); if (!classFx[c]) return;
   follow = null; if (selected !== b) select(b); if (!xrayAll) setXray(b, true);
   const r = classRect(c); target.set(r.cx, r.y, r.cz); view.touched = true; setZoom(innerWidth < 700 ? 11 : 7.5); roomView = c;
 }
