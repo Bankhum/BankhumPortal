@@ -1086,6 +1086,15 @@ const spawnOf = a => new THREE.Vector3(a.ref.drop[0], 0, a.ref.drop[1]);
 
 /* ---------- รถ ---------- */
 const box = (w, h, d, col, y = h/2, z = 0, x = 0) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({color: col})); m.position.set(x, y, z); m.castShadow = true; return m; };
+let _truckTex = null;
+function truckTex(){
+  if (_truckTex) return _truckTex;
+  const mk = (w, h, draw) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; };
+  return _truckTex = {
+    side: mk(512, 64, (c, w, h) => { c.fillStyle = '#f8fafc'; c.fillRect(0, 0, w, h); c.fillStyle = '#1e3a8a'; c.textAlign = 'center'; c.font = 'bold 20px sans-serif'; c.fillText('รถโดยสารส่วนบุคคล', w/2, 24); c.font = 'bold 19px sans-serif'; c.fillText('โรงเรียนบ้านคุ้ม(ประสาทราษฎร์วิทยา) จ.แพร่', w/2, 52); }),
+    plate: mk(192, 64, (c, w, h) => { c.fillStyle = '#f97316'; c.fillRect(0, 0, w, h); c.fillStyle = '#111827'; c.textAlign = 'center'; c.font = 'bold 34px sans-serif'; c.fillText('รถโรงเรียน', w/2, 44); }),
+  };
+}
 function buildVeh(v){
   const g = new THREE.Group(), K = 1.3;
   const wheels = (n, w, len, r = .45) => { for (let i = 0; i < n; i++) for (const sx of [-1,1]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(r, r, .3, 10), new THREE.MeshLambertMaterial({color:'#111'})); c.rotation.z = Math.PI/2; c.position.set(sx*w/2, r, (i/(n-1) - .5)*len); g.add(c); } };
@@ -1096,11 +1105,16 @@ function buildVeh(v){
     for (const sx of [-1,1]) { g.add(box(.05,.7,1.0,GL,1.85,3.45,sx*1.16)); g.add(box(.05,.07,1.75,OR,1.05,3.3,sx*1.16)); g.add(box(.1,.35,.08,'#111827',1.9,4.25,sx*1.25)); }
     const L = 5.7, z0 = -.6;                                                                           // ตัวโดยสาร z: -3.45 … 2.25
     g.add(box(2.5,.12,L,'#374151',.86,z0)); g.add(box(2.5,.95,L,W,1.4,z0));                             // พื้น + ผนังล่าง
-    g.add(box(2.42,.78,L-.1,GL,2.26,z0));                                                              // แถบกระจก
+    // ตัวโดยสารแบบสองแถวเปิดข้าง (ตามรูปจริง school-photos/12-โรงรถ-ที่จอดรถ): ข้างในมืด มีลูกกรงเหล็กแนวตั้งและราวกลาง
+    g.add(box(2.3,.78,L-.2,'#3f3f46',2.26,z0));
+    for (const sx of [-1,1]) { for (let i = 0; i < 19; i++) g.add(box(.035,.78,.035,'#cbd5e1',2.26,z0 - L/2 + .2 + i*(L-.4)/18,sx*1.2)); g.add(box(.05,.05,L,'#cbd5e1',2.28,z0,sx*1.2)); }
+    const tT = truckTex(), sideM = new THREE.MeshLambertMaterial({map: tT.side});
+    for (const sx of [-1,1]) { const pl = new THREE.Mesh(new THREE.PlaneGeometry(L - .7, .55), sideM); pl.rotation.y = sx*Math.PI/2; pl.position.set(sx*1.265, 1.45, z0 + .1); g.add(pl); }
+    const fp = new THREE.Mesh(new THREE.PlaneGeometry(.9, .3), new THREE.MeshLambertMaterial({map: tT.plate})); fp.position.set(0, 1.42, 4.22); g.add(fp);   // ป้าย "รถโรงเรียน" สีส้มหน้ารถ
+    for (const dx of [-.45, .45]) g.add(box(.05,1.1,.05,'#cbd5e1',1.0,z0 - L/2 - .18,dx)); for (const y of [.55, .85, 1.15]) g.add(box(.95,.04,.05,'#cbd5e1',y,z0 - L/2 - .18));   // บันไดขึ้นท้ายรถ
     for (let i = 0; i <= 6; i++) for (const sx of [-1,1]) g.add(box(.07,.82,.09,'#e5e7eb',2.26,z0 - L/2 + .05 + i*(L-.1)/6,sx*1.23));   // เสา/กรอบหน้าต่าง
     g.add(box(2.5,.82,.08,W,2.26,z0 + L/2 - .04)); g.add(box(2.5,.82,.08,W,2.26,z0 - L/2 + .04));
-    const roof = new THREE.Mesh(new THREE.CylinderGeometry(1.32, 1.32, L + .3, 16, 1, false, -Math.PI/2, Math.PI), new THREE.MeshLambertMaterial({color: W}));
-    roof.rotation.x = -Math.PI/2; roof.scale.z = .32; roof.position.set(0, 2.66, z0 + .05); roof.castShadow = true; g.add(roof);   // หลังคาโค้ง
+    g.add(box(2.6,.14,L + .25,W,2.74,z0 + .05)); for (const sx of [-1,1]) g.add(box(.05,.12,L - .4,'#9ca3af',2.9,z0,sx*1.1));   // หลังคาเรียบ + ราวแร็คบนหลังคา
     for (const sx of [-1,1]) {
       g.add(box(.04,.08,L,OR,1.0,z0,sx*1.26)); g.add(box(.04,.08,L,'#e5e7eb',1.86,z0,sx*1.26));          // แถบสะท้อนแสงส้ม + คิ้วขอบหน้าต่าง
       for (const zz of [z0 + L/2 - .05, z0 - L/2 + .05]) g.add(box(.05,1.0,.07,OR,1.4,zz,sx*1.26));         // แถบส้มแนวตั้งหัว-ท้าย
@@ -1422,12 +1436,57 @@ function buildKgPool(){
   const ps = new THREE.Mesh(new THREE.PlaneGeometry(2.4, .45), new THREE.MeshLambertMaterial({map: pT, side: THREE.DoubleSide})); ps.position.set(-12.75, 2.5, fz0 - .14); ps.rotation.y = Math.PI; g.add(ps);
   B(1, 1.3, .04, '#bae6fd', -15, 1.1, fz0 - .08);
 }
+// โรงจอดรถ เรือนไม้ข้างอาคาร ป.1 ป.2 และหอถังน้ำ (ตามรูปจริง school-photos/12-โรงรถ-ที่จอดรถ):
+// โรงจอดเสาไม้ หลังคาสังกะสีเก่า เปิดโล่งรอบด้าน ชิดหน้าเรือนไม้สองชั้นสีแดงน้ำตาล · หอถังน้ำเสาสูงหัวกลมสีเหลือง มีปาล์มรอบโคน
+let parkFixed = false;
+function buildParkingSite(){
+  const mesh = {}; scene.traverse(o => { if (/^box(118|118_1|084|084_1|084_2|084_3|116_1)$/.test(o.name) && o.isMesh) mesh[o.name] = o; });
+  if (Object.keys(mesh).length < 7) return false;
+  for (const k of ['box118', 'box118_1', 'box084_1', 'box084_2', 'box084_3', 'box116_1']) mesh[k].visible = false;
+  mesh.box084.material = mesh.box084.material.clone(); mesh.box084.material.color.set('#b8b2a7');
+  const g = new THREE.Group(); g.name = 'ParkingSite'; scene.add(g);
+  const M = c => new THREE.MeshLambertMaterial({color: c}), add = (geo, mat, x, y, z, par = g) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; par.add(o); return o; };
+  const B = (w, h, d, c, x, y, z, par = g) => add(new THREE.BoxGeometry(w, h, d), typeof c === 'string' ? M(c) : c, x, y, z, par);
+  const cv = (w, h, draw, rx = 1, ry = 1) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); return t; };
+  // เรือนไม้สองชั้น: ไม้ตีซ้อนแนวนอนสีแดงน้ำตาล หน้าต่างบานไม้ หลังคาปั้นหยาสังกะสีเทา
+  const X0 = -10.5, X1 = 3.5, Z0 = -42.4, Z1 = -31.4, W = X1 - X0, D = Z1 - Z0, cx = (X0 + X1)/2, cz = (Z0 + Z1)/2;
+  const plank = (rx, ry) => cv(64, 64, (c, w, h) => { c.fillStyle = '#7b3526'; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 8) { c.fillStyle = '#5e281c'; c.fillRect(0, y, w, 1.5); c.fillStyle = '#86402f'; c.fillRect(0, y + 2, w, 2); } }, rx, ry);
+  const wallM = [new THREE.MeshLambertMaterial({map: plank(D/2, 1.4)}), new THREE.MeshLambertMaterial({map: plank(D/2, 1.4)}), M('#5e281c'), M('#5e281c'), new THREE.MeshLambertMaterial({map: plank(W/2, 1.4)}), new THREE.MeshLambertMaterial({map: plank(W/2, 1.4)})];
+  B(W, 2.9, D, wallM, cx, .3 + 1.45, cz); B(W + .4, .18, D + .4, '#5e281c', cx, 3.3, cz); B(W + .3, 2.7, D + .3, wallM, cx, 3.39 + 1.35, cz);
+  const winM = M('#3b1a12'), frM = M('#d6c7b0');
+  for (let x = X0 + 1.2; x < X1 - .6; x += 1.75) for (const y of [1.9, 4.9]) for (const [z, f] of [[Z1 + .17, 1], [Z0 - .17, -1]]) { B(1.0, 1.1, .06, winM, x, y, z); B(1.12, .08, .08, frM, x, y + .59, z + f*.02); B(1.12, .08, .08, frM, x, y - .59, z + f*.02); }
+  for (let z = Z0 + 1.2; z < Z1 - .6; z += 1.8) for (const y of [1.9, 4.9]) for (const x of [X0 - .17, X1 + .17]) B(.06, 1.1, 1.0, winM, x, y, z);
+  const roofT = cv(64, 64, (c, w, h) => { c.fillStyle = '#8b8f94'; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 8) { c.fillStyle = '#6b7075'; c.fillRect(x, 0, 2, h); c.fillStyle = '#a3a7ab'; c.fillRect(x + 4, 0, 2, h); } c.fillStyle = 'rgba(146,86,52,.35)'; for (let k = 0; k < 9; k++) c.fillRect((k*23) % w, (k*37) % h, 10, 14); }, 4, 4);
+  const hip = add(new THREE.ConeGeometry(Math.hypot(W, D)/2 + .9, 2.3, 4, 1), new THREE.MeshLambertMaterial({map: roofT}), cx, 6.05 + 1.15, cz); hip.rotation.y = Math.PI/4; hip.scale.set(W/Math.hypot(W, D)*1.42, 1, D/Math.hypot(W, D)*1.42);
+  // โรงจอดรถ: พื้นปูน เสาไม้ คานไม้ หลังคาสังกะสีลาดต่ำสองด้าน (ชิดหน้าเรือนไม้)
+  const SX0 = -11, SX1 = 3, SZ0 = -31.2, SZ1 = -25.7, H = 3.3;
+  B(SX1 - SX0, .06, SZ1 - SZ0 + .6, '#bdb8ae', (SX0 + SX1)/2, .03, (SZ0 + SZ1)/2 + .3);
+  const postM = M('#7a6a58'), beamM = M('#6b5a48');
+  for (const x of [SX0 + .25, -6.85, -3.45, -.15, SX1 - .1]) for (const z of [SZ0 + .1, SZ1 - .1]) B(.24, H, .24, postM, x, H/2, z);
+  for (const z of [SZ0 + .1, SZ1 - .1]) B(SX1 - SX0, .22, .2, beamM, (SX0 + SX1)/2, H - .05, z);
+  for (const x of [SX0 + .25, -6.85, -3.45, -.15, SX1 - .1]) B(.14, .18, SZ1 - SZ0, beamM, x, H + .2, (SZ0 + SZ1)/2);
+  const tinT = cv(64, 64, (c, w, h) => { c.fillStyle = '#9a9188'; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 8) { c.fillStyle = '#7d746b'; c.fillRect(0, y, w, 2); c.fillStyle = '#b3aba2'; c.fillRect(0, y + 4, w, 2); } c.fillStyle = 'rgba(140,82,45,.4)'; for (let k = 0; k < 7; k++) c.fillRect((k*29) % w, (k*19) % h, 14, 8); }, 3, 6);
+  const tinM = new THREE.MeshLambertMaterial({map: tinT, side: THREE.DoubleSide}), half = (SZ1 - SZ0)/2 + .5, rise = .55;
+  for (const f of [-1, 1]) { const r = add(new THREE.PlaneGeometry(SX1 - SX0 + .8, Math.hypot(half, rise)), tinM, (SX0 + SX1)/2, H + .3 + rise/2, (SZ0 + SZ1)/2 + f*half/2); r.rotation.x = -Math.PI/2 + f*Math.atan2(rise, half); }
+  // ของในโรงจอด: ยางรถเก่า โต๊ะ ชั้นวางของชิดผนังเรือนไม้
+  B(1.6, .9, .6, '#a16207', -10.2, .45, SZ0 + .5); B(.8, 1.4, .45, '#64748b', 2.4, .7, SZ0 + .45);
+  // หอถังน้ำ: เสาปูนสูง ถังทรงกลมสีเหลือง มีปาล์มรอบโคน
+  const TX = 10.3, TZ = -37.9;
+  add(new THREE.CylinderGeometry(.45, .7, 12, 14), M('#e5e7eb'), TX, 6.2, TZ);
+  add(new THREE.CylinderGeometry(1.2, .6, .6, 16), M('#d1d5db'), TX, 12.4, TZ);
+  add(new THREE.SphereGeometry(1.9, 20, 14), M('#facc15'), TX, 14.4, TZ); B(.08, 1.2, .08, '#6b7280', TX, 16.8, TZ);
+  for (const [dx, dz, h] of [[-2.2, 1.6, 5.5], [2, 1.9, 4.6], [-1.7, -2, 6.2], [2.3, -1.5, 3.8]]) {
+    const px = TX + dx, pz = TZ + dz; add(new THREE.CylinderGeometry(.16, .24, h, 8), M('#8a7f70'), px, h/2, pz);
+    for (let k = 0; k < 9; k++) { const lf = add(new THREE.BoxGeometry(.3, .05, 1.9), M(k % 2 ? '#3f8a2a' : '#4d9a2f'), px + Math.sin(k*.7)*.85, h + .1, pz + Math.cos(k*.7)*.85); lf.rotation.set(-.45*Math.cos(k*.7), k*.7, .45*Math.sin(k*.7)); }
+  }
+  return parkFixed = true;
+}
 function buildP12Lane(){
   const g = new THREE.Group(); g.name = 'P12Lane'; scene.add(g);
   const M = c => new THREE.MeshLambertMaterial({color: c}), add = (geo, mat, x, y, z, par = g) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; par.add(o); return o; };
   const B = (w, h, d, c, x, y, z, par = g) => add(new THREE.BoxGeometry(w, h, d), typeof c === 'string' ? M(c) : c, x, y, z, par);
   const TREES = [-38.4, -34.1, -29.9, -25.6, -21.3, -17, -12.7, -8.4], TZ = -18.2, SALA = [-38.6, -34.7, -30.8, -26.9, -23, -19.1, -15.2, -11.3], SZ = -15.3;   // ศาลาวางชิดแนวต้นไม้ริมถนน (ตามที่ครูชี้)
-  fixP12Site();
+  fixP12Site(); buildParkingSite();
   // กระถางปูนกลมสีขาวรอบโคนต้นไม้ + พุ่มเข็ม/ไม้ประดับ
   const potG = new THREE.CylinderGeometry(.78, .82, .5, 18), bushG = new THREE.SphereGeometry(.55, 9, 7), dotG = new THREE.SphereGeometry(.09, 5, 4);
   const potM = M('#f1f5f4'), bushM = M('#3f8a35'), ixM = M('#f97316');
@@ -2417,7 +2476,7 @@ function frame(){
   if (playing) { simMin += dt * speed; if (simMin > 990) simMin = 355; slider.value = simMin; update(); }
   const ang = view.touched ? view.yaw : (view.yaw = Math.PI/4 + Math.sin(t*0.08)*0.25);
   cam.position.set(target.x+Math.sin(ang)*150, 120, target.z+Math.cos(ang)*150); cam.lookAt(target);
-  moveVehicles(Math.min(dt,.3)); moveAgents(Math.min(dt,.3)); classFeed(dt); animFarm(Math.min(dt,.3), t); animGarden(Math.min(dt,.3), t); if (!p12Fixed && fenceBuilt) fixP12Site(); followFind(Math.min(dt,.3));
+  moveVehicles(Math.min(dt,.3)); moveAgents(Math.min(dt,.3)); classFeed(dt); animFarm(Math.min(dt,.3), t); animGarden(Math.min(dt,.3), t); if (!p12Fixed && fenceBuilt) fixP12Site(); if (!parkFixed && fenceBuilt) buildParkingSite(); followFind(Math.min(dt,.3));
   placeGroupChips(); placeRoomLabels();
   renderer.render(scene,cam);
   for (const z of Object.values(zones)) { v.copy(z.p).project(cam); z.el.style.left = (v.x*.5+.5)*innerWidth+'px'; z.el.style.top = (-v.y*.5+.5)*innerHeight+'px'; }
