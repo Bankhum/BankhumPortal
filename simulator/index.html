@@ -50,6 +50,7 @@ html,body{margin:0;height:100%;overflow:hidden;font-family:Sarabun,sans-serif;co
 #tt small{display:block;color:var(--mute);font-size:9.5px}
 #days,#jumps{border-right:1px solid var(--line);padding-right:8px}
 #right{max-height:calc(100vh - 120px);overflow:auto}
+#sel .enter{margin:6px 6px 0 0;border:1px solid var(--line);background:var(--chip);border-radius:999px;padding:5px 11px;font:inherit;font-size:12px;cursor:pointer}
 #sel{margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid var(--c,#111)}
 #sel .x{border:0;background:var(--chip);border-radius:6px;cursor:pointer;font-size:12px;padding:1px 7px}
 #sel .big{font-size:22px;font-weight:700}
@@ -733,11 +734,11 @@ function onModel(g) {
   if (dome) { dome.rotation.y = Math.PI/2; dome.position.x = PLAY_C[0]; dome.position.z = PLAY_C[1]; buildPlayset(); }
   const tent = root.getObjectByName('Museum_Walk'); if (tent) tent.removeFromParent();   // เอาเต็นท์หลังคาโค้งสีน้ำเงินออก (ตามที่ครูขอ)
   buildField(); buildChalerm();
-  buildFarm(); buildRestroom(root); buildMushroom(root); buildFloors(); initAgents(root); applyXrayAll();
+  buildFarm(); buildRestroom(root); buildMushroom(root); buildFloors(); buildClassFx(); initAgents(root); applyXrayAll();
   $('info').onclick = () => document.body.classList.toggle('sheet');
   $('find').onclick = () => openFind($('findp').hidden); $('fx').onclick = () => openFind(false); $('fq').oninput = renderFind;
   addEventListener('keydown', e => { if (e.key === 'Escape' && !$('findp').hidden) openFind(false); });
-  $('home').onclick = () => { view.touched = false; target.set(0,0,0); setZoom(1); };
+  $('home').onclick = () => { roomView = null; view.touched = false; target.set(0,0,0); setZoom(1); };
   for (const [n, [th]] of Object.entries(ZONES)) if (zones[n]) $('tBld').add(new Option(th, n));
   $('tBld').onchange = () => { const n = $('tBld').value; if (!n) { if (selected) select(selected); return; } focusZone(n); };
   const fitBar = () => document.documentElement.style.setProperty('--barH', ($('bar').offsetHeight + 16) + 'px');
@@ -1797,8 +1798,11 @@ function renderFind(){
   ul.innerHTML = !q.trim() ? '<li style="cursor:default;color:var(--mute)">พิมพ์ชื่อครู หรือชั้นเรียน แล้วแตะรายชื่อเพื่อดูตำแหน่งบนแผนที่</li>'
     : list.length ? list.map(a => { const st = statusOf(a); return `<li data-i="${AGENTS.indexOf(a)}" class="${a === follow ? 'on' : ''}"><span class="av">${a.kind === 't' ? '👩‍🏫' : a.cls}</span><span><b>${whoOf(a)}</b><small>📍 ${st.src === 'sch' ? 'ตามตาราง' : 'จำลอง'}: ${st.where} ${srcB(st.src || 'unk')}</small><small>${st.what}</small></span></li>`; }).join('')
     : '<li style="cursor:default;color:var(--mute)">ไม่พบ ลองพิมพ์ชื่อครู หรือ ป.1–ป.6 / อ.2–อ.3</li>';
+  const cm = q.trim().match(/^(?:ห้อง\s*)?(อ|ป)\.?\s*(\d)/); if (cm && HOMEROOM[`${cm[1]}.${cm[2]}`]) ul.insertAdjacentHTML('afterbegin', `<li data-c="${cm[1]}.${cm[2]}"><span class="av">🚪</span><span><b>เข้าห้องเรียน ${cm[1]}.${cm[2]}</b><small>ซูมเข้าในห้อง ดูกระดาน โต๊ะครู โต๊ะนักเรียน</small></span></li>`);
   if (pl.length) ul.insertAdjacentHTML('afterbegin', pl.map(x => `<li data-z="${x.place}"><span class="av">🏫</span><span><b>${x.label}</b><small>${x.sub}</small></span></li>`).join(''));
   if (pl.length) ul.querySelector('li[style*="cursor:default"]')?.remove();   // เจออาคาร/ห้องแล้ว ไม่ต้องขึ้น "ไม่พบ"
+  for (const li of ul.querySelectorAll('li[data-c]')) li.onclick = () => { openFind(false); enterClass(li.dataset.c); };
+  if (cm) ul.querySelector('li[style*="cursor:default"]')?.remove();
   for (const li of ul.querySelectorAll('li[data-z]')) li.onclick = () => { follow = null; focusZone(li.dataset.z); };
   for (const li of ul.querySelectorAll('li[data-i]')) li.onclick = () => { follow = AGENTS[+li.dataset.i]; view.touched = true; if (view.zoom < 2.2) setZoom(2.6); renderFind(); };
 }
@@ -1829,8 +1833,10 @@ function renderSel(){
     <div class="big">${st.length} <span style="font-size:12px;font-weight:400;color:var(--mute)">นักเรียน · ครู ${te.length}</span></div>
     <ul>${Object.entries(by).map(([k,n]) => { const [c,t] = k.split('|'); return `<li><b>${c}</b> ${n} คน<small>${t}</small></li>`; }).join('')}
     ${te.map(a => `<li>👩‍🏫 ${fullName(a.ref.name)}<small>${placeOfAgent(a, simMin)[1]}</small></li>`).join('')}
-    ${here.length ? '' : '<li style="color:var(--mute)">ตอนนี้ไม่มีใครอยู่</li>'}</ul>`;
+    ${here.length ? '' : '<li style="color:var(--mute)">ตอนนี้ไม่มีใครอยู่</li>'}</ul>
+    ${roomsIn(selected).map(c => `<button class="enter" data-c="${c}">🚪 เข้าห้อง ${c}</button>`).join('')}`;
   el.querySelector('.x').onclick = () => select(selected);
+  for (const b of el.querySelectorAll('.enter')) b.onclick = () => enterClass(b.dataset.c);
 }
 const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
 /* ---------- หมุน / ซูม / เลื่อน (เมาส์และนิ้ว) ---------- */
@@ -1843,7 +1849,7 @@ function panBy(dx, dy){
   target.addScaledVector(r, -dx*k).addScaledVector(f, dy*k*1.4);
   target.x = THREE.MathUtils.clamp(target.x, -70, 70); target.z = THREE.MathUtils.clamp(target.z, -70, 70);
 }
-const setZoom = z => { view.zoom = THREE.MathUtils.clamp(z, .7, 5); cam.zoom = view.zoom; cam.updateProjectionMatrix(); };
+const setZoom = z => { view.zoom = THREE.MathUtils.clamp(z, .7, 12); if (view.zoom < 3) roomView = null; cam.zoom = view.zoom; cam.updateProjectionMatrix(); };
 el.addEventListener('pointerdown', e => { el.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]); if (ptrs.size === 1) { downAt = [e.clientX, e.clientY]; moved = 0; } pinch0 = null; });
 el.addEventListener('pointermove', e => {
   if (!ptrs.has(e.pointerId)) return;
@@ -1870,6 +1876,58 @@ el.addEventListener('pointerup', e => {
 });
 window.__select = select;
 function focusZone(n){ if (!zones[n]) return; if (selected !== n) select(n); const z = zones[n]; view.touched = true; target.set(z.c.x, 0, z.c.z); setZoom(Math.max(view.zoom, 2)); document.body.classList.add('sheet'); }
+/* ---------- เข้าห้องเรียน: ซูมเข้าไปในห้อง เห็นกระดาน โต๊ะครู ชั้นวางของ และนักเรียนนั่งโต๊ะ ---------- */
+let roomView = null; const classFx = {};
+const classRect = c => { const key = HOMEROOM_ROOM[c] || HOMEROOM[c], share = CLASSES.filter(([k]) => (HOMEROOM_ROOM[k] || HOMEROOM[k]) === key).map(([k]) => k); return subRect(key, share.indexOf(c), share.length); };
+const roomsIn = b => CLASSES.map(([c]) => c).filter(c => HOMEROOM[c] === b && keyRect(HOMEROOM_ROOM[c] || HOMEROOM[c]));
+function buildClassFx(){
+  const M = c => new THREE.MeshLambertMaterial({color: c});
+  const wood = M('#92400e'), board = M('#f8fafc'), frame = M('#475569'), floor = M('#e7d8bf'), shelf = M('#a16207'), book = [M('#2563eb'), M('#dc2626'), M('#16a34a'), M('#f59e0b')];
+  for (const [c] of CLASSES) {
+    if (!keyRect(HOMEROOM_ROOM[c] || HOMEROOM[c])) continue;
+    const r = classRect(c), W = r.w/.86, D = r.d/.8, z0 = r.cz - D/2 + .25, g = new THREE.Group(), y = r.y;
+    const bx = (w, h, d, m, x, yy, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y + yy, z); o.castShadow = true; g.add(o); return o; };
+    bx(W - .3, .03, D - .3, floor, r.cx, .03, r.cz).castShadow = false;                    // พื้นห้อง
+    const bw = Math.min(W*.55, 4.2);
+    bx(bw + .16, 1.36, .08, frame, r.cx, 1.55, z0); bx(bw, 1.2, .1, board, r.cx, 1.55, z0 + .02);   // กระดานไวท์บอร์ด
+    bx(bw, .05, .14, frame, r.cx, .93, z0 + .07);                                            // รางปากกา
+    const tx = r.cx + Math.min(W*.32, bw/2 + 1);
+    bx(1.4, .08, .7, wood, tx, .76, z0 + 1.1);                                               // โต๊ะครู
+    for (const sx of [-.62, .62]) for (const sz of [-.28, .28]) bx(.06, .72, .06, wood, tx + sx, .36, z0 + 1.1 + sz);
+    bx(.45, .06, .45, M('#1e3a8a'), tx, .45, z0 + 1.75); bx(.45, .5, .06, M('#1e3a8a'), tx, .72, z0 + 1.98);   // เก้าอี้ครู
+    const sx = r.cx - W/2 + .35;                                                             // ชั้นวางหนังสือข้างห้อง
+    bx(.35, 1.1, Math.min(D*.4, 2.4), shelf, sx, .55, r.cz + D*.15);
+    for (let i = 0; i < 6; i++) bx(.2, .26, .12, book[i % 4], sx + .05, .2 + (i % 2)*.48 + .12, r.cz + D*.15 - .8 + Math.floor(i/2)*.6);
+    g.visible = false; scene.add(g); classFx[c] = g;
+    const el = document.createElement('div'); el.className = 'rlab'; el.textContent = 'ห้อง ' + c; $('labels').appendChild(el);
+    roomLabs.push({el, R: {b: HOMEROOM[c]}, p: new THREE.Vector3(r.cx, y + 2.6, r.cz)});
+  }
+}
+function showClassFx(){
+  for (const c in classFx) classFx[c].visible = roomView ? roomView === c : view.zoom >= 2.4 || selected === HOMEROOM[c];
+  if (cutFor !== roomView) cutaway(roomView);
+}
+// ตอนอยู่ในห้อง: ซ่อนหลังคา ผนัง ต้นไม้ที่บังห้อง (เฉพาะของที่สูงเกินระดับเข่า ทับพื้นที่ห้อง) ออกจากห้องแล้วคืนเหมือนเดิม
+let cutFor = null; const cutHidden = [], bbOf = new Map(), cutBox = new THREE.Box3();
+function cutaway(c){
+  for (const o of cutHidden) o.visible = true; cutHidden.length = 0; cutFor = c; if (!c) return;
+  const r = classRect(c), W = r.w/.86 + 1.5, D = r.d/.8 + 1.5, own = new Set(); classFx[c].traverse(o => own.add(o));
+  scene.traverse(o => {
+    if (!o.isMesh || o.isInstancedMesh || o.isSkinnedMesh || !o.visible || own.has(o)) return;
+    let bb = bbOf.get(o); if (!bb) { bb = new THREE.Box3().setFromObject(o); bbOf.set(o, bb); }
+    const sz = bb.getSize(cutBox.min.clone()); if (sz.x * sz.z > 2500) return;
+    if (bb.max.y < r.y + 1 || bb.min.y > r.y + 40) return;
+    if (bb.max.x < r.cx - W/2 || bb.min.x > r.cx + W/2 || bb.max.z < r.cz - D/2 || bb.min.z > r.cz + D/2) return;
+    if (o.userData.zone) return;   // กล่องคลิกอาคาร
+    o.visible = false; cutHidden.push(o);
+  });
+}
+function enterClass(c){
+  const b = HOMEROOM[c]; if (!classFx[c]) return;
+  follow = null; if (selected !== b) select(b); if (!xrayAll) setXray(b, true);
+  const r = classRect(c); target.set(r.cx, r.y, r.cz); view.touched = true; setZoom(innerWidth < 700 ? 11 : 7.5); roomView = c;
+}
+window.__enterClass = enterClass;
 function applyXrayAll(){ for (const n in zones) setXray(n, xrayAll || n === selected); $('xr').className = xrayAll ? 'on' : ''; }
 
 /* ---------- UI ---------- */
@@ -2478,7 +2536,7 @@ function frame(){
   const ang = view.touched ? view.yaw : (view.yaw = Math.PI/4 + Math.sin(t*0.08)*0.25);
   cam.position.set(target.x+Math.sin(ang)*150, 120, target.z+Math.cos(ang)*150); cam.lookAt(target);
   moveVehicles(Math.min(dt,.3)); moveAgents(Math.min(dt,.3)); classFeed(dt); animFarm(Math.min(dt,.3), t); animGarden(Math.min(dt,.3), t); if (!p12Fixed && fenceBuilt) fixP12Site(); if (!parkFixed && fenceBuilt) buildParkingSite(); followFind(Math.min(dt,.3));
-  placeGroupChips(); placeRoomLabels();
+  placeGroupChips(); placeRoomLabels(); showClassFx();
   renderer.render(scene,cam);
   for (const z of Object.values(zones)) { v.copy(z.p).project(cam); z.el.style.left = (v.x*.5+.5)*innerWidth+'px'; z.el.style.top = (-v.y*.5+.5)*innerHeight+'px'; }
   declutter();   // ทุกเฟรม หลังวางตำแหน่งป้ายครบแล้ว (อ่านขนาดป้ายครั้งเดียวต่อเฟรม)
