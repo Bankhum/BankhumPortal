@@ -389,6 +389,91 @@ function escapeHtml(value) {
 
 renderMenu();
 
+// ===== V38 "วันนี้ที่บ้านคุ้ม" public daily summary (aggregates only) =====
+const TODAY_CACHE_KEY = 'bankhumPortalTodayV1';
+let lastToday = null;
+
+function thaiDate(iso, lang, opts) {
+  if (!iso) return '';
+  const d = new Date(iso.length <= 10 ? iso + 'T12:00:00+07:00' : iso);
+  return d.toLocaleDateString(lang === 'en' ? 'en-GB' : 'th-TH', { timeZone: 'Asia/Bangkok', ...opts });
+}
+
+function paintToday() {
+  const box = document.getElementById('todayCard');
+  if (!box) return;
+  const lang = currentLang();
+  const en = lang === 'en';
+  const d = lastToday;
+  if (!d) {
+    box.innerHTML = `<div class="today-loading">${en ? 'Loading today’s summary…' : 'กำลังโหลดสรุปวันนี้...'}</div>`;
+    return;
+  }
+  const u = d.usage || { today: 0, yesterday: 0, systemsToday: 0, top: [] };
+  const n = d.newsletter;
+  const diff = u.today - u.yesterday;
+  const trend = u.yesterday
+    ? (en ? `Yesterday ${u.yesterday.toLocaleString()}` : `เมื่อวาน ${u.yesterday.toLocaleString()} ครั้ง`)
+    : '';
+  const topName = u.top && u.top[0] ? (en ? (u.top[0].name_en || u.top[0].name_th) : u.top[0].name_th) : '';
+  const news = n && n.latest ? `
+      <a class="today-news" href="${escapeAttr(n.latest.url)}" target="_blank" rel="noopener noreferrer" data-label="${escapeAttr(en ? 'Newsletter archive' : 'คลังจดหมายข่าว')}">
+        ${n.latest.thumb ? `<img src="${escapeAttr(n.latest.thumb)}" alt="" loading="lazy" width="96" height="136">` : ''}
+        <span class="today-news-text">
+          <small>${en ? 'Latest newsletter' : 'จดหมายข่าวล่าสุด'} · ${escapeAttr(n.latest.issue)}</small>
+          <strong>${escapeAttr(n.latest.title)}</strong>
+          <em>${escapeAttr(thaiDate(n.latest.date, lang, { day: 'numeric', month: 'long', year: 'numeric' }))}</em>
+          <span class="today-news-cta">${en ? 'Read all newsletters' : 'อ่านจดหมายข่าวทั้งหมด'} <i data-lucide="arrow-up-right"></i></span>
+        </span>
+      </a>` : '';
+  box.innerHTML = `
+    <header class="today-head">
+      <h2 id="todayTitle"><i data-lucide="sun"></i> ${en ? 'Today at Bankhum' : 'วันนี้ที่บ้านคุ้ม'}</h2>
+      <span class="today-date">${escapeAttr(thaiDate(d.date, lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))}</span>
+    </header>
+    <div class="today-body${news ? '' : ' no-news'}">
+      ${news}
+      <ul class="today-stats">
+        <li><span class="today-ic c-blue"><i data-lucide="mouse-pointer-click"></i></span>
+          <div><b>${u.today.toLocaleString()}</b><span>${en ? 'system opens today' : 'ครั้งที่ใช้ระบบออนไลน์วันนี้'}</span>${trend ? `<small class="${diff >= 0 ? 'up' : 'down'}">${escapeAttr(trend)}</small>` : ''}</div></li>
+        <li><span class="today-ic c-green"><i data-lucide="layout-grid"></i></span>
+          <div><b>${u.systemsToday}</b><span>${en ? 'systems in use today' : 'ระบบที่มีการใช้งานวันนี้'}</span></div></li>
+        <li><span class="today-ic c-orange"><i data-lucide="trophy"></i></span>
+          <div><b class="today-text">${escapeAttr(topName || (en ? '—' : 'ยังไม่มีการใช้งาน'))}</b><span>${en ? 'most used today' : 'ใช้มากที่สุดวันนี้'}</span></div></li>
+        <li><span class="today-ic c-pink"><i data-lucide="newspaper"></i></span>
+          <div><b>${n ? n.thisMonth : '—'}</b><span>${en ? 'newsletters this month' : 'จดหมายข่าวเดือนนี้ (ฉบับ)'}</span>${n ? `<small>${en ? `${n.total.toLocaleString()} in archive` : `ในคลังทั้งหมด ${n.total.toLocaleString()} ฉบับ`}</small>` : ''}</div></li>
+      </ul>
+    </div>
+    <p class="today-note"><i data-lucide="shield-check"></i> ${en ? 'Totals only — no personal information is shown.' : 'แสดงเฉพาะยอดรวม ไม่มีข้อมูลส่วนบุคคล'}</p>`;
+  refreshIcons();
+}
+
+async function loadToday() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(TODAY_CACHE_KEY) || 'null');
+    if (cached && !lastToday) { lastToday = cached; paintToday(); }
+  } catch (_) {}
+  if (!lastToday) paintToday();
+  try {
+    const res = await fetch('/api/today', { cache: 'no-store' });
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      lastToday = data;
+      try { localStorage.setItem(TODAY_CACHE_KEY, JSON.stringify(data)); } catch (_) {}
+      paintToday();
+    }
+  } catch (_) {
+    if (!lastToday) document.getElementById('todayCard')?.closest('.today-section')?.setAttribute('hidden', '');
+  }
+}
+
+document.getElementById('todayCard')?.addEventListener('click', e => {
+  const a = e.target.closest('a.today-news');
+  if (a) showToast(currentLang() === 'en' ? 'Opening newsletter archive…' : 'กำลังเปิดคลังจดหมายข่าว...');
+});
+loadToday();
+setInterval(() => { if (document.visibilityState === 'visible') loadToday(); }, 5 * 60000);
+
 // Mobile navigation highlight
 const mobileLinks = [...document.querySelectorAll('.mobile-nav-item')];
 const targets = ['home','systems','mod-sarabun','mod-student','dashboard']
@@ -433,7 +518,7 @@ window.addEventListener('appinstalled', () => showToast('ติดตั้ง B
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('./sw.js?v=37', { updateViaCache: 'none' });
+      const reg = await navigator.serviceWorker.register('./sw.js?v=38', { updateViaCache: 'none' });
       await reg.update();
     } catch (_) {}
   });
@@ -610,6 +695,7 @@ function setLanguage(lang) {
   if (searchInput) searchInput.placeholder = lang === 'en' ? 'Search menus, e.g. salary, sarabun, grades, savings…' : 'ค้นหาเมนู เช่น เงินเดือน, สารบรรณ, วัดผล, ออมทรัพย์...';
   renderMenu();
   paintDashboard();
+  paintToday();
   if (hotlineMessage) hotlineMessage.placeholder = lang === 'en' ? 'Type your message…' : 'พิมพ์รายละเอียดที่ต้องการติดต่อ...';
   languageToggle?.setAttribute('aria-label', lang === 'en' ? 'Switch to Thai' : 'Switch to English');
   refreshIcons();
