@@ -2149,7 +2149,7 @@ function update(force){
 }
 
 /* ---------- แปลงเกษตรอัจฉริยะ: สปริงเกอร์ตั้งเวลา 08:00 และ 15:30 + ตู้ควบคุม ---------- */
-const FARM = {x0:47.6, x1:60.4, z0:-3.6, z1:21.2}, FARM_LPM = 30, SPRAY_R = 4.3;   // ลิตร/นาที/หัว (หัวใหญ่ พ่นไกล)
+const FARM = {x0:47.6, x1:60.4, z0:-3.6, z1:32.4}, FARM_LPM = 30, SPRAY_R = 4.3;   // ลิตร/นาที/หัว (หัวใหญ่ พ่นไกล)
 const FARM_SCHED = [[480, 495, 'รอบเช้า'], [930, 945, 'รอบบ่าย']];
 let farmManual = null, farmManualAt = 0, lastFarm = null, lastFarmM = 0;   // farmManual: null = อัตโนมัติ, true/false = สั่งเอง
 const farmAuto = m => FARM_SCHED.some(([a, b]) => m >= a && m < b);
@@ -2171,12 +2171,12 @@ function buildFarm(){
   const M = (c, o) => new THREE.MeshLambertMaterial(o ? {color: c, transparent: true, opacity: o, depthWrite: false, side: THREE.DoubleSide} : {color: c});
   const cvTex = (w, h, draw) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; };
   const tin = (rep, base = '#9ca3a8') => { const t = cvTex(64, 16, (c, w, h) => { c.fillStyle = base; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 8) { c.fillStyle = 'rgba(255,255,255,.28)'; c.fillRect(x, 0, 3, h); c.fillStyle = 'rgba(0,0,0,.16)'; c.fillRect(x + 4, 0, 2, h); } c.fillStyle = 'rgba(120,72,40,.22)'; c.fillRect(0, h - 4, w, 4); }); t.wrapS = THREE.RepeatWrapping; t.repeat.set(rep, 1); return t; };
-  const grass = new THREE.Mesh(new THREE.PlaneGeometry(23.4, 26.2), M('#86a55a')); grass.rotation.x = -Math.PI/2; grass.position.set(51.1, .06, 8.9); grass.receiveShadow = true; g.add(grass);
+  const grass = new THREE.Mesh(new THREE.PlaneGeometry(23.4, 37), M('#86a55a')); grass.rotation.x = -Math.PI/2; grass.position.set(51.1, .06, 14.3); grass.receiveShadow = true; g.add(grass);
   const leafM = M('#4d9a2a'), leaf = new THREE.SphereGeometry(.28, 6, 4), plankM = M('#8b6a47'), plants = [];
-  for (const x of [50.9, 57.1]) {                                                  // แปลงยาวตามแนวอาคาร ขอบไม้กระดาน ผักปลูกห่าง ๆ
-    B(3.8, .16, 12.4, bedM, x, .08, 2.9);
-    for (const s of [-1, 1]) { B(.08, .24, 12.6, plankM, x + s*1.95, .12, 2.9); B(3.98, .24, .08, plankM, x, .12, 2.9 + s*6.25); }
-    for (let i = 0; i < 3; i++) for (let j = 0; j < 15; j++) if ((i*7 + j*3) % 5) plants.push([x - 1.2 + i*1.2, .26, -3.1 + j*.86]);
+  for (const [zc, L] of [[2.9, 12.4], [27.6, 8.6]]) for (const x of [50.9, 57.1]) {   // แปลงยาวตามแนวอาคาร ขอบไม้กระดาน ผักปลูกห่าง ๆ (คู่หลังขยายมาชิดกำแพงบ้านข้างเคียง)
+    B(3.8, .16, L, bedM, x, .08, zc);
+    for (const s of [-1, 1]) { B(.08, .24, L + .2, plankM, x + s*1.95, .12, zc); B(3.98, .24, .08, plankM, x, .12, zc + s*(L/2 + .05)); }
+    for (let i = 0; i < 3; i++) for (let j = 0; j < Math.floor(L/.86) + 1; j++) if ((i*7 + j*3) % 5) plants.push([x - 1.2 + i*1.2, .26, zc - L/2 + .3 + j*.86]);
   }
   const pl = new THREE.InstancedMesh(leaf, leafM, plants.length); plants.forEach(([x, y, z], i) => { dummy.position.set(x, y, z); dummy.rotation.set(0,0,0); dummy.scale.set(1, .7, 1); dummy.updateMatrix(); pl.setMatrixAt(i, dummy.matrix); }); g.add(pl);
   const bambooM = M('#c9a66b');                                                     // ไม้ไผ่วางพาดบนหญ้า (รูป 1-3)
@@ -2186,7 +2186,8 @@ function buildFarm(){
   wetMat = new THREE.MeshBasicMaterial({color:'#0369a1', transparent:true, opacity:0, depthWrite:false});
   const wet = new THREE.CircleGeometry(SPRAY_R, 32);
   const lat = new THREE.Mesh(new THREE.BoxGeometry(.16, .1, 12.6), pipeM); lat.position.set(54, .06, 3.3); g.add(lat);
-  for (const z of [-1.6, 2.9, 7.4]) {                                             // สปริงเกอร์หัวใหญ่ 3 หัว กลางระหว่างสองแปลง
+  const lat2 = new THREE.Mesh(new THREE.BoxGeometry(.16, .1, 17.6), pipeM); lat2.position.set(54, .06, 18.8); g.add(lat2);
+  for (const z of [-1.6, 2.9, 7.4, 27.6]) {                                       // สปริงเกอร์หัวใหญ่ 4 หัว (4 โซนตามกล่องควบคุม IoT) กลางระหว่างแปลง
     const x = 54, p = new THREE.Mesh(pole, pipeM); p.position.set(x, .8, z); g.add(p);
     const hd = new THREE.Mesh(head, headM); hd.position.set(x, 1.65, z); g.add(hd);
     const w = new THREE.Mesh(wet, wetMat); w.rotation.x = -Math.PI/2; w.position.set(x, .05, z); g.add(w);
@@ -2265,10 +2266,37 @@ function buildFarm(){
   B(3.2, 2.7, 3.6, shedM, 49.4, 1.35, 13.4); B(3.6, .06, 4, M('#cbd5e1'), 49.4, 2.85, 13.4).rotation.z = .12; B(.04, 1.9, 1, M('#6b7280'), 47.78, .95, 13.4);
   // ต้นมะละกอ (ลำต้นสูง ใบแฉกเป็นพุ่มบนยอด ลูกเขียวใต้ใบ)
   const trunkM = M('#9ca38f'), papM = M('#3f8f2c'), fruitM = M('#65a30d');
-  for (const [x, z, h] of [[61.2, 17.8, 4.4], [60.6, -2.4, 3.8], [45.2, 21.2, 4.6], [52.4, 19.6, 3.6], [41.4, 17.4, 4]]) {
+  for (const [x, z, h] of [[61.2, 17.8, 4.4], [60.6, -2.4, 3.8], [45.2, 21.2, 4.6], [52.4, 19.6, 3.6], [41.4, 17.4, 4], [61.6, 31.4, 4.2], [44.6, 31.6, 3.9], [40.8, 29.4, 4.5]]) {
     const tr = new THREE.Mesh(new THREE.CylinderGeometry(.09, .14, h, 7), trunkM); tr.position.set(x, h/2, z); tr.castShadow = true; g.add(tr);
     for (let k = 0; k < 9; k++) { const a = k*2.4, lf = new THREE.Mesh(new THREE.BoxGeometry(1.15, .03, .5), papM); lf.rotation.order = 'YXZ'; lf.rotation.set(0, -a, -.45 - (k % 3)*.15); lf.position.set(x + Math.cos(a)*.55, h - .1 - (k % 3)*.1, z + Math.sin(a)*.55); lf.castShadow = true; g.add(lf); }
     for (let k = 0; k < 5; k++) { const f = new THREE.Mesh(new THREE.SphereGeometry(.11, 6, 4), fruitM); f.scale.y = 1.5; f.position.set(x + Math.cos(k*1.3)*.17, h - .25 - (k % 2)*.18, z + Math.sin(k*1.3)*.17); g.add(f); }
+  }
+  // บ้านเรือนข้างโรงเรียน 4 หลัง (ตามที่ครูวงในแผนที่) หันหน้าออกถนนซอยข้าง มีกำแพงบล็อกกั้นจากแปลงเกษตร
+  const wallM = M('#a8a29e'), capM = M('#78716c');
+  for (const [ax, az, bx, bz] of [[62.8, 33.2, 36.2, 33.2], [36.2, 33.2, 36.2, 38.4], [36.2, 38.4, 24.4, 38.4], [24.4, 38.4, 24.4, 48.4]]) {
+    const L = Math.hypot(bx - ax, bz - az), cx = (ax + bx)/2, cz = (az + bz)/2, ry = Math.atan2(bx - ax, bz - az);
+    B(.2, 1.8, L, wallM, cx, .9, cz).rotation.y = ry; B(.28, .08, L, capM, cx, 1.84, cz).rotation.y = ry;
+    for (let d = 0; d <= L + .01; d += 3) B(.3, 1.95, .3, capM, ax + (bx - ax)*d/L, .98, az + (bz - az)*d/L);
+  }
+  const gable = (w, d, h, c, x, y, z) => { const sh = new THREE.Shape([new THREE.Vector2(-w/2, 0), new THREE.Vector2(w/2, 0), new THREE.Vector2(0, h)]); const m = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, {depth: d, bevelEnabled: false}).translate(0, 0, -d/2), M(c)); m.position.set(x, y, z); m.castShadow = true; g.add(m); };
+  for (const [x0, x1, z0, kind, wall, roof] of [[24.6, 36, 38.6, 0, '#fde68a', '#b45309'], [36.4, 45.2, 33.4, 1, '#e0f2fe', '#475569'], [45.2, 53.9, 33.4, 2, '#a16207', '#57534e'], [53.9, 62.6, 33.4, 0, '#fce7f3', '#9f1239']]) {
+    const cx = (x0 + x1)/2 + (x0 < 30 ? 1.6 : 0), z1 = 48.3, hz = z0 + (z1 - z0)*.45, W = 6.2, D = Math.min(7, (z1 - z0)*.55);
+    const lot = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), M('#c8bca4')); lot.rotation.x = -Math.PI/2; lot.position.set((x0 + x1)/2, .07, (z0 + z1)/2); lot.receiveShadow = true; g.add(lot);
+    if (kind === 2) {   // บ้านไม้ใต้ถุนสูง
+      for (const dx of [-2.6, 0, 2.6]) for (const dz of [-D/2 + .4, D/2 - .4]) B(.28, 2.3, .28, M('#57534e'), cx + dx, 1.15, hz + dz);
+      B(W, 2.5, D, M(wall), cx, 3.55, hz); B(W + .4, .14, 1.8, M('#78350f'), cx, 2.35, hz + D/2 + .9); gable(W + 1.4, D + .8, 2.6, roof, cx, 4.8, hz);
+      B(1, 1.8, .1, M('#451a03'), cx, 3.3, hz + D/2 + .02); B(1, .1, 2.6, M('#78350f'), cx - 2.2, 1.2, hz + D/2 + 2).rotation.x = -.75;
+    } else {
+      const H = kind === 1 ? 5.4 : 2.9;
+      B(W, H, D, M(wall), cx, H/2, hz); gable(W + 1.2, D + .9, kind === 1 ? 2 : 2.4, roof, cx, H, hz);
+      B(1.1, 2.1, .1, M('#7c2d12'), cx, 1.05, hz + D/2 + .02);
+      for (const wx of [-1.9, 1.9]) for (let fl = 0; fl < (kind === 1 ? 2 : 1); fl++) B(1.1, .9, .1, M('#1e293b'), cx + wx, 1.5 + fl*2.7, hz + D/2 + .02);
+      if (kind === 1) B(W + .2, .14, 1.1, M('#e5e7eb'), cx, 2.75, hz + D/2 + .55);
+    }
+    B(2.6, .08, z1 - (hz + D/2) - .2, M('#9ca3af'), cx, .1, (hz + D/2 + z1)/2);   // ทางเดินหน้าบ้านออกถนน
+    if (x1 < 62) { B(.15, .9, z1 - z0, M('#e7e5e4'), x1, .45, (z0 + z1)/2); }       // รั้วเตี้ยระหว่างบ้าน
+    const tr = new THREE.Mesh(new THREE.CylinderGeometry(.15, .2, 2.2, 6), M('#78350f')); tr.position.set(x0 + 1.4, 1.1, z1 - 1.6); g.add(tr);
+    const cr = new THREE.Mesh(new THREE.SphereGeometry(1.3, 8, 6), M(kind ? '#4d7c0f' : '#15803d')); cr.position.set(x0 + 1.4, 2.8, z1 - 1.6); cr.castShadow = true; g.add(cr);
   }
   // ป้าย "เติมผักฟาร์ม"
   const cv = document.createElement('canvas'); cv.width = 512; cv.height = 128; const cx = cv.getContext('2d');
