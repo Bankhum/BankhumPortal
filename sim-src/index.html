@@ -781,6 +781,7 @@ function onModel(g) {
     const box = obj ? new THREE.Box3().setFromObject(obj) : new THREE.Box3(new THREE.Vector3(VB.x0, 0, VB.z0), new THREE.Vector3(VB.x1, name === 'Restroom' ? 2.4 : 1.2, VB.z1)); const size = box.getSize(new THREE.Vector3()); const c = box.getCenter(new THREE.Vector3());
     if (name === 'Flagpole') { size.set(ASSEMBLY.x1 - ASSEMBLY.x0, 1.5, ASSEMBLY.z1 - ASSEMBLY.z0); c.set((ASSEMBLY.x0 + ASSEMBLY.x1)/2, 0, (ASSEMBLY.z0 + ASSEMBLY.z1)/2); box.min.y = 0; }
     if (name === 'Field') { size.set(FIELD.x1 - FIELD.x0, 1, FIELD.z1 - FIELD.z0); c.set((FIELD.x0 + FIELD.x1)/2, 0, (FIELD.z0 + FIELD.z1)/2); box.min.y = 0; }
+    if (name === 'Swimming_Pool') { size.set(POOL.L, POOL.H, POOL.W); c.set(POOL.x, 0, POOL.z); box.min.y = 0; }
     size.x += 1.2; size.z += 1.2; size.y += 1;
     const geo = new THREE.BoxGeometry(size.x,size.y,size.z);
     const mat = new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.18,depthWrite:false});
@@ -792,6 +793,7 @@ function onModel(g) {
     zones[name] = {el, mat, lmat, th, col, mesh, obj: (name==='Field'||name==='Flagpole') ? null : obj, y: box.min.y, c, sx: size.x-1.2, sz: size.z-1.2, p:new THREE.Vector3(c.x, box.min.y+size.y+1, c.z)};
     mesh.userData.zone = name;
   }
+  if (zones.Swimming_Pool) zones.Swimming_Pool.y = POOL.H - .3;   // สระยกพื้น: คนว่ายที่ระดับผิวน้ำ ไม่จมใต้พื้น
   root.children.forEach(o => { if (/^(Student|Teacher)_/.test(o.name)) o.visible = false; });
   const dome = root.getObjectByName('Playground_Dome');
   if (dome) { dome.rotation.y = Math.PI/2; dome.position.x = PLAY_C[0]; dome.position.z = PLAY_C[1]; buildPlayset(); }
@@ -1438,6 +1440,8 @@ function fixP12Site(){   // ศาลาเดิมในโมเดล (ก�
   scene.traverse(o => { if (o.name === 'poly_14' && o.material && !o.userData.mango) { o.material = o.material.clone(); o.material.color.set('#2f6b2a'); o.userData.mango = 1; n++; } });   // ต้นมะม่วง 2 ต้นข้างสนามเปตอง (ใบเขียวเข้ม)
   return p12Fixed = n >= 7;
 }
+// สระว่ายน้ำ (ขยายตามที่ครูบอก 12×5 → 15×7 ม. ปลายฝั่งถังกรองอยู่ที่เดิม) และที่อาบน้ำกลางแจ้งระหว่างสระกับอาคารอนุบาล
+const POOL = {x: -11.1, z: 37.3, L: 15, W: 7, H: 1.3}, SHOWER = {x: -21.3, z: 39.6};
 // ถนนหน้าอาคารอนุบาล และสระว่ายน้ำ (ตามรูปจริง school-photos/06-อาคารอนุบาล, 10-สระว่ายน้ำ)
 function buildKgPool(){
   const g = new THREE.Group(); g.name = 'KgPool'; scene.add(g);
@@ -1481,8 +1485,8 @@ function buildKgPool(){
   // ต้นไม้ต้นเล็กกลางสนามริมถนน
   B(.18, 2, .18, '#6b4f3a', -49, 1, 21.5); const cr = add(new THREE.IcosahedronGeometry(1.4, 0), M('#4d8b31'), -49, 2.9, 21.5); cr.scale.y = .8;
   // สระว่ายน้ำยกพื้น: ผนังปูนทาสีฟ้าลายเด็กว่ายน้ำ "BANKHUM SWIMMING POOL", บันไดเหล็ก, หลังคาโค้งเมทัลชีท, ถังกรองน้ำ, รั้วตาข่าย, ป้ายสีน้ำเงิน
-  const px0 = -9.6, pz0 = 37.3, PL = 12, PW = 5, PH = 1.3;
-  B(PL + 6, .1, PW + 5, '#cfc8bd', px0 + 1, .05, pz0);   // ลานปูน
+  const px0 = POOL.x, pz0 = POOL.z, PL = POOL.L, PW = POOL.W, PH = POOL.H;
+  B(23.3, .1, PW + 4.4, '#cfc8bd', -11.25, .05, pz0);   // ลานปูน (ถึงที่อาบน้ำฝั่งอาคารอนุบาล)
   const wallT = cvTex(1024, 110, (c, w, h) => { c.fillStyle = '#2563eb'; c.fillRect(0, 0, w, h); c.fillStyle = '#60a5fa'; for (let x = 0; x < w; x += 40) { c.beginPath(); c.arc(x, h - 10, 22, Math.PI, 0); c.fill(); }
     for (let i = 0; i < 9; i++) { const x = 60 + i*110; c.fillStyle = '#fde2c4'; c.beginPath(); c.arc(x, 48, 14, 0, 7); c.fill(); c.fillStyle = '#111827'; c.fillRect(x - 14, 34, 28, 7); c.fillStyle = '#fde2c4'; c.fillRect(x + 12, 30, 6, 22); }
     c.font = 'bold italic 34px sans-serif'; c.lineWidth = 6; c.strokeStyle = '#1e3a8a'; c.textAlign = 'center'; c.strokeText('BANKHUM SWIMMING POOL', w/2, 80); c.fillStyle = '#fde047'; c.fillText('BANKHUM SWIMMING POOL', w/2, 80); });
@@ -1493,8 +1497,11 @@ function buildKgPool(){
   const water = new THREE.Mesh(new THREE.PlaneGeometry(PL - .3, PW - .3), new THREE.MeshLambertMaterial({color: '#38bdf8', transparent: true, opacity: .85})); water.rotation.x = -Math.PI/2; water.position.set(px0, PH - .2, pz0); g.add(water);
   for (let k = 0; k < 4; k++) B(.6, .1, 1.4, '#d1d5db', px0 - PL/2 - .4 - k*.32, PH - .3 - k*.32, pz0 - 1.2);   // บันไดขึ้นสระ
   for (const dz of [-1.9, -.5]) B(.05, .9, .05, '#9ca3af', px0 - PL/2 - .9, PH, pz0 - 1.2 + dz*.5);
-  for (const sx of [-1, 1]) for (let k = 0; k < 4; k++) B(.12, 3.6, .12, '#9ca3af', px0 - PL/2 + .3 + k*(PL - .6)/3, 1.8, pz0 + sx*(PW/2 + .6));
-  const roof = new THREE.Mesh(new THREE.CylinderGeometry(4.2, 4.2, PL + 1, 24, 1, true, Math.PI/2 - .62, 1.24), new THREE.MeshLambertMaterial({color: '#d4d4d8', side: THREE.DoubleSide})); roof.rotation.z = Math.PI/2; roof.position.set(px0, 0, pz0); roof.position.y = 3.6 - 4.2*Math.cos(.62) + .05; roof.castShadow = true; g.add(roof);
+  for (const sx of [-1, 1]) for (let k = 0; k < 5; k++) B(.12, 3.6, .12, '#9ca3af', px0 - PL/2 + .3 + k*(PL - .6)/4, 1.8, pz0 + sx*(PW/2 + .6));
+  const RR = (PW/2 + .6)/Math.sin(.62);   // หลังคาโค้งกว้างคลุมเสาทั้งสองแนว
+  const roof = new THREE.Mesh(new THREE.CylinderGeometry(RR, RR, PL + 1, 32, 1, true, Math.PI/2 - .62, 1.24), new THREE.MeshLambertMaterial({color: '#d4d4d8', side: THREE.DoubleSide})); roof.rotation.z = Math.PI/2; roof.position.set(px0, 0, pz0); roof.position.y = 3.6 - RR*Math.cos(.62) + .05; roof.castShadow = true; g.add(roof);
+  POOL.roof = roof; if (xrayAll || selected === 'Swimming_Pool') setXray('Swimming_Pool', true);
+  for (let k = 1; k < 4; k++) { const ln = add(new THREE.BoxGeometry(PL - .6, .03, .1), M('#f8fafc'), px0, PH - .19, pz0 - PW/2 + k*PW/4); ln.castShadow = false; }   // ทุ่นแบ่งลู่
   for (const dx of [0, 1.1]) { const t = add(new THREE.CylinderGeometry(.45, .45, 1.6, 12), M('#111827'), px0 + PL/2 + 1.2 + dx, .8, pz0 + 1.6); }   // ถังกรองน้ำ
   // รั้วตาข่ายรอบสระ เว้นช่องประตูด้านถนน
   const meshT = cvTex(32, 32, (c) => { c.strokeStyle = '#cbd5e1'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, 0); c.lineTo(32, 32); c.moveTo(32, 0); c.lineTo(0, 32); c.stroke(); });
@@ -1509,6 +1516,40 @@ function buildKgPool(){
   for (const dx of [-1, 1]) B(.07, 2.6, .07, '#6b7280', -12.75 + dx*1.1, 1.3, fz0 - .1);
   const ps = new THREE.Mesh(new THREE.PlaneGeometry(2.4, .45), new THREE.MeshLambertMaterial({map: pT, side: THREE.DoubleSide})); ps.position.set(-12.75, 2.5, fz0 - .14); ps.rotation.y = Math.PI; g.add(ps);
   B(1, 1.3, .04, '#bae6fd', -15, 1.1, fz0 - .08);
+  buildShower(g, B, add, M, cvTex);
+}
+// ที่อาบน้ำกลางแจ้ง (ล้างตัวก่อนลงสระ): พื้นกระเบื้องฟ้ายกขอบ ร่องระบายน้ำ ผนังกระเบื้องด้านอาคารอนุบาล
+// ท่อ PVC ฟ้าพาดบนเสาเหล็ก ฝักบัว 5 หัว ก๊อกล้างเท้า อ่างล้างเท้าทางขึ้นสระ ป้ายบอก ไม่มีหลังคา
+function buildShower(g, B, add, M, cvTex){
+  const s = new THREE.Group(); s.position.set(SHOWER.x, 0, SHOWER.z); g.add(s);
+  const W = 2.6, D = 5;   // กว้าง (ตะวันออก-ตก) × ยาว (เหนือ-ใต้)
+  const tileT = cvTex(64, 64, (c, w, h) => { c.fillStyle = '#bfe3f2'; c.fillRect(0, 0, w, h); c.strokeStyle = '#8ec5dc'; c.lineWidth = 2; for (let i = 0; i <= 4; i++) { c.beginPath(); c.moveTo(i*16, 0); c.lineTo(i*16, h); c.moveTo(0, i*16); c.lineTo(w, i*16); c.stroke(); } });
+  tileT.wrapS = tileT.wrapT = THREE.RepeatWrapping;
+  const fT = tileT.clone(); fT.needsUpdate = true; fT.repeat.set(W*2, D*2);
+  B(W, .12, D, [M('#e2e8f0'), M('#e2e8f0'), new THREE.MeshLambertMaterial({map: fT}), M('#e2e8f0'), M('#e2e8f0'), M('#e2e8f0')], 0, .11, 0, s);   // พื้นกระเบื้อง
+  for (const dz of [-1, 1]) B(W, .16, .1, '#e2e8f0', 0, .2, dz*(D/2 - .05), s);   // ขอบกันน้ำ
+  B(.18, .02, D - .3, '#475569', .55, .18, 0, s);   // ร่องระบายน้ำ + ตะแกรง
+  for (let k = 0; k < 14; k++) B(.16, .025, .04, '#94a3b8', .55, .19, -D/2 + .4 + k*.32, s);
+  const wT = tileT.clone(); wT.needsUpdate = true; wT.repeat.set(D*2, 1.8*2);
+  B(.15, 1.8, D, [new THREE.MeshLambertMaterial({map: wT}), M('#d6d3d1'), M('#e2e8f0'), M('#e2e8f0'), M('#d6d3d1'), M('#d6d3d1')], -W/2 + .08, .17 + .9, 0, s);   // ผนังกระเบื้อง
+  const pipeM = M('#38bdf8'), steel = M('#9ca3af'), chrome = new THREE.MeshStandardMaterial({color: '#e5e7eb', metalness: .8, roughness: .3});
+  for (const dz of [-1, 1]) B(.08, 2.3, .08, steel, -W/2 + .35, 1.32, dz*(D/2 - .3), s);
+  const pipe = add(new THREE.CylinderGeometry(.035, .035, D - .4, 8), pipeM, -W/2 + .35, 2.4, 0, s); pipe.rotation.x = Math.PI/2;
+  const riser = add(new THREE.CylinderGeometry(.035, .035, 2.3, 8), pipeM, -W/2 + .2, 1.3, -D/2 + .3, s);
+  const water = new THREE.MeshBasicMaterial({color: '#e0f2fe', transparent: true, opacity: .45, depthWrite: false});
+  for (let k = 0; k < 5; k++) {
+    const z = -D/2 + .7 + k*(D - 1.4)/4;
+    const arm = add(new THREE.CylinderGeometry(.025, .025, .5, 6), pipeM, -W/2 + .6, 2.4, z, s); arm.rotation.z = Math.PI/2;
+    const head = add(new THREE.CylinderGeometry(.11, .05, .08, 12), chrome, -W/2 + .85, 2.33, z, s);
+    if (k % 2 === 0) { const st = add(new THREE.CylinderGeometry(.1, .2, 2.1, 10, 1, true), water, -W/2 + .85, 1.24, z, s); st.castShadow = st.receiveShadow = false; }   // สายน้ำ (เปิดอยู่ 3 หัว)
+    B(.07, .12, .07, chrome, -W/2 + .2, 1.1, z, s);   // วาล์วเปิด-ปิด
+  }
+  // ก๊อกล้างเท้า + อ่างล้างเท้าตื้นก่อนขึ้นบันไดสระ
+  B(.5, .45, .5, '#cbd5e1', W/2 - .3, .4, -D/2 - .5, s); add(new THREE.CylinderGeometry(.03, .03, .2, 6), chrome, W/2 - .3, .72, -D/2 - .62, s);
+  B(1.4, .1, 1.1, '#e2e8f0', 1.55, .12, -D/2 - 1.7, s); B(1.2, .02, .9, '#7dd3fc', 1.55, .18, -D/2 - 1.7, s);
+  // ป้ายบอก
+  const sT = cvTex(256, 96, (c, w, h) => { c.fillStyle = '#0369a1'; c.fillRect(0, 0, w, h); c.strokeStyle = '#f8fafc'; c.lineWidth = 3; c.strokeRect(4, 4, w - 8, h - 8); c.fillStyle = '#f8fafc'; c.textAlign = 'center'; c.font = 'bold 30px sans-serif'; c.fillText('ที่อาบน้ำ', w/2, 40); c.font = '20px sans-serif'; c.fillText('อาบน้ำก่อนลงสระทุกครั้ง', w/2, 74); });
+  const sg = new THREE.Mesh(new THREE.PlaneGeometry(1.2, .45), new THREE.MeshLambertMaterial({map: sT, side: THREE.DoubleSide})); sg.position.set(-W/2 + .17, 1.75, 0); sg.rotation.y = Math.PI/2; s.add(sg);
 }
 // โรงจอดรถ เรือนไม้ข้างอาคาร ป.1 ป.2 และหอถังน้ำ (ตามรูปจริง school-photos/12-โรงรถ-ที่จอดรถ):
 // โรงจอดเสาไม้ หลังคาสังกะสีเก่า เปิดโล่งรอบด้าน ชิดหน้าเรือนไม้สองชั้นสีแดงน้ำตาล · หอถังน้ำเสาสูงหัวกลมสีเหลือง มีปาล์มรอบโคน
@@ -1842,7 +1883,8 @@ let selected = null; const xray = new Map();
 let xrayAll = true;
 function setXray(name, on){
   const z = zones[name]; if (!z || !z.obj) return;
-  z.obj.traverse(o => { if (!o.isMesh) return;
+  const objs = name === 'Swimming_Pool' && POOL.roof ? [z.obj, POOL.roof] : [z.obj];   // หลังคาโค้งสระสร้างแยกจากโมเดล ให้มองทะลุได้ด้วย
+  for (const ob of objs) ob.traverse(o => { if (!o.isMesh) return;
     if (on && !xray.has(o)) { xray.set(o, o.material); o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = .14; o.material.depthWrite = false; o.castShadow = false; }
     else if (!on && xray.has(o)) { o.material = xray.get(o); xray.delete(o); o.castShadow = true; }   // เลือกอาคารซ้ำตอนมองทะลุอยู่แล้ว ต้องไม่กลับเป็นทึบ
   });
