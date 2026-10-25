@@ -1969,11 +1969,11 @@ let roomView = null; const classFx = {};
 // ห้องพิเศษที่เข้าไปดูได้ (ไม่ใช่ห้องประจำชั้น): ห้องคอมพิวเตอร์
 const COMP = 'ห้องคอมพิวเตอร์', SPECIAL = {[COMP]: 'Technology_Building'};
 const fxB = c => SPECIAL[c] || HOMEROOM[c];
-// ที่นั่งหน้าเครื่องคอม: 5 แถว แถวละ 8 เครื่อง (ฝั่งละ 4 ทางเดินกลาง) หันหน้าไปทางตะวันออก เข้ากระดานผนังตะวันออก (ครูบอก)
+// ที่นั่งหน้าเครื่องคอม: 5 แถว แถวละ 8 เครื่อง (ฝั่งละ 4 ทางเดินกลาง) หันหน้าไปทางตะวันออก เข้าจอทีวีผนังตะวันออก (ครูบอก) · หน้าห้องเว้นที่วางสนามหุ่นยนต์
 function compStations(){
   if (compStations.v) return compStations.v;
   const R = ROOMS[COMP], x1 = R.c.x + R.sx/2, v = [];
-  for (let row = 0; row < 5; row++) for (let i = 0; i < 8; i++) { const s = i < 4 ? -1 : 1, k = i % 4; v.push(new THREE.Vector3(x1 - 2.75 - row*1.1, R.y, R.c.z + s*(.9 + k*.75))); }
+  for (let row = 0; row < 5; row++) for (let i = 0; i < 8; i++) { const s = i < 4 ? -1 : 1, k = i % 4; v.push(new THREE.Vector3(x1 - 3.7 - row*1.05, R.y, R.c.z + s*(.9 + k*.75))); }
   return compStations.v = v;
 }
 const classRect = c => { if (SPECIAL[c]) return subRect(c, 0, 1); const key = HOMEROOM_ROOM[c] || HOMEROOM[c], share = CLASSES.filter(([k]) => (HOMEROOM_ROOM[k] || HOMEROOM[k]) === key).map(([k]) => k); return subRect(key, share.indexOf(c), share.length); };
@@ -2020,35 +2020,53 @@ function buildClassFx(){
   }
   buildCompFx();
 }
-// ห้องคอมพิวเตอร์ (แบบพื้นฐาน รอปรับตามรูปจริง): กระดาน + จอทีวี ผนังตะวันออก, โต๊ะครูพร้อมคอม, โต๊ะคอมยาว 5 แถว 40 เครื่อง, แอร์
+// ห้องคอมพิวเตอร์ ตามรูปจริงที่ครูส่ง: ผนังขาว ขอบล่างเขียวเข้ม พื้นกระเบื้องขาว จอทีวีใหญ่ติดผนังตะวันออก (ฝั่งหน้าต่างที่มองเห็นอาคารไม้สีแดง)
+// หน้าห้องเป็นพื้นที่ว่างวางสนามหุ่นยนต์ (แผ่นขาวเส้นตารางดำ กระป๋อง หุ่นยนต์ micro:bit) · โต๊ะไม้ยาวขาเหล็กดำ เก้าอี้พลาสติกสีม่วงไม่มีพนัก
+// จอคอมดำ คีย์บอร์ด กล่องชุดหุ่นยนต์บนโต๊ะ · โต๊ะครูหลังห้องพร้อมโน้ตบุ๊ก/เครื่องพิมพ์ · พัดลมติดผนัง เสาในห้อง
 function buildCompFx(){
   const M = c => new THREE.MeshLambertMaterial({color: c}), R = ROOMS[COMP], y = R.y, g = new THREE.Group();
-  const W = R.sx, D = R.sz, cx = R.c.x, cz = R.c.z, x1 = cx + W/2;
+  const W = R.sx, D = R.sz, cx = R.c.x, cz = R.c.z, x0 = cx - W/2, x1 = cx + W/2, z0 = cz - D/2, z1 = cz + D/2;
   const bx = (w, h, d, m, x, yy, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y + yy, z); o.castShadow = true; g.add(o); return o; };
-  const desk = M('#e5e7eb'), leg = M('#64748b'), dark = M('#111827'), screen = new THREE.MeshBasicMaterial({color: '#60a5fa'}), frame = M('#475569');
-  bx(W - .3, .03, D - .3, M('#cbd5e1'), cx, .03, cz).castShadow = false;                        // พื้นกระเบื้อง
-  bx(.08, 1.3, 3.6, frame, x1 - .2, 1.55, cz); bx(.1, 1.16, 3.44, M('#f8fafc'), x1 - .22, 1.55, cz);   // ไวท์บอร์ด
-  bx(.08, .88, 1.5, dark, x1 - .2, 1.7, cz - 2.7); bx(.02, .78, 1.4, screen, x1 - .25, 1.7, cz - 2.7);   // จอทีวี
-  bx(.25, .32, 1.1, M('#f1f5f9'), x1 - .2, 2.6, cz + 2.7);                                       // แอร์
-  const tx = x1 - 1.3, tz = cz + 2.75;                                                           // โต๊ะครู + คอม (หันหน้าเข้าหานักเรียน)
-  bx(.7, .06, 1.4, M('#92400e'), tx, .76, tz); bx(.05, .7, 1.3, M('#78350f'), tx - .3, .4, tz);
-  bx(.04, .34, .55, dark, tx - .15, 1.0, tz); bx(.01, .29, .5, screen, tx - .12, 1.0, tz);
-  bx(.45, .06, .45, M('#1e3a8a'), tx + .65, .45, tz);
+  const white = M('#f1f5f9'), teal = M('#1f4a50'), wood = M('#d9a566'), black = M('#111827'), purple = M('#5b3cc4'), screen = new THREE.MeshBasicMaterial({color: '#93c5fd'}), glass = new THREE.MeshBasicMaterial({color: '#c2655a'});
+  bx(W - .1, .03, D - .1, M('#e5e7eb'), cx, .03, cz).castShadow = false;                        // พื้นกระเบื้องขาว
+  // ผนัง: ล่างเขียวเข้มสูง 1.2 ม. บนขาว (ผนังตะวันออกมีหน้าต่างบานเลื่อนเห็นอาคารไม้สีแดง)
+  for (const [w, d, x, z] of [[.06, D, x1 - .05, cz], [W, .06, cx, z0 + .05], [W, .06, cx, z1 - .05], [.06, D, x0 + .05, cz]]) { bx(w, 1.2, d, teal, x, .6, z); bx(w, 1.4, d, white, x, 1.9, z); }
+  for (const wz of [cz - 2.4, cz + 2.4]) { bx(.04, 1.2, 1.9, M('#cbd5e1'), x1 - .09, 1.85, wz); bx(.02, 1.08, 1.78, glass, x1 - .12, 1.85, wz); bx(.03, 1.08, .04, M('#cbd5e1'), x1 - .13, 1.85, wz); }
+  bx(.08, 1.3, 2.3, black, x1 - .12, 1.9, cz); bx(.02, 1.18, 2.18, M('#a78bfa'), x1 - .17, 1.9, cz);   // จอทีวี/อินเทอร์แอกทีฟติดผนัง
+  bx(.12, .4, .6, M('#f8fafc'), x1 - .12, 1.6, cz + 1.5);                                       // ตู้ไฟ/จอเล็กข้างทีวี
+  // สนามหุ่นยนต์บนพื้นหน้าห้อง
+  const cv = document.createElement('canvas'); cv.width = cv.height = 128; const c2 = cv.getContext('2d');
+  c2.fillStyle = '#fafafa'; c2.fillRect(0, 0, 128, 128); c2.strokeStyle = '#111'; c2.lineWidth = 4; c2.beginPath(); c2.roundRect(14, 14, 100, 100, 18); c2.stroke();
+  c2.lineWidth = 3; for (let i = 1; i < 5; i++) { c2.beginPath(); c2.moveTo(30 + i*14, 26); c2.lineTo(30 + i*14, 102); c2.stroke(); c2.beginPath(); c2.moveTo(26, 30 + i*14); c2.lineTo(102, 30 + i*14); c2.stroke(); }
+  const matT = new THREE.CanvasTexture(cv); matT.colorSpace = THREE.SRGBColorSpace;
+  const can = M('#c9a227'), bot = M('#f8fafc');
+  for (const mz of [cz - 1.7, cz + 1.7]) {
+    const mat = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.8), new THREE.MeshLambertMaterial({map: matT})); mat.rotation.x = -Math.PI/2; mat.position.set(x1 - 1.6, y + .05, mz); g.add(mat);
+    for (const [dx, dz] of [[-.5, -.6], [.4, .5], [-.1, .55], [.55, -.3]]) { const o = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, .14, 8), can); o.position.set(x1 - 1.6 + dx, y + .12, mz + dz); g.add(o); }
+    bx(.18, .1, .14, bot, x1 - 2.3, .1, mz + .2); bx(.1, .02, .1, M('#16a34a'), x1 - 2.3, .16, mz + .2);   // หุ่นยนต์ micro:bit
+  }
+  bx(.35, 2.9, .35, white, cx - .6, 1.45, z0 + .4);                                             // เสาในห้อง
+  for (const [fx, fz] of [[cx - 1.5, z0 + .15], [cx + 2, z1 - .15]]) { const f = new THREE.Mesh(new THREE.CylinderGeometry(.28, .28, .1, 14), white); f.rotation.x = Math.PI/2; f.position.set(fx, y + 2.5, fz + (fz < cz ? .12 : -.12)); g.add(f); }   // พัดลมติดผนัง
+  // โต๊ะครูหลังห้อง (ผนังตะวันตก): โต๊ะขาวยาว โน้ตบุ๊ก เครื่องพิมพ์ ตู้ลำโพง
+  bx(.7, .05, 2.6, M('#e5e7eb'), x0 + .55, .76, cz); for (const lz of [-1.2, 1.2]) bx(.6, .74, .05, M('#94a3b8'), x0 + .55, .37, cz + lz);
+  bx(.3, .02, .4, black, x0 + .55, .8, cz - .5); bx(.02, .26, .4, black, x0 + .4, .93, cz - .5); bx(.4, .22, .45, black, x0 + .55, .9, cz + .6);
+  bx(.5, .5, .5, black, x0 + .4, 1.5, z1 - .6);
   const st = compStations(), mm = new THREE.Matrix4(), n = st.length;
   const I = (geo, mat, k) => { const o = new THREE.InstancedMesh(geo, mat, k); o.castShadow = true; g.add(o); return o; };
-  const mon = I(new THREE.BoxGeometry(.04, .32, .5), dark, n), scr = I(new THREE.BoxGeometry(.01, .27, .45), screen, n), stand = I(new THREE.BoxGeometry(.06, .16, .06), dark, n);
-  const kb = I(new THREE.BoxGeometry(.14, .02, .42), M('#1f2937'), n), cpu = I(new THREE.BoxGeometry(.42, .4, .18), M('#334155'), n), ch = I(new THREE.BoxGeometry(.4, .05, .42), M('#1d4ed8'), n), back = I(new THREE.BoxGeometry(.05, .45, .42), M('#1d4ed8'), n);
+  const mon = I(new THREE.BoxGeometry(.04, .34, .52), black, n), scr = I(new THREE.BoxGeometry(.01, .29, .47), screen, n), stand = I(new THREE.BoxGeometry(.06, .16, .06), black, n);
+  const kb = I(new THREE.BoxGeometry(.14, .02, .44), black, n), cpu = I(new THREE.BoxGeometry(.42, .4, .18), M('#1f2937'), n), seat = I(new THREE.BoxGeometry(.34, .05, .34), purple, n), sleg = I(new THREE.BoxGeometry(.3, .42, .3), purple, n), kit = I(new THREE.BoxGeometry(.22, .1, .3), M('#e0f2fe'), n);
   st.forEach((q, i) => {
     const dx = q.x + .55;                                                                        // โต๊ะอยู่หน้านักเรียน (ทางตะวันออก)
-    mon.setMatrixAt(i, mm.makeTranslation(dx + .15, y + 1.02, q.z)); scr.setMatrixAt(i, mm.makeTranslation(dx + .125, y + 1.02, q.z));
+    mon.setMatrixAt(i, mm.makeTranslation(dx + .15, y + 1.03, q.z)); scr.setMatrixAt(i, mm.makeTranslation(dx + .125, y + 1.03, q.z));
     stand.setMatrixAt(i, mm.makeTranslation(dx + .17, y + .86, q.z)); kb.setMatrixAt(i, mm.makeTranslation(dx - .1, y + .8, q.z));
     cpu.setMatrixAt(i, mm.makeTranslation(dx + .05, y + .2, q.z + .25));
-    ch.setMatrixAt(i, mm.makeTranslation(q.x - .05, y + .42, q.z)); back.setMatrixAt(i, mm.makeTranslation(q.x - .27, y + .7, q.z));
+    seat.setMatrixAt(i, mm.makeTranslation(q.x - .05, y + .45, q.z)); sleg.setMatrixAt(i, mm.makeTranslation(q.x - .05, y + .21, q.z));   // เก้าอี้พลาสติกม่วง
+    kit.setMatrixAt(i, i % 2 ? mm.makeScale(0, 0, 0) : mm.makeTranslation(dx - .05, y + .84, q.z + .36));   // กล่องชุดหุ่นยนต์ (ทุก 2 ที่)
   });
-  for (const row of new Set(st.map(q => q.x))) for (const s of [-1, 1]) {                       // โต๊ะยาวแถวละ 2 ตัว
+  for (const row of new Set(st.map(q => q.x))) for (const s of [-1, 1]) {                       // โต๊ะไม้ยาวขาเหล็กดำ แถวละ 2 ตัว
     const z = cz + s*2.025, dx = row + .55;
-    bx(.6, .05, 3.4, desk, dx, .76, z);
-    for (const lz of [-1.6, 0, 1.6]) bx(.5, .74, .05, leg, dx, .37, z + lz);
+    bx(.65, .04, 3.4, wood, dx, .77, z);
+    for (const lz of [-1.6, 1.6]) bx(.5, .04, .04, black, dx, .1, z + lz), bx(.04, .74, .04, black, dx - .22, .37, z + lz), bx(.04, .74, .04, black, dx + .22, .37, z + lz);
   }
   g.visible = false; scene.add(g); classFx[COMP] = g;
 }
