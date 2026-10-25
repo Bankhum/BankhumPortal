@@ -363,8 +363,15 @@ const ROOMS = {
   'ห้องน้ำครู': mkRoom('ชั้น 1 ห้องน้ำครูชาย/หญิง', 'Chalerm_Building', 25.6, 35, 22, 25.9, 0),
   'ห้องวิทยาศาสตร์': mkRoom('ชั้น 1 ห้องวิทยาศาสตร์', 'Wooden_Building', 22.2, 32, -43, -22.2, 0), 'ห้องภาษาอังกฤษ': mkRoom('ชั้น 2 ห้องภาษาอังกฤษ', 'Wooden_Building', 22.2, 32, -43, -22.2, F2),
   'ห้องคอมพิวเตอร์': mkRoom('ชั้น 2 ห้องคอมพิวเตอร์', 'Technology_Building', 9.6, 19, -47.6, -40.4, F2),
+  'ห้องเก็บของ อาคารเทคโนโลยี': mkRoom('ชั้น 1 ห้องเก็บของ', 'Technology_Building', 9.6, 19, -47.6, -40.4, 0),
+  // อาคาร ป.1 ป.2 ชั้นเดียว 3 ห้อง เรียงจากฝั่งประตูทางออก (ตะวันตก): ห้องเก็บของ → ป.2 → ป.1 (ครูบอก)
+  'ห้องเก็บของ ป.1 ป.2': mkRoom('ห้องเก็บของ', 'P1P2_Classroom', -47.6, -36.6, -32.8, -25, 0), 'ห้อง ป.2': mkRoom('ห้อง ป.2', 'P1P2_Classroom', -36.6, -25.6, -32.8, -25, 0),
+  'ห้อง ป.1': mkRoom('ห้อง ป.1', 'P1P2_Classroom', -25.6, -14.6, -32.8, -25, 0),
 };
-const HOMEROOM_ROOM = {'ป.3':'ห้อง ป.3','ป.4':'ห้อง ป.4','ป.5':'ห้อง ป.5','ป.6':'ห้อง ป.6'};
+const HOMEROOM_ROOM = {'ป.1':'ห้อง ป.1','ป.2':'ห้อง ป.2','ป.3':'ห้อง ป.3','ป.4':'ห้อง ป.4','ป.5':'ห้อง ป.5','ป.6':'ห้อง ป.6'};
+// ห้องที่กระดานอยู่ผนังด้านตะวันออก (+x) นักเรียนนั่งหันหน้าไปทางตะวันออก (ครูบอก): ห้อง ป.1 ป.2 และห้องคอมพิวเตอร์
+const EAST_ROOMS = new Set(['ห้อง ป.1', 'ห้อง ป.2', 'ห้องคอมพิวเตอร์']);
+const faceOf = r => r.east ? Math.PI/2 : undefined;   // หุ่นหันหน้า +z ที่ yaw 0 → π/2 = หันไปทางตะวันออก
 // บันไดขึ้นชั้น 2 (ในอาคาร): จุดล่าง → จุดบน
 const STAIR = {Chalerm_Building: {bot: [24.9, -12.8], top: [24.9, -7.2]}, Wooden_Building: {bot: [21.2, -15.6], top: [21.2, -21.4]}, Technology_Building: {bot: [8.5, -39.3], top: [14.3, -39.3]}};
 for (const s of Object.values(STAIR)) { s.bot3 = new THREE.Vector3(s.bot[0], 0, s.bot[1]); s.top3 = new THREE.Vector3(s.top[0], F2, s.top[1]); }
@@ -791,7 +798,7 @@ function onModel(g) {
   const tent = root.getObjectByName('Museum_Walk'); if (tent) tent.removeFromParent();
   const solar = root.getObjectByName('Solar_Pergola'); if (solar) solar.removeFromParent();   // ซุ้มหลังคาขาวแผงโซลาร์ที่หัวอาคาร ป.1 ป.2 ไม่มีจริง (ครูให้เอาออก)   // เอาเต็นท์หลังคาโค้งสีน้ำเงินออก (ตามที่ครูขอ)
   buildField(); buildChalerm();
-  buildFarm(); buildRestroom(root); buildMushroom(root); buildFloors(); buildChalermF2(); buildClassFx(); initAgents(root); applyXrayAll();
+  buildFarm(); buildRestroom(root); buildMushroom(root); buildFloors(); buildBridge(); buildChalermF2(); buildClassFx(); buildStoreFx(); initAgents(root); applyXrayAll();
   $('info').onclick = () => document.body.classList.toggle('sheet');
   $('find').onclick = () => openFind($('findp').hidden); $('fx').onclick = () => openFind(false); $('fq').oninput = renderFind;
   addEventListener('keydown', e => { if (e.key === 'Escape' && !$('findp').hidden) openFind(false); });
@@ -952,11 +959,16 @@ function subRect(z, i, n){
   const Z = keyRect(z), long = Z.sx >= Z.sz;
   const w = long ? Z.sx/n : Z.sx, d = long ? Z.sz : Z.sz/n;
   const off = (i + .5)/n - .5;
-  return {cx: Z.c.x + (long ? off*Z.sx : 0), cz: Z.c.z + (long ? 0 : off*Z.sz), w: w*.86, d: d*.8, y: Z.y};
+  return {cx: Z.c.x + (long ? off*Z.sx : 0), cz: Z.c.z + (long ? 0 : off*Z.sz), w: w*.86, d: d*.8, y: Z.y, east: EAST_ROOMS.has(z)};
 }
 const T0 = performance.now();
 function slotOf(r, pose, idx, cnt, ox, oz){
   const t = (performance.now()-T0)/1000;
+  if (pose === 'sit' && r.east) {   // แถวหน้าชิดกระดานผนังตะวันออก
+    const cols = Math.max(1, Math.round(Math.sqrt(cnt * r.d / r.w))), rows = Math.ceil(cnt/cols);
+    const cI = idx % cols, rI = Math.floor(idx / cols);
+    return new THREE.Vector3(r.cx + r.w*.28 - ((rI+.5)/rows)*r.w*.72, r.y, r.cz + ((cI+.5)/cols - .5)*r.d*.9);
+  }
   if (pose === 'sit') {
     const cols = Math.max(1, Math.round(Math.sqrt(cnt * r.w / r.d))), rows = Math.ceil(cnt/cols);
     const cI = idx % cols, rI = Math.floor(idx / cols);
@@ -971,7 +983,7 @@ function slotOf(r, pose, idx, cnt, ox, oz){
   }
   return new THREE.Vector3(r.cx + (ox-.5)*r.w, r.y, r.cz + (oz-.5)*r.d);           // farm
 }
-const teacherFront = (r, pose) => pose === 'sit' ? new THREE.Vector3(r.cx, r.y, r.cz - r.d*.48)
+const teacherFront = (r, pose) => r.east && pose === 'sit' ? new THREE.Vector3(r.cx + r.w*.48, r.y, r.cz) : pose === 'sit' ? new THREE.Vector3(r.cx, r.y, r.cz - r.d*.48)
   : pose === 'run' || pose === 'circle' ? new THREE.Vector3(r.cx, r.y, r.cz) : new THREE.Vector3(r.cx, r.y, r.cz - r.d*.55);
 // ตำแหน่ง + ท่าทาง ณ เวลา m
 // เวลาว่าง: นักเรียนกระจายเล่นหลายที่ ทั้งสนาม ลานกีฬา ระเบียงอาคาร ใต้อาคาร โดมเครื่องเล่น และอาคารเอนกประสงค์
@@ -1087,9 +1099,9 @@ function targetOf(a, m){
     const hrC = a.kind === 's' ? a.cls : (a.ref.name.startsWith('ครูอนุบาล') ? 'อ.' + a.ref.name.slice(-1) : HR_TEACHER[a.ref.name]);
     if (hrC && z === HOMEROOM[hrC]) {
       const key = HOMEROOM_ROOM[hrC] || z, share = CLASSES.filter(([c]) => (HOMEROOM_ROOM[c] || HOMEROOM[c]) === key).map(([c]) => c), r = subRect(key, share.indexOf(hrC), share.length);
-      if (a.kind === 't') return {p: teacherFront(r, 'sit'), pose:'stand', teach: true};
+      if (a.kind === 't') return {p: teacherFront(r, 'sit'), pose:'stand', teach: true, yaw: r.east ? -Math.PI/2 : undefined};
       const cm = a.cohort ??= STUDENTS.filter(s => s.cls === a.cls && s.scan != null);
-      return {p: slotOf(r, 'sit', cm.indexOf(a.ref), cm.length, a.ox, a.oz), pose: ph === 'homeroom' ? 'sit' : 'stand'};
+      return {p: slotOf(r, 'sit', cm.indexOf(a.ref), cm.length, a.ox, a.oz), pose: ph === 'homeroom' ? 'sit' : 'stand', yaw: faceOf(r)};
     }
   }
   if (ph === 'duty' && a.kind === 's' && !isKG(a.cls)) { const w = m*.9 + a.i; return {p: inZone(z, a.ox, a.oz).add(new THREE.Vector3(Math.sin(w)*.8, 0, Math.cos(w)*.8)), pose:'sweep'}; }
@@ -1134,11 +1146,11 @@ function targetOf(a, m){
     if (a.kind === 's') {
       const k = L[a.cls], r = subRect(k.z, k.i, k.n), pose = poseOf(k.z, k.l.sub);
       const mates = a.cohort ??= STUDENTS.filter(s => s.cls === a.cls && s.scan != null);
-      if (k.z === COMP) { const st = compStations(), j = mates.indexOf(a.ref) + k.i*Math.floor(st.length/k.n); if (j < st.length) return {p: st[j].clone(), pose}; }   // นั่งหน้าเครื่องคอมพิวเตอร์
-      return {p: slotOf(r, pose, mates.indexOf(a.ref), mates.length, a.ox, a.oz), pose};
+      if (k.z === COMP) { const st = compStations(), j = mates.indexOf(a.ref) + k.i*Math.floor(st.length/k.n); if (j < st.length) return {p: st[j].clone(), pose, yaw: faceOf(r)}; }   // นั่งหน้าเครื่องคอมพิวเตอร์
+      return {p: slotOf(r, pose, mates.indexOf(a.ref), mates.length, a.ox, a.oz), pose, yaw: pose === 'sit' ? faceOf(r) : undefined};
     }
     const ts = tslot(a.ref.name.slice(3), where), mine = Object.entries(L).find(([c, k]) => 'ครู'+k.l.tea === a.ref.name || ts?.[1] === c || (a.ref.name.startsWith('ครูอนุบาล') && c === 'อ.'+a.ref.name.slice(-1)));
-    if (mine) { const k = mine[1], r = subRect(k.z, k.i, k.n); return {p: teacherFront(r, poseOf(k.z, k.l.sub)), pose:'stand', teach: true}; }
+    if (mine) { const k = mine[1], r = subRect(k.z, k.i, k.n), ps = poseOf(k.z, k.l.sub); return {p: teacherFront(r, ps), pose:'stand', teach: true, yaw: r.east && ps === 'sit' ? -Math.PI/2 : undefined}; }
   }
   if (a.kind === 't' && z === 'Chalerm_Building' && m < a.ref.scan + .4) return {p: new THREE.Vector3(TSCAN_PT[0] + .8 + a.ox*1.2, 0, TSCAN_PT[1] + (a.oz-.5)*2), pose:'stand'};   // ต่อคิวสแกนหน้าในห้องธุรการ
   if (a.kind === 't' && z === 'Chalerm_Building') { const R = ROOMS[a.ref.name === 'ครูกนกวรรณ' ? 'ห้องผู้บริหาร' : 'ห้องธุรการ']; return {p: new THREE.Vector3(R.c.x + (a.ox-.5)*R.sx*.8, 0, R.c.z + (a.oz-.5)*R.sz*.8), pose:'stand'}; }
@@ -1817,7 +1829,8 @@ function moveAgents(dt){
     const s = a.shown ? a.scale : 0;
     dummy.scale.set(s, s*sy, s); dummy.updateMatrix(); setParts(a, dummy.matrix);
     if (a.kind === 's') {
-      dummy.rotation.set(0,0,0); dummy.position.copy(a.pos).add(new THREE.Vector3(0,0,-.55));
+      const fy = arrived && T.yaw != null ? T.yaw : null;   // หันตะวันออก: โต๊ะอยู่ข้างหน้า (+x) ของนักเรียน
+      dummy.rotation.set(0, fy ?? 0, 0); dummy.position.copy(a.pos).add(fy == null ? new THREE.Vector3(0,0,-.55) : new THREE.Vector3(Math.sin(fy)*.55, 0, Math.cos(fy)*.55));
       dummy.scale.setScalar(a.shown && pose === 'sit' ? 1 : 0); dummy.updateMatrix(); desks.setMatrixAt(a.i, dummy.matrix);
     }
   }
@@ -1955,11 +1968,11 @@ let roomView = null; const classFx = {};
 // ห้องพิเศษที่เข้าไปดูได้ (ไม่ใช่ห้องประจำชั้น): ห้องคอมพิวเตอร์
 const COMP = 'ห้องคอมพิวเตอร์', SPECIAL = {[COMP]: 'Technology_Building'};
 const fxB = c => SPECIAL[c] || HOMEROOM[c];
-// ที่นั่งหน้าเครื่องคอม: 4 แถว แถวละ 10 เครื่อง (ซ้าย 5 ขวา 5 ทางเดินกลาง) หันหน้าเข้ากระดาน
+// ที่นั่งหน้าเครื่องคอม: 5 แถว แถวละ 8 เครื่อง (ฝั่งละ 4 ทางเดินกลาง) หันหน้าไปทางตะวันออก เข้ากระดานผนังตะวันออก (ครูบอก)
 function compStations(){
   if (compStations.v) return compStations.v;
-  const R = ROOMS[COMP], z0 = R.c.z - R.sz/2, v = [];
-  for (let row = 0; row < 4; row++) for (let i = 0; i < 10; i++) { const s = i < 5 ? -1 : 1, k = i % 5; v.push(new THREE.Vector3(R.c.x + s*(1 + k*.8), R.y, z0 + 2.75 + row*1.1)); }
+  const R = ROOMS[COMP], x1 = R.c.x + R.sx/2, v = [];
+  for (let row = 0; row < 5; row++) for (let i = 0; i < 8; i++) { const s = i < 4 ? -1 : 1, k = i % 4; v.push(new THREE.Vector3(x1 - 2.75 - row*1.1, R.y, R.c.z + s*(.9 + k*.75))); }
   return compStations.v = v;
 }
 const classRect = c => { if (SPECIAL[c]) return subRect(c, 0, 1); const key = HOMEROOM_ROOM[c] || HOMEROOM[c], share = CLASSES.filter(([k]) => (HOMEROOM_ROOM[k] || HOMEROOM[k]) === key).map(([k]) => k); return subRect(key, share.indexOf(c), share.length); };
@@ -1969,30 +1982,34 @@ function buildClassFx(){
   const wood = M('#92400e'), board = M('#f8fafc'), frame = M('#475569'), floor = M('#e7d8bf'), shelf = M('#a16207'), book = [M('#2563eb'), M('#dc2626'), M('#16a34a'), M('#f59e0b')];
   for (const [c] of CLASSES) {
     if (!keyRect(HOMEROOM_ROOM[c] || HOMEROOM[c])) continue;
-    const r = classRect(c), W = r.w/.86, D = r.d/.8, z0 = r.cz - D/2 + .25, g = new THREE.Group(), y = r.y;
-    const bx = (w, h, d, m, x, yy, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y + yy, z); o.castShadow = true; g.add(o); return o; };
-    bx(W - .3, .03, D - .3, floor, r.cx, .03, r.cz).castShadow = false;                    // พื้นห้อง
+    const r = classRect(c), g = new THREE.Group(), y = r.y;
+    // จัดของในกรอบห้องของตัวเอง: หัวห้อง (กระดาน) อยู่ด้าน -z ของกรอบ · ห้องหันตะวันออกหมุนกรอบ -90° ให้หัวห้องไปอยู่ผนังตะวันออก
+    const rot = r.east ? -Math.PI/2 : 0, co = Math.cos(rot), si = Math.sin(rot), W = (r.east ? r.d/.8 : r.w/.86), D = (r.east ? r.w/.86 : r.d/.8), z0 = -D/2 + .25;
+    const at = (x0, z0_, lx, lz) => [x0 + lx*co + lz*si, z0_ - lx*si + lz*co];
+    const bx = (w, h, d, m, lx, yy, lz) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m), [x, z] = at(r.cx, r.cz, lx, lz); o.position.set(x, y + yy, z); o.rotation.y = rot; o.castShadow = true; g.add(o); return o; };
+    bx(W - .3, .03, D - .3, floor, 0, .03, 0).castShadow = false;                            // พื้นห้อง
     const bw = Math.min(W*.55, 4.2);
-    bx(bw + .16, 1.36, .08, frame, r.cx, 1.55, z0); bx(bw, 1.2, .1, board, r.cx, 1.55, z0 + .02);   // กระดานไวท์บอร์ด
-    bx(bw, .05, .14, frame, r.cx, .93, z0 + .07);                                            // รางปากกา
-    const tx = r.cx + Math.min(W*.32, bw/2 + 1);
+    bx(bw + .16, 1.36, .08, frame, 0, 1.55, z0); bx(bw, 1.2, .1, board, 0, 1.55, z0 + .02);   // กระดานไวท์บอร์ด
+    bx(bw, .05, .14, frame, 0, .93, z0 + .07);                                               // รางปากกา
+    const tx = Math.min(W*.32, bw/2 + 1);
     bx(1.4, .08, .7, wood, tx, .76, z0 + 1.1);                                               // โต๊ะครู
     for (const sx of [-.62, .62]) for (const sz of [-.28, .28]) bx(.06, .72, .06, wood, tx + sx, .36, z0 + 1.1 + sz);
     bx(.45, .06, .45, M('#1e3a8a'), tx, .45, z0 + 1.75); bx(.45, .5, .06, M('#1e3a8a'), tx, .72, z0 + 1.98);   // เก้าอี้ครู
-    const sx = r.cx - W/2 + .35;                                                             // ชั้นวางหนังสือข้างห้อง
-    bx(.35, 1.1, Math.min(D*.4, 2.4), shelf, sx, .55, r.cz + D*.15);
-    for (let i = 0; i < 6; i++) bx(.2, .26, .12, book[i % 4], sx + .05, .2 + (i % 2)*.48 + .12, r.cz + D*.15 - .8 + Math.floor(i/2)*.6);
+    const sx = -W/2 + .35;                                                                   // ชั้นวางหนังสือข้างห้อง
+    bx(.35, 1.1, Math.min(D*.4, 2.4), shelf, sx, .55, D*.15);
+    for (let i = 0; i < 6; i++) bx(.2, .26, .12, book[i % 4], sx + .05, .2 + (i % 2)*.48 + .12, D*.15 - .8 + Math.floor(i/2)*.6);
     // โต๊ะ-เก้าอี้นักเรียนครบทุกที่นั่ง (ตำแหน่งเดียวกับที่นักเรียนนั่ง) ห้องจึงไม่โล่งตอนพัก/เลิกเรียน
-    const n = STUDENTS.filter(s => s.cls === c && s.scan != null).length, mm = new THREE.Matrix4();
+    const n = STUDENTS.filter(s => s.cls === c && s.scan != null).length, mm = new THREE.Matrix4(), qr = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rot), V = new THREE.Vector3(), S = new THREE.Vector3();
+    const put = (m, k, q, lx, yy, lz, sx_ = 1, sy = 1, sz = 1) => { const [x, z] = at(q.x, q.z, lx, lz); m.setMatrixAt(k, mm.compose(V.set(x, y + yy, z), qr, S.set(sx_, sy, sz))); };
     const chal = HOMEROOM[c] === 'Chalerm_Building';   // ชั้น 2 เฉลิมฯ: โต๊ะไม้หน้าน้ำตาลเข้ม เก้าอี้ไม้ (ป.3 เก้าอี้พลาสติกเทา) ตามรูปจริง
     const dk = new THREE.InstancedMesh(new THREE.BoxGeometry(.95, .08, .6).translate(0, .62, 0), M(chal ? '#7a4a2a' : '#b45309'), n * 3), ch = new THREE.InstancedMesh(new THREE.BoxGeometry(.42, .05, .38).translate(0, .4, 0), M(chal ? (c === 'ป.3' ? '#6b7280' : '#9a6a3f') : '#1e40af'), n * 2);
     for (let i = 0; i < n; i++) {
       const q = slotOf(r, 'sit', i, n, .5, .5);
-      dk.setMatrixAt(i*3, mm.makeTranslation(q.x, y, q.z - .55));
-      dk.setMatrixAt(i*3 + 1, mm.makeScale(.07, 7.5, .1).setPosition(q.x - .4, y - 4.35, q.z - .55));   // ขาโต๊ะ (สเกลกล่องเดิมเป็นแท่ง)
-      dk.setMatrixAt(i*3 + 2, mm.makeScale(.07, 7.5, .1).setPosition(q.x + .4, y - 4.35, q.z - .55));
-      ch.setMatrixAt(i*2, mm.makeTranslation(q.x, y, q.z + .05));
-      ch.setMatrixAt(i*2 + 1, mm.makeScale(1, 9, .15).setPosition(q.x, y - 2.95, q.z + .25));   // พนักพิง
+      put(dk, i*3, q, 0, 0, -.55);
+      put(dk, i*3 + 1, q, -.4, -4.35, -.55, .07, 7.5, .1);   // ขาโต๊ะ (สเกลกล่องเดิมเป็นแท่ง)
+      put(dk, i*3 + 2, q, .4, -4.35, -.55, .07, 7.5, .1);
+      put(ch, i*2, q, 0, 0, .05);
+      put(ch, i*2 + 1, q, 0, -2.95, .25, 1, 9, .15);   // พนักพิง
     }
     dk.castShadow = ch.castShadow = true; g.add(dk, ch);
     if (chal) chalermRoomFx(c, g);
@@ -2002,40 +2019,75 @@ function buildClassFx(){
   }
   buildCompFx();
 }
-// ห้องคอมพิวเตอร์ (แบบพื้นฐาน รอปรับตามรูปจริง): กระดาน + จอทีวี, โต๊ะครูพร้อมคอม, โต๊ะคอมยาว 4 แถว 40 เครื่อง, แอร์
+// ห้องคอมพิวเตอร์ (แบบพื้นฐาน รอปรับตามรูปจริง): กระดาน + จอทีวี ผนังตะวันออก, โต๊ะครูพร้อมคอม, โต๊ะคอมยาว 5 แถว 40 เครื่อง, แอร์
 function buildCompFx(){
   const M = c => new THREE.MeshLambertMaterial({color: c}), R = ROOMS[COMP], y = R.y, g = new THREE.Group();
-  const W = R.sx, D = R.sz, cx = R.c.x, cz = R.c.z, z0 = cz - D/2;
+  const W = R.sx, D = R.sz, cx = R.c.x, cz = R.c.z, x1 = cx + W/2;
   const bx = (w, h, d, m, x, yy, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y + yy, z); o.castShadow = true; g.add(o); return o; };
   const desk = M('#e5e7eb'), leg = M('#64748b'), dark = M('#111827'), screen = new THREE.MeshBasicMaterial({color: '#60a5fa'}), frame = M('#475569');
   bx(W - .3, .03, D - .3, M('#cbd5e1'), cx, .03, cz).castShadow = false;                        // พื้นกระเบื้อง
-  bx(3.6, 1.3, .08, frame, cx, 1.55, z0 + .2); bx(3.44, 1.16, .1, M('#f8fafc'), cx, 1.55, z0 + .22);   // ไวท์บอร์ด
-  bx(1.5, .88, .08, dark, cx - 3, 1.7, z0 + .2); bx(1.4, .78, .02, screen, cx - 3, 1.7, z0 + .25);       // จอทีวี
-  bx(1.1, .32, .25, M('#f1f5f9'), cx + 3.2, 2.6, z0 + .2);                                       // แอร์
-  const tx = cx + 3.2, tz = z0 + 1.4;                                                            // โต๊ะครู + คอม
-  bx(1.4, .06, .7, M('#92400e'), tx, .76, tz); bx(1.3, .7, .05, M('#78350f'), tx, .4, tz + .3);
-  bx(.55, .34, .04, dark, tx, 1.0, tz + .15); bx(.5, .29, .01, screen, tx, 1.0, tz + .12);
-  bx(.45, .06, .45, M('#1e3a8a'), tx, .45, tz - .65);
+  bx(.08, 1.3, 3.6, frame, x1 - .2, 1.55, cz); bx(.1, 1.16, 3.44, M('#f8fafc'), x1 - .22, 1.55, cz);   // ไวท์บอร์ด
+  bx(.08, .88, 1.5, dark, x1 - .2, 1.7, cz - 2.7); bx(.02, .78, 1.4, screen, x1 - .25, 1.7, cz - 2.7);   // จอทีวี
+  bx(.25, .32, 1.1, M('#f1f5f9'), x1 - .2, 2.6, cz + 2.7);                                       // แอร์
+  const tx = x1 - 1.3, tz = cz + 2.75;                                                           // โต๊ะครู + คอม (หันหน้าเข้าหานักเรียน)
+  bx(.7, .06, 1.4, M('#92400e'), tx, .76, tz); bx(.05, .7, 1.3, M('#78350f'), tx - .3, .4, tz);
+  bx(.04, .34, .55, dark, tx - .15, 1.0, tz); bx(.01, .29, .5, screen, tx - .12, 1.0, tz);
+  bx(.45, .06, .45, M('#1e3a8a'), tx + .65, .45, tz);
   const st = compStations(), mm = new THREE.Matrix4(), n = st.length;
   const I = (geo, mat, k) => { const o = new THREE.InstancedMesh(geo, mat, k); o.castShadow = true; g.add(o); return o; };
-  const mon = I(new THREE.BoxGeometry(.5, .32, .04), dark, n), scr = I(new THREE.BoxGeometry(.45, .27, .01), screen, n), stand = I(new THREE.BoxGeometry(.06, .16, .06), dark, n);
-  const kb = I(new THREE.BoxGeometry(.42, .02, .14), M('#1f2937'), n), cpu = I(new THREE.BoxGeometry(.18, .4, .42), M('#334155'), n), ch = I(new THREE.BoxGeometry(.42, .05, .4), M('#1d4ed8'), n), back = I(new THREE.BoxGeometry(.42, .45, .05), M('#1d4ed8'), n);
+  const mon = I(new THREE.BoxGeometry(.04, .32, .5), dark, n), scr = I(new THREE.BoxGeometry(.01, .27, .45), screen, n), stand = I(new THREE.BoxGeometry(.06, .16, .06), dark, n);
+  const kb = I(new THREE.BoxGeometry(.14, .02, .42), M('#1f2937'), n), cpu = I(new THREE.BoxGeometry(.42, .4, .18), M('#334155'), n), ch = I(new THREE.BoxGeometry(.4, .05, .42), M('#1d4ed8'), n), back = I(new THREE.BoxGeometry(.05, .45, .42), M('#1d4ed8'), n);
   st.forEach((q, i) => {
-    const dz = q.z - .55;
-    mon.setMatrixAt(i, mm.makeTranslation(q.x, y + 1.02, dz - .15)); scr.setMatrixAt(i, mm.makeTranslation(q.x, y + 1.02, dz - .125));
-    stand.setMatrixAt(i, mm.makeTranslation(q.x, y + .86, dz - .17)); kb.setMatrixAt(i, mm.makeTranslation(q.x, y + .8, dz + .1));
-    cpu.setMatrixAt(i, mm.makeTranslation(q.x + .25, y + .2, dz - .05));
-    ch.setMatrixAt(i, mm.makeTranslation(q.x, y + .42, q.z + .05)); back.setMatrixAt(i, mm.makeTranslation(q.x, y + .7, q.z + .27));
+    const dx = q.x + .55;                                                                        // โต๊ะอยู่หน้านักเรียน (ทางตะวันออก)
+    mon.setMatrixAt(i, mm.makeTranslation(dx + .15, y + 1.02, q.z)); scr.setMatrixAt(i, mm.makeTranslation(dx + .125, y + 1.02, q.z));
+    stand.setMatrixAt(i, mm.makeTranslation(dx + .17, y + .86, q.z)); kb.setMatrixAt(i, mm.makeTranslation(dx - .1, y + .8, q.z));
+    cpu.setMatrixAt(i, mm.makeTranslation(dx + .05, y + .2, q.z + .25));
+    ch.setMatrixAt(i, mm.makeTranslation(q.x - .05, y + .42, q.z)); back.setMatrixAt(i, mm.makeTranslation(q.x - .27, y + .7, q.z));
   });
-  for (const row of new Set(st.map(q => q.z))) for (const s of [-1, 1]) {                       // โต๊ะยาวแถวละ 2 ตัว
-    const x = cx + s*2.6, dz = row - .55;
-    bx(4.1, .05, .6, desk, x, .76, dz);
-    for (const lx of [-1.95, 0, 1.95]) bx(.05, .74, .5, leg, x + lx, .37, dz);
+  for (const row of new Set(st.map(q => q.x))) for (const s of [-1, 1]) {                       // โต๊ะยาวแถวละ 2 ตัว
+    const z = cz + s*2.025, dx = row + .55;
+    bx(.6, .05, 3.4, desk, dx, .76, z);
+    for (const lz of [-1.6, 0, 1.6]) bx(.5, .74, .05, leg, dx, .37, z + lz);
   }
   g.visible = false; scene.add(g); classFx[COMP] = g;
 }
+// ห้องเก็บของ (ครูบอก): อาคาร ป.1 ป.2 ห้องฝั่งประตูทางออก และชั้นล่างอาคารเทคโนโลยี · ชั้นเหล็กวางกล่อง โต๊ะ-เก้าอี้เก่าซ้อน อุปกรณ์กีฬา
+const storeFx = [];
+function buildStoreFx(){
+  const M = c => new THREE.MeshLambertMaterial({color: c}), steel = M('#94a3b8'), boxM = ['#d6a35c', '#c08a4a', '#60a5fa', '#f8fafc', '#16a34a'].map(M), chairM = M('#1e40af'), deskM = M('#b45309'), ballM = M('#f97316');
+  for (const key of ['ห้องเก็บของ ป.1 ป.2', 'ห้องเก็บของ อาคารเทคโนโลยี']) {
+    const R = ROOMS[key], g = new THREE.Group(), y = R.y, x0 = R.c.x - R.sx/2, x1 = R.c.x + R.sx/2, z0 = R.c.z - R.sz/2, z1 = R.c.z + R.sz/2;
+    const bx = (w, h, d, m, x, yy, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y + yy, z); o.castShadow = true; g.add(o); return o; };
+    bx(R.sx - .3, .03, R.sz - .3, M('#d6d3d1'), R.c.x, .03, R.c.z).castShadow = false;
+    let k = 0;
+    for (let x = x0 + 1.2; x < x1 - 1; x += 2.1) {                                              // ชั้นเหล็ก 4 ชั้นชิดผนังด้านหลัง
+      for (const px of [-.9, .9]) for (const pz of [-.25, .25]) bx(.05, 2, .05, steel, x + px, 1, z0 + .55 + pz);
+      for (let l = 0; l < 4; l++) { bx(1.85, .04, .55, steel, x, .15 + l*.55, z0 + .55); for (let i = 0; i < 3; i++) if ((k++ * 7) % 5) bx(.5, .32, .42, boxM[k % 5], x - .6 + i*.6, .33 + l*.55, z0 + .55); }
+    }
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 6; j++) bx(.42, .05, .42, chairM, x0 + 1 + i*.7, .4 + j*.12, z1 - 1);   // เก้าอี้พลาสติกซ้อน
+    for (let i = 0; i < 3; i++) { const dx = R.c.x + 1 + i*1.2; bx(.95, .06, .6, deskM, dx, .66, z1 - 1.2); bx(.95, .06, .6, deskM, dx, 1.36, z1 - 1.2); for (const lx of [-.42, .42]) bx(.05, 1.36, .05, deskM, dx + lx, .68, z1 - 1.2); }   // โต๊ะเก่าซ้อน 2 ชั้น
+    for (let i = 0; i < 5; i++) { const o = new THREE.Mesh(new THREE.SphereGeometry(.12, 10, 8), ballM); o.position.set(x1 - .8 - (i % 3)*.26, y + .12 + (i > 2 ? .2 : 0), z1 - .7 - (i % 2)*.2); g.add(o); }   // ลูกบอล
+    bx(.6, .5, .6, boxM[0], x1 - 1.6, .25, R.c.z); bx(.5, .4, .5, boxM[1], x1 - 1.6, .7, R.c.z);
+    if (R.b === 'P1P2_Classroom') for (const px of [x1, ROOMS['ห้อง ป.2'].c.x + ROOMS['ห้อง ป.2'].sx/2]) bx(.15, 2.6, R.sz, M('#f1f5f9'), px, 1.3, R.c.z);   // ผนังกั้นห้อง
+    g.visible = false; scene.add(g); storeFx.push({b: R.b, g});
+  }
+}
+// สะพานเชื่อมชั้น 2 อาคารเทคโนโลยี ↔ อาคารไม้ (ครูบอก): ทางเดินปูนมีหลังคา ราวกันตก
+function buildBridge(){
+  const M = c => new THREE.MeshLambertMaterial({color: c}), g = new THREE.Group(); g.name = 'SkyBridge'; scene.add(g);
+  const xa = 18.9, xb = 20.6, cz = -41.9, Wd = 2.2, L = xb - xa, cx = (xa + xb)/2;
+  const bx = (w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; g.add(o); return o; };
+  bx(L, .22, Wd, M('#d6d3d1'), cx, F2 - .11, cz);                                               // พื้นสะพาน
+  bx(L, .3, .12, M('#cbd5e1'), cx, F2 - .3, cz - Wd/2); bx(L, .3, .12, M('#cbd5e1'), cx, F2 - .3, cz + Wd/2);   // คานขอบ
+  for (const s of [-1, 1]) { bx(L, .08, .08, M('#475569'), cx, F2 + 1, cz + s*(Wd/2 - .05)); for (let x = xa + .15; x <= xb; x += .3) bx(.04, 1, .04, M('#475569'), x, F2 + .5, cz + s*(Wd/2 - .05)); }   // ราวกันตกเหล็ก
+  for (const s of [-1, 1]) bx(.12, 2.4, .12, M('#64748b'), cx, F2 + 1.2, cz + s*(Wd/2 - .05));
+  const roof = bx(L + .4, .06, Wd + .5, M('#2563eb'), cx, F2 + 2.45, cz); roof.rotation.x = .04;   // หลังคาเมทัลชีต
+  const el = document.createElement('div'); el.className = 'rlab'; el.textContent = 'สะพานเชื่อมชั้น 2 ↔ อาคารไม้'; $('labels').appendChild(el);
+  roomLabs.push({el, R: {b: 'Technology_Building'}, p: new THREE.Vector3(cx, F2 + 3.2, cz)});
+}
 function showClassFx(){
   for (const c in classFx) classFx[c].visible = roomView ? roomView === c : view.zoom >= 2.4 || selected === fxB(c);
+  for (const {b, g} of storeFx) g.visible = roomView ? fxB(roomView) === b : view.zoom >= 2.4 || selected === b;
   const zs = zones[selected]; if (zs) zs.mat.opacity = view.zoom >= 2.4 ? .08 : .36;   // ซูมใกล้: ลดสีไฮไลต์อาคารที่เลือก ให้เห็นของข้างในชัด
   if (ch2Grp) ch2Grp.visible = roomView ? fxB(roomView) === 'Chalerm_Building' : view.zoom >= 2.4 || selected === 'Chalerm_Building';
   if (cutFor !== roomView) cutaway(roomView);
@@ -2638,6 +2690,7 @@ function buildFloors(){
     for (let i = 1; i < 10; i++) { const q = S.bot3.clone().lerp(S.top3, i/10), step = new THREE.Mesh(new THREE.BoxGeometry(1.3, .06, .12), stairM); step.position.copy(q).setY(q.y + .1); step.lookAt(S.top3.clone().setY(q.y + .1)); scene.add(step); }
   }
   for (const [k, R] of Object.entries(ROOMS)) {
+    if (R.y === 0 && R.th === k) continue;   // ห้อง ป.1 ป.2 มีป้าย "ห้อง ป.x" จาก buildClassFx แล้ว
     const el = document.createElement('div'); el.className = 'rlab'; el.textContent = R.th; $('labels').appendChild(el);
     roomLabs.push({el, R, p: R.c.clone().setY(R.y + 2.2)});
   }
