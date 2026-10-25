@@ -229,6 +229,8 @@ canvas{cursor:pointer}
 #vtools button,#tour button,#atm .seg button{border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(8px);border-radius:8px;padding:5px 10px;font:inherit;font-size:12px;color:var(--ink);cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.06)}
 #vtools button.on,#tour button.on,#atm .seg button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
 #vtools .ic{padding:5px 8px}
+#vMusic.wait{animation:mpulse 1.6s ease-in-out infinite}
+@keyframes mpulse{50%{box-shadow:0 0 0 4px rgba(30,86,49,.3)}}
 #tour{position:fixed;left:50%;bottom:calc(var(--barH,112px) + 4px);transform:translateX(-50%);display:flex;gap:4px;padding:4px;border-radius:999px;background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);box-shadow:0 4px 18px rgba(0,0,0,.08);max-width:calc(100vw - 32px);overflow-x:auto;scrollbar-width:none;z-index:5}
 #tour button{border:0;box-shadow:none;background:transparent;border-radius:999px;padding:5px 11px}
 #tour button i{font-style:normal;font-size:10px;opacity:.65;margin-right:4px}
@@ -295,6 +297,7 @@ body.night #hint,body.night #note{color:#cbd5e1}
   <button id="vAtm" title="แสง เงา และบรรยากาศ">☀️<span class="tx"> แสง เงา</span></button>
   <button id="vShot" class="ic" title="บันทึกภาพหน้าจอ" aria-label="บันทึกภาพหน้าจอ">📷</button>
   <button id="vClean" class="ic" title="ซ่อน/แสดงแผงข้อมูล" aria-label="ซ่อนแผงข้อมูล">🙈</button>
+  <button id="vMusic" title="เปิด/ปิดเพลงผ่อนคลาย" aria-label="เปิด/ปิดเพลงผ่อนคลาย" aria-pressed="false">🎵</button>
 </div>
 <div class="panel" id="atm" hidden role="dialog" aria-label="แสง เงา และบรรยากาศ">
   <div class="h">แสง เงา และบรรยากาศ <button id="atmX">ปิด</button></div>
@@ -3275,6 +3278,101 @@ function declutter(){
   }
 }
 frame();
+</script>
+<script>
+/* เพลงผ่อนคลาย: สร้างเสียงสด ๆ ด้วย Web Audio ในเครื่องผู้ชม (ไม่มีไฟล์เสียง ไม่มีลิขสิทธิ์ของใคร)
+   คอร์ดแพดนุ่ม ๆ + โน้ตคล้ายระนาด/คาลิมบาสุ่มบนบันไดเสียงเพนทาโทนิก + เสียงเบสต่ำ วนไปเรื่อย ๆ ไม่ซ้ำ
+   เบราว์เซอร์ไม่ให้เล่นเสียงเอง จึงเริ่มเมื่อผู้ใช้แตะ/คลิก/กดปุ่มครั้งแรก · ปุ่ม 🎵 เปิด/ปิด จำค่าไว้ในเครื่อง */
+(() => {
+  const btn = document.getElementById('vMusic'), KEY = 'bkSimMusic', AC = window.AudioContext || window.webkitAudioContext;
+  if (!btn) return;
+  if (!AC) { btn.hidden = true; return; }
+  let want = true; try { want = localStorage.getItem(KEY) !== 'off'; } catch (e) {}
+  let ctx = null, master = null, timer = 0, next = 0, step = 0, chordI = 0, mel = 7, playing = false;
+  const BEAT = .8, CHORD_BEATS = 12;
+  // D เมเจอร์เพนทาโทนิก (D E F# A B) เป็นเลข MIDI · คอร์ด: D add9, Bm7, G maj7, A sus
+  const PENTA = [62, 64, 66, 69, 71, 74, 76, 78, 81, 83, 86];
+  const CHORDS = [[50, 57, 62, 64, 66], [47, 54, 59, 62, 66], [43, 50, 55, 59, 66], [45, 52, 57, 62, 64]];
+  const hz = m => 440*Math.pow(2, (m - 69)/12);
+
+  function build(){
+    ctx = new AC();
+    master = ctx.createGain(); master.gain.value = 0;
+    const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -18; comp.ratio.value = 3;
+    master.connect(comp); comp.connect(ctx.destination);
+    // ห้องเสียงก้อง: สร้าง impulse response จากเสียงซ่าที่ค่อย ๆ จางหาย
+    const len = Math.floor(ctx.sampleRate*3.2), ir = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random()*2 - 1)*Math.pow(1 - i/len, 3); }
+    const verb = ctx.createConvolver(); verb.buffer = ir;
+    const wet = ctx.createGain(); wet.gain.value = .55; verb.connect(wet); wet.connect(master);
+    const echo = ctx.createDelay(2); echo.delayTime.value = BEAT*.75;
+    const fb = ctx.createGain(); fb.gain.value = .3; const eLp = ctx.createBiquadFilter(); eLp.frequency.value = 2200;
+    echo.connect(eLp); eLp.connect(fb); fb.connect(echo); eLp.connect(verb);
+    ctx._dry = master; ctx._verb = verb; ctx._echo = echo;
+  }
+  function pad(t, notes, dur){
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 700; lp.Q.value = .4;
+    const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.05, t + 3); g.gain.setValueAtTime(.05, t + dur - 1.5); g.gain.linearRampToValueAtTime(0, t + dur + 3);
+    lp.connect(g); g.connect(ctx._dry); g.connect(ctx._verb);
+    for (const n of notes.slice(1)) for (const det of [-6, 6]) {
+      const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = hz(n); o.detune.value = det;
+      o.connect(lp); o.start(t); o.stop(t + dur + 3.2);
+    }
+    const b = ctx.createOscillator(), bg = ctx.createGain(); b.type = 'sine'; b.frequency.value = hz(notes[0] - 12);
+    bg.gain.setValueAtTime(0, t); bg.gain.linearRampToValueAtTime(.09, t + 2); bg.gain.linearRampToValueAtTime(0, t + dur + 1.5);
+    b.connect(bg); bg.connect(ctx._dry); b.start(t); b.stop(t + dur + 1.6);
+  }
+  function pluck(t, m, v){
+    const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + .008); g.gain.exponentialRampToValueAtTime(.0005, t + 2.2);
+    const lp = ctx.createBiquadFilter(); lp.frequency.value = 2600;
+    g.connect(lp); lp.connect(ctx._dry); lp.connect(ctx._verb); lp.connect(ctx._echo);
+    [[1, 1], [4.01, .12], [2, .25]].forEach(([r, a]) => {   // ฮาร์มอนิกแบบเครื่องตีไม้/โลหะเบา ๆ
+      const o = ctx.createOscillator(), og = ctx.createGain(); o.type = 'sine'; o.frequency.value = hz(m)*r; og.gain.value = a;
+      o.connect(og); og.connect(g); o.start(t); o.stop(t + 2.3);
+    });
+  }
+  function tick(){
+    while (next < ctx.currentTime + 1.2) {
+      if (step % CHORD_BEATS === 0) { pad(next, CHORDS[chordI], CHORD_BEATS*BEAT); chordI = (chordI + 1) % CHORDS.length; }
+      const phraseRest = Math.floor(step/16) % 3 === 2;   // ทุก 3 วลี เว้นว่างให้ฟังสบาย ๆ
+      if (!phraseRest && Math.random() < (step % 2 ? .35 : .7)) {
+        mel = Math.max(0, Math.min(PENTA.length - 1, mel + [-2, -1, -1, 0, 1, 1, 2][Math.floor(Math.random()*7)]));
+        pluck(next + (Math.random() - .5)*.03, PENTA[mel], .07 + Math.random()*.04);
+      }
+      next += BEAT/2; step++;
+    }
+  }
+  function ui(){
+    btn.classList.toggle('on', playing); btn.classList.toggle('wait', want && !playing);
+    btn.innerHTML = (want ? '🎵' : '🔇') + '<span class="tx"> ' + (playing ? 'เพลงเปิด' : 'เพลงปิด') + '</span>'; btn.setAttribute('aria-pressed', String(playing));
+    btn.title = playing ? 'ปิดเพลงผ่อนคลาย' : want ? 'แตะที่ใดก็ได้เพื่อเริ่มเพลงผ่อนคลาย' : 'เปิดเพลงผ่อนคลาย';
+  }
+  function start(){
+    if (playing || document.hidden) return;
+    if (!ctx) build();
+    ctx.resume().then(() => {
+      if (!want || playing) return;
+      playing = true; next = Math.max(next, ctx.currentTime + .1);
+      master.gain.cancelScheduledValues(ctx.currentTime); master.gain.setValueAtTime(master.gain.value, ctx.currentTime);
+      master.gain.linearRampToValueAtTime(.5, ctx.currentTime + 4);
+      tick(); timer = setInterval(tick, 250); ui();
+    }).catch(() => {});
+  }
+  function stop(){
+    if (!playing) return; playing = false; clearInterval(timer);
+    const t = ctx.currentTime; master.gain.cancelScheduledValues(t); master.gain.setValueAtTime(master.gain.value, t); master.gain.linearRampToValueAtTime(0, t + .8);
+    setTimeout(() => { if (!playing) ctx.suspend(); }, 900); ui();
+  }
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    want = !(want && playing); try { localStorage.setItem(KEY, want ? 'on' : 'off'); } catch (er) {}
+    want ? start() : stop(); ui();
+  });
+  const first = () => { if (want) start(); };
+  ['pointerdown', 'keydown', 'touchend'].forEach(ev => addEventListener(ev, first, {capture: true, passive: true}));
+  document.addEventListener('visibilitychange', () => { document.hidden ? stop() : first(); });
+  ui();
+})();
 </script>
 </body>
 </html>
