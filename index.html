@@ -1969,13 +1969,13 @@ let roomView = null; const classFx = {};
 // ห้องพิเศษที่เข้าไปดูได้ (ไม่ใช่ห้องประจำชั้น): ห้องคอมพิวเตอร์
 const COMP = 'ห้องคอมพิวเตอร์', SPECIAL = {[COMP]: 'Technology_Building'};
 const fxB = c => SPECIAL[c] || HOMEROOM[c];
-// ที่นั่งหน้าเครื่องคอม ตามรูปจริง: โต๊ะไม้ยาว 2 เกาะวางตามแนวตะวันออก-ตะวันตก (ชี้ไปทางผนังทีวี) จอหันหลังชนกันกลางโต๊ะ
-// นักเรียนนั่งสองฝั่งหันหน้าเข้าหากันข้ามโต๊ะ ฝั่งละ 8 เครื่อง รวม 32 · ทางเดินคั่นกลางระหว่างเกาะ · หน้าห้องเว้นที่วางสนามหุ่นยนต์
+// ที่นั่งหน้าเครื่องคอม ตามรูปกล้องวงจรปิด: โต๊ะไม้ยาวคู่ 2 แนว ชิดผนังเหนือ/ใต้ ชี้ไปทางผนังทีวี จอหันหลังชนกันกลางโต๊ะ
+// นักเรียนนั่งสองฝั่งหันหน้าเข้าหากันข้ามโต๊ะ (ฝั่งทางเดินหันเข้าผนัง ฝั่งผนังหันเข้ากลางห้อง) ฝั่งละ 8 เครื่อง รวม 32 · กลางห้องทางเดินโล่งมีเสา · หน้าห้องโล่ง
 // แต่ละที่: ตำแหน่งนั่ง + .side (-1 ฝั่งเหนือ หันใต้ / +1 ฝั่งใต้ หันเหนือ) + .zc (แนวกลางโต๊ะ) + .yaw
 function compStations(){
   if (compStations.v) return compStations.v;
   const R = ROOMS[COMP], x0 = R.c.x - R.sx/2, v = [];
-  for (const zc of [R.c.z - 1.75, R.c.z + 1.75]) for (const side of [-1, 1]) for (let k = 0; k < 8; k++) {
+  for (const zc of [R.c.z - 2.15, R.c.z + 2.15]) for (const side of [-1, 1]) for (let k = 0; k < 8; k++) {
     const q = new THREE.Vector3(x0 + 1.65 + k*.65, R.y, zc + side*.95); q.side = side; q.zc = zc; q.yaw = side < 0 ? 0 : Math.PI; v.push(q);
   }
   return compStations.v = v;
@@ -2049,22 +2049,28 @@ function buildCompFx(){
     for (const [dx, dz] of [[-.5, -.6], [.4, .5], [-.1, .55], [.55, -.3]]) { const o = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, .14, 8), can); o.position.set(x1 - 1.6 + dx, y + .12, mz + dz); g.add(o); }
     bx(.18, .1, .14, bot, x1 - 2.3, .1, mz + .2); bx(.1, .02, .1, M('#16a34a'), x1 - 2.3, .16, mz + .2);   // หุ่นยนต์ micro:bit
   }
-  bx(.35, 2.9, .35, white, cx - .6, 1.45, z0 + .4);                                             // เสาในห้อง
-  for (const [fx, fz] of [[cx - 1.5, z0 + .15], [cx + 2, z1 - .15]]) { const f = new THREE.Mesh(new THREE.CylinderGeometry(.28, .28, .1, 14), white); f.rotation.x = Math.PI/2; f.position.set(fx, y + 2.5, fz + (fz < cz ? .12 : -.12)); g.add(f); }   // พัดลมติดผนัง
-  // โต๊ะครูหลังห้อง (ผนังตะวันตก): โต๊ะขาวยาว โน้ตบุ๊ก เครื่องพิมพ์ ตู้ลำโพง
-  bx(.7, .05, 2.6, M('#e5e7eb'), x0 + .55, .76, cz); for (const lz of [-1.2, 1.2]) bx(.6, .74, .05, M('#94a3b8'), x0 + .55, .37, cz + lz);
-  bx(.3, .02, .4, black, x0 + .55, .8, cz - .5); bx(.02, .26, .4, black, x0 + .4, .93, cz - .5); bx(.4, .22, .45, black, x0 + .55, .9, cz + .6);
-  bx(.5, .5, .5, black, x0 + .4, 1.5, z1 - .6);
+  bx(.35, 1.2, .35, teal, cx - 2.2, .6, cz); bx(.35, 1.7, .35, white, cx - 2.2, 2.05, cz);       // เสากลางห้อง (ล่างเขียว บนขาว)
+  for (const ax of [cx - 2.6, cx + 1.4]) bx(1.0, .3, .22, white, ax, 2.55, z0 + .16);              // แอร์ 2 ตัวผนังเหนือ
+  for (const wx of [cx + .4, cx + 2.6]) { bx(1.3, 1.1, .04, M('#cbd5e1'), wx, 1.85, z1 - .09); bx(1.2, 1.0, .02, M('#e0f2fe'), wx, 1.85, z1 - .12); }   // หน้าต่างผนังใต้
+  for (let i = 0; i < 4; i++) bx(.45, .2, .45, purple, x1 - .45, .3 + i*.2, z0 + .45);           // เก้าอี้ม่วงซ้อนมุมหน้าห้อง
+  bx(.05, 2.1, .9, M('#cbd5e1'), x0 + .06, 1.05, z1 - .9); bx(.02, 1.95, .75, M('#bae6fd'), x0 + .09, 1.05, z1 - .9);   // ประตูกระจกออกระเบียง
+  for (const [fx, fz] of [[cx - 3.6, z0 + .15], [cx - .4, z0 + .15], [cx - 1, z1 - .15], [cx + 3.6, z1 - .15]]) { const f = new THREE.Mesh(new THREE.CylinderGeometry(.28, .28, .1, 14), white); f.rotation.x = Math.PI/2; f.position.set(fx, y + 2.5, fz + (fz < cz ? .12 : -.12)); g.add(f); }   // พัดลมติดผนัง
+  // โต๊ะครูหลังห้อง (ผนังตะวันตก มุมเหนือ) จอคอม เครื่องพิมพ์ เก้าอี้ดำ · ประตูกระจกออกระเบียงฝั่งใต้
+  const tz = z0 + 1.5;                                                                           // มุมตะวันตกเฉียงเหนือ (ตามรูปกล้อง)
+  bx(.7, .05, 2.2, M('#e5e7eb'), x0 + .5, .76, tz); for (const lz of [-1, 1]) bx(.6, .74, .05, M('#94a3b8'), x0 + .5, .37, tz + lz);
+  bx(.04, .36, .55, black, x0 + .3, 1.0, tz - .4); bx(.4, .22, .45, black, x0 + .5, .9, tz + .55); bx(.08, .25, .08, M('#dc2626'), x0 + .3, .9, tz - .9);   // จอ เครื่องพิมพ์ กระป๋องสเปรย์
+  bx(.45, .06, .45, black, x0 + 1.15, .48, tz - .4); bx(.06, .5, .45, black, x0 + 1.4, .78, tz - .4);   // เก้าอี้ครูสีดำ
   const st = compStations(), mm = new THREE.Matrix4(), n = st.length;
   const I = (geo, mat, k) => { const o = new THREE.InstancedMesh(geo, mat, k); o.castShadow = true; g.add(o); return o; };
   const mon = I(new THREE.BoxGeometry(.04, .34, .52), black, n), scr = I(new THREE.BoxGeometry(.01, .29, .47), screen, n), stand = I(new THREE.BoxGeometry(.06, .16, .06), black, n);
-  const kb = I(new THREE.BoxGeometry(.14, .02, .44), black, n), cpu = I(new THREE.BoxGeometry(.42, .4, .18), M('#1f2937'), n), seat = I(new THREE.BoxGeometry(.34, .05, .34), purple, n), sleg = I(new THREE.BoxGeometry(.3, .42, .3), purple, n), kit = I(new THREE.BoxGeometry(.22, .1, .3), M('#e0f2fe'), n);
+  const kb = I(new THREE.BoxGeometry(.14, .02, .44), black, n), cpu = I(new THREE.BoxGeometry(.42, .4, .18), M('#1f2937'), n), seat = I(new THREE.BoxGeometry(.34, .05, .34), purple, n), sleg = I(new THREE.BoxGeometry(.3, .42, .3), purple, n), kit = I(new THREE.BoxGeometry(.22, .1, .3), M('#e0f2fe'), n), cam = I(new THREE.BoxGeometry(.08, .06, .06), black, n);
   st.forEach((q, i) => {
     const s = q.side, ry = mm.makeRotationY(Math.PI/2).clone(), at = (dz, yy, dx = 0) => mm.makeTranslation(q.x + dx, y + yy, q.zc + dz);   // dz วัดจากแนวกลางโต๊ะ
     mon.setMatrixAt(i, at(s*.12, 1.03).multiply(ry)); scr.setMatrixAt(i, at(s*.145, 1.03).multiply(ry));   // จอหันออกหาคนนั่ง หลังจอชนกันกลางโต๊ะ
     stand.setMatrixAt(i, at(s*.1, .86)); kb.setMatrixAt(i, at(s*.45, .8).multiply(ry));
     cpu.setMatrixAt(i, at(s*.35, .2, .2).multiply(ry));
     seat.setMatrixAt(i, mm.makeTranslation(q.x, y + .45, q.z)); sleg.setMatrixAt(i, mm.makeTranslation(q.x, y + .21, q.z));   // เก้าอี้พลาสติกม่วง
+    cam.setMatrixAt(i, at(s*.12, 1.24));                                                        // กล้องเว็บแคมบนจอ
     kit.setMatrixAt(i, i % 3 ? mm.makeScale(0, 0, 0) : at(s*.45, .84, .28).multiply(ry));   // กล่องชุดหุ่นยนต์ (บางที่)
   });
   const xs = st.map(q => q.x), xa = Math.min(...xs) - .45, xb = Math.max(...xs) + .45;
