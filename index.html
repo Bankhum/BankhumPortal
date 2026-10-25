@@ -3426,21 +3426,34 @@ frame();
     btn.innerHTML = (want ? '🎵' : '🔇') + '<span class="tx"> ' + (playing ? 'เพลงเปิด' : 'เพลงปิด') + '</span>'; btn.setAttribute('aria-pressed', String(playing));
     btn.title = playing ? 'ปิดเพลง' : want ? 'แตะที่ใดก็ได้เพื่อเริ่มเพลง' : 'เปิดเพลง';
   }
+  let unlockEl = null;
+  function unlockIOS(){   // iPhone/iPad: Web Audio เงียบเมื่อเปิดสวิตช์ปิดเสียง จึงบอกเบราว์เซอร์ว่าเป็นการเล่นเพลง + เล่นเสียงเงียบผ่าน <audio> หนึ่งครั้ง
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+    if (unlockEl) return;
+    const n = 4410, buf = new ArrayBuffer(44 + n*2), v = new DataView(buf), w = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+    w(0, 'RIFF'); v.setUint32(4, 36 + n*2, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, 44100, true); v.setUint32(28, 88200, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n*2, true);
+    unlockEl = new Audio(URL.createObjectURL(new Blob([buf], {type: 'audio/wav'}))); unlockEl.loop = true; unlockEl.setAttribute('playsinline', '');
+    unlockEl.play().catch(() => { unlockEl = null; });
+  }
   function start(){
-    if (playing || document.hidden) return;
+    if (document.hidden) return;
+    if (unlockEl && unlockEl.paused) unlockEl.play().catch(() => {});
+    if (playing) { if (ctx.state !== 'running') ctx.resume().catch(() => {}); return; }   // iOS ขัดจังหวะ (มีสายเข้า ฯลฯ) แตะอีกครั้งเล่นต่อ
     if (!ctx) build();
+    unlockIOS();
     ctx.resume().then(() => {
       if (!want || playing) return;
       playing = true; next = Math.max(next, ctx.currentTime + .1); step = step - step % 64;
       master.gain.cancelScheduledValues(ctx.currentTime); master.gain.setValueAtTime(master.gain.value, ctx.currentTime);
-      master.gain.linearRampToValueAtTime(.5, ctx.currentTime + 2);
+      master.gain.linearRampToValueAtTime(1, ctx.currentTime + 2);
       tick(); timer = setInterval(tick, 150); ui();
     }).catch(() => {});
   }
   function stop(){
     if (!playing) return; playing = false; clearInterval(timer);
     const t = ctx.currentTime; master.gain.cancelScheduledValues(t); master.gain.setValueAtTime(master.gain.value, t); master.gain.linearRampToValueAtTime(0, t + .6);
-    setTimeout(() => { if (!playing) ctx.suspend(); }, 700); ui();
+    setTimeout(() => { if (!playing) { ctx.suspend(); if (unlockEl) unlockEl.pause(); } }, 700); ui();
   }
   btn.addEventListener('click', e => {
     e.stopPropagation();
@@ -3448,7 +3461,7 @@ frame();
     want ? start() : stop(); ui();
   });
   const first = () => { if (want) start(); };
-  ['pointerdown', 'keydown', 'touchend'].forEach(ev => addEventListener(ev, first, {capture: true, passive: true}));
+  ['pointerdown', 'pointerup', 'touchstart', 'touchend', 'click', 'keydown'].forEach(ev => addEventListener(ev, first, {capture: true, passive: true}));
   document.addEventListener('visibilitychange', () => { document.hidden ? stop() : first(); });
   ui();
 })();
