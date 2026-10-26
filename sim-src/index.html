@@ -930,7 +930,7 @@ function placeOfAgent(a, m){
     if (a.kind === 't') return ['Chalerm_Building','ห้องธุรการ เตรียมการสอน'];
     if (m < r.scan + 4) return [HOMEROOM[a.cls], 'เอากระเป๋าไปเก็บที่ห้อง'];
     if (isKG(a.cls)) return ['PLAY','วิ่งเล่นสนามเด็กเล่น'];
-    return (r.no + a.cls.length) % 5 < 2 ? ['Canteen','ซื้อขนมที่โรงอาหาร'] : ['FREE','เล่นตามอัธยาศัย'];
+    return (r.no + a.cls.length) % 5 < 2 ? ['Canteen','ซื้อขนมที่โรงอาหาร'] : ['FREE', playOf(a).th];
   }
   if (where === 'duty') {
     if (a.kind === 't') { if (r.name.startsWith('ครูอนุบาล')) return ['Kindergarten','ดูแลเด็กอนุบาล']; const g = COLOR_GROUPS[r.no % 4]; return [g[2], `ดูแลเวรกลุ่มสี${g[0]}`]; }
@@ -944,7 +944,7 @@ function placeOfAgent(a, m){
   if (where === 'lunch') {
     if (a.kind === 't') return m < 715 ? ['Canteen','กินข้าวกลางวัน'] : ['Chalerm_Building','ห้องธุรการ'];
     const L = lunchAt(a.cls, m); if (!L) return placeOfAgent(a, 679.9);
-    return [L[0], L[1]];
+    return [L[0], L[0] === 'FREE' ? playOf(a).th : L[1]];
   }
   if (where === 'homeroom' && a.kind === 's' && m < 516 && EXIT_ROUTE[HOMEROOM[a.cls]] && placeOfAgent(a, 499.9)[0] === 'Flagpole' && exitWalk(a, m)?.file) return [HOMEROOM[a.cls], 'เลิกแถว เดินแถวเรียงหนึ่งกลับห้อง (ไม่ลัดสนาม)'];
   if (where == null) return ['GATE',''];
@@ -1003,12 +1003,66 @@ function slotOf(r, pose, idx, cnt, ox, oz){
 const teacherFront = (r, pose) => r.east && pose === 'sit' ? new THREE.Vector3(r.cx + r.w*.48, r.y, r.cz) : pose === 'sit' ? new THREE.Vector3(r.cx, r.y, r.cz - r.d*.48)
   : pose === 'run' || pose === 'circle' ? new THREE.Vector3(r.cx, r.y, r.cz) : new THREE.Vector3(r.cx, r.y, r.cz - r.d*.55);
 // ตำแหน่ง + ท่าทาง ณ เวลา m
-// เวลาว่าง: นักเรียนกระจายเล่นหลายที่ ทั้งสนาม ลานกีฬา ระเบียงอาคาร ใต้อาคาร โดมเครื่องเล่น และอาคารเอนกประสงค์
-const PLAY_SPOTS = [[-34.4,7.5,13,13,'run','สนามฟุตบอล'],[-8,4,6,7,'run','ลานกีฬา'],[-30,-22.6,13,.5,'circle','ระเบียงอาคาร ป.1 ป.2'],
-  [24.6,6,.7,14,'circle','ใต้อาคารเฉลิมพระเกียรติ'],[21.2,-29,.6,10,'circle','ระเบียงอาคารไม้'],[17,32,5,8,'run','อาคารเอนกประสงค์'],[-47.4,14.5,3.5,6.5,'run','สนามเด็กเล่นมีหลังคา']];
+// เวลาว่าง (ก่อนเข้าแถว / พักเที่ยง): นักเรียนส่วนใหญ่เล่นหน้าห้องเรียนของตัวเอง (ตามที่ครูบอก) กลางสนามมีแค่กลุ่มเตะฟุตบอล
+// บางกลุ่มตีวอลเลย์บอลที่ลานเสาธง เล่นเปตองที่ลานเปตอง ป.1–2 บางคนเล่นโดมสนามเด็กเล่น บางคนนั่งเล่นอาคารเอนกประสงค์
+const PETANQUE = {x: -13, z: 19.5};   // ลานเปตอง 2 ลู่ ลู่ยาวตามแนว x (ดู buildDecor)
+const PLAY_TH = {front: 'เล่นหน้าห้องเรียน', below: 'เล่นหน้าอาคารเฉลิมพระเกียรติ', football: 'เตะฟุตบอลที่สนาม', volley: 'ตีวอลเลย์บอลที่ลานเสาธง',
+  petanque: 'เล่นเปตอง', dome: 'เล่นโดมสนามเด็กเล่น', hall: 'นั่งเล่นอาคารเอนกประสงค์'};
+function playOf(a){
+  if (a.play) return a.play;
+  const g = playGroupRaw(a), same = AGENTS.filter(b => b.kind === 's' && !isKG(b.cls) && playGroupRaw(b) === g);
+  return a.play = {g, th: PLAY_TH[g], k: same.indexOf(a), n: same.length};
+}
+// กลุ่มเล่นของแต่ละคน (คงที่ทุกวัน): ฟุตบอล ป.3–6 ชาย, วอลเลย์ ป.4–6, เปตอง ป.5–6, โดม ป.1–2
+function playGroupRaw(a){
+  const s = a.ref, ci = CLASSES.findIndex(([c]) => c === a.cls), h = (a.i*37 + s.no*11 + ci*7) % 100, boy = !isGirl(s);
+  if (ci >= 4 && boy && h < 24) return 'football';
+  if (ci >= 5 && !boy && h < 30) return 'volley';
+  if (ci >= 5 && boy && h >= 90) return 'volley';
+  if (ci >= 6 && h >= 80 && h < 90) return 'petanque';
+  if (ci <= 3 && h < 22) return 'dome';
+  if (h >= 94) return 'hall';
+  if (ci >= 4 && h % 3 === 0) return 'below';
+  return 'front';
+}
+// ลูกฟุตบอลวิ่งไปมาระหว่างประตูสองฝั่ง ผู้เล่นวิ่งตามลูก
+const ballAt = m => { const {x0, x1, z0, z1} = FIELD, cx = (x0 + x1)/2, cz = (z0 + z1)/2;
+  return [cx + 11*Math.sin(m*.21) + 3*Math.sin(m*.67 + 1), cz + 6*Math.sin(m*.29 + 2) + 2*Math.sin(m*.9)]; };
+// ลูกวอลเลย์ข้ามเน็ตไปมา: [x, y, z]
+function vballAt(m){
+  const s = m*1.4, k = Math.floor(s), f = s - k, side = k % 2 ? 1 : -1, xr = j => VBALL.x + ((j*53) % 7 - 3)*.9;
+  const za = VBALL.z + side*4.5, zb = VBALL.z - side*4.5, xa = xr(k), xb = xr(k + 1);
+  return [xa + (xb - xa)*f, 2 + 3.2*Math.sin(Math.PI*f), za + (zb - za)*f];
+}
+// ลูกเปตองกลิ้งจากฝั่งตะวันออกไปหาลูกเป้า
+function boulesAt(m){ const s = m*.8, k = Math.floor(s), f = Math.min(1, (s - k)*1.6), lane = k % 2 ? 1.6 : -1.6;
+  return [PETANQUE.x + 3.2 - 5.6*Math.sin(f*Math.PI/2), .09 + Math.max(0, Math.sin(f*Math.PI*2.2))*.5*(1 - f), PETANQUE.z + lane + (k % 3 - 1)*.25]; }
 function freePlay(a, m){
-  const sp = PLAY_SPOTS[(a.i * 5 + (a.ref.no || 0)) % PLAY_SPOTS.length], w = m*1.3 + a.i*1.7, r = sp[4] === 'run' ? 2.2 : .4;
-  return {p: new THREE.Vector3(sp[0] + (a.ox-.5)*2*sp[2] + Math.sin(w)*r, 0, sp[1] + (a.oz-.5)*2*sp[3] + Math.cos(w*.9)*r), pose: sp[4]};
+  const P = playOf(a), w = m*1.3 + a.i*1.7, jit = (r) => [Math.sin(w)*r, Math.cos(w*.9)*r];
+  if (P.g === 'football') {
+    const {x0, x1, z0, z1} = FIELD, cx = (x0 + x1)/2, cz = (z0 + z1)/2, team = P.k % 2 ? 1 : -1, j = P.k >> 1;
+    if (j === 0) { const [, bz] = ballAt(m); return {p: new THREE.Vector3(cx - team*(x1 - x0 - 4)/2, 0, Math.max(cz - 2.2, Math.min(cz + 2.2, bz))), pose: 'stand', yaw: team*Math.PI/2}; }   // ผู้รักษาประตู
+    const [bx, bz] = ballAt(m - .05*j), ang = j*1.9 + (team > 0 ? 1 : 0), R = 1.5 + (j % 4)*1.8;
+    const x = Math.max(x0 + 1.5, Math.min(x1 - 1.5, bx + Math.cos(ang)*R - team*1.2)), z = Math.max(z0 + 1.5, Math.min(z1 - 1.5, bz + Math.sin(ang)*R));
+    return {p: new THREE.Vector3(x, 0, z), pose: 'run', ball: 'foot'};
+  }
+  if (P.g === 'volley') {
+    const side = P.k % 2 ? 1 : -1, j = (P.k >> 1) % 9, row = [1.6, 4.2, 6.8][Math.floor(j/3)], [dx, dz] = jit(.25);
+    return {p: new THREE.Vector3(VBALL.x + ((j % 3) - 1)*2.8 + dx, 0, VBALL.z + side*row + dz), pose: 'circle', yaw: side > 0 ? Math.PI : 0, ball: 'volley'};
+  }
+  if (P.g === 'petanque') {
+    const lane = P.k % 2 ? 1.6 : -1.6, j = P.k >> 1;
+    return {p: new THREE.Vector3(PETANQUE.x + 4.4 + (j % 2)*.6, 0, PETANQUE.z + lane + ((j >> 1) - .5)*.8), pose: j === 0 ? 'brush' : 'stand', yaw: -Math.PI/2, ball: 'boule'};
+  }
+  if (P.g === 'dome') { const [dx, dz] = jit(1.2); return {p: new THREE.Vector3(PLAY_C[0] + (a.ox-.5)*6 + dx, 0, PLAY_C[1] + (a.oz-.5)*12 + dz), pose: 'run'}; }
+  if (P.g === 'hall') { const [dx, dz] = jit(.4); return {p: new THREE.Vector3(17 + (a.ox-.5)*8 + dx, 0, 32 + (a.oz-.5)*10 + dz), pose: 'circle'}; }
+  const R = ROOMS[HOMEROOM_ROOM[a.cls]], z = R.c.z + (a.oz - .5)*(R.sz - 1.4), [dx, dz] = jit(.35);
+  if (R.y > 1.8) {   // ระเบียงชั้น 2 หน้าห้องตัวเอง
+    if (P.g === 'below') return {p: new THREE.Vector3(21.6 + a.ox*2.6 + dx*.5, 0, z + dz), pose: a.i % 3 ? 'circle' : 'run'};
+    return {p: new THREE.Vector3(CH2.cor - .6 + a.ox*1.2, F2, z + dz*.6), pose: a.i % 4 ? 'circle' : 'stand'};
+  }
+  // อาคาร ป.1 ป.2: ระเบียงและลานหน้าห้อง (ก่อนถึงถนน)
+  return {p: new THREE.Vector3(R.c.x + (a.ox - .5)*(R.sx - 1.2) + dx, 0, -23.9 + a.oz*1.6 + dz*.4), pose: a.i % 3 ? 'circle' : 'run'};
 }
 // สนามเด็กเล่นมีหลังคา: หมุนหลังคาโค้งเป็นแนวขวาง (ตามที่ครูขอ) ไม่ให้ทับถนน
 const PLAY_C = [-57.5, 12.2];   // โดมสนามเด็กเล่นชิดรั้วด้านหน้า (ตามที่ครูชี้) เพื่อขยายสนามฟุตบอล
@@ -1875,9 +1929,10 @@ function moveAgents(dt){
   const duty = phaseAt(simMin)[2] === 'duty'; if (uniDay !== day || uniDuty !== duty) { uniDuty = duty; applyUniforms(); }
   const t = performance.now()/1000;
   if (!desks) { desks = new THREE.InstancedMesh(new THREE.BoxGeometry(.95,.08,.6).translate(0,.62,0), new THREE.MeshLambertMaterial({color:'#b45309'}), STUDENTS.length); desks.castShadow = true; scene.add(desks); }
-  const cars = carsNow();
+  const cars = carsNow(), inPlay = {};
   for (const a of AGENTS) {
     const T = targetOf(a, simMin), tgt = T && T.p;
+    if (T && T.ball && a.pos.distanceTo(tgt) < 3) inPlay[T.ball] = (inPlay[T.ball] || 0) + 1;
     if (!tgt) { a.shown = false; }
     else {
       if (!a.shown) { a.shown = true; a.pos.copy(spawnOf(a)); }
@@ -1912,6 +1967,16 @@ function moveAgents(dt){
     }
   }
   for (const k in PARTS) PARTS[k].instanceMatrix.needsUpdate = true; desks.instanceMatrix.needsUpdate = true;
+  playBalls(inPlay);
+}
+// ลูกบอลของกลุ่มที่กำลังเล่น (ฟุตบอล วอลเลย์บอล เปตอง) แสดงเมื่อมีผู้เล่นอยู่ในสนามอย่างน้อย 2 คน
+let balls = null;
+function playBalls(n){
+  if (!balls) { const mk = (r, c, opt = {}) => { const o = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 10), new THREE.MeshStandardMaterial({color: c, roughness: .6, ...opt})); o.castShadow = true; o.visible = false; scene.add(o); return o; };
+    balls = {foot: mk(.14, '#f8fafc'), volley: mk(.12, '#facc15'), boule: mk(.09, '#cbd5e1', {metalness: .8, roughness: .3})}; }
+  const [fx, fz] = ballAt(simMin); balls.foot.position.set(fx, .19, fz);
+  balls.volley.position.set(...vballAt(simMin)); balls.boule.position.set(...boulesAt(simMin));
+  for (const k in balls) balls[k].visible = (n[k] || 0) >= 2;
 }
 
 /* ---------- คลิกดูอาคาร ---------- */
