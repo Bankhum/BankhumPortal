@@ -374,9 +374,9 @@ const ROOMS = {
   // ชั้น 2 เรียงจากฝั่งบันได (หัวอาคารด้านอาคารไม้) ตามป้ายหน้าห้องในรูปจริง: ป.5 → ป.6 → ป.4 → ป.3 (ครูบอก ป.3 ป.4 ป.6 ป.5 นับจากปลายอีกด้าน)
   'ห้อง ป.5': mkRoom('ชั้น 2 ห้อง ป.5', 'Chalerm_Building', 25.6, 35, -6.5, 1.6, F2), 'ห้อง ป.6': mkRoom('ชั้น 2 ห้อง ป.6', 'Chalerm_Building', 25.6, 35, 1.6, 9.7, F2),
   'ห้อง ป.4': mkRoom('ชั้น 2 ห้อง ป.4', 'Chalerm_Building', 25.6, 35, 9.7, 17.8, F2), 'ห้อง ป.3': mkRoom('ชั้น 2 ห้อง ป.3', 'Chalerm_Building', 25.6, 35, 17.8, 25.9, F2),
-  // ชั้น 1 จากฝั่งบันได/จุดสแกนหน้า: ห้องธุรการ → ห้องผู้บริหาร → ห้องประชุม ต่อกับ Bankhum Studio เป็นห้องยาวกั้นด้วยเสาไม้ (ครูบอก + รูปจริง)
-  'ห้องธุรการ': mkRoom('ชั้น 1 ห้องธุรการ', 'Chalerm_Building', 25.6, 35, -6.5, 4, 0), 'ห้องผู้บริหาร': mkRoom('ชั้น 1 ห้องผู้บริหาร', 'Chalerm_Building', 25.6, 35, 4, 11, 0),
-  'ห้องประชุม': mkRoom('ชั้น 1 ห้องประชุม', 'Chalerm_Building', 25.6, 35, 11, 19.5, 0), 'Bankhum Studio': mkRoom('ชั้น 1 Bankhum Studio', 'Chalerm_Building', 25.6, 35, 19.5, 25.9, 0),
+  // ชั้น 1 จากฝั่งบันได/จุดสแกนหน้า: ห้องผู้บริหาร → ห้องธุรการ → Bankhum Studio (ห้องเล็ก) → ห้องประชุม (ใหญ่สุด ถึงปลายอาคาร) · Studio ต่อกับห้องประชุม กั้นด้วยเสาไม้ (ครูบอก + รูปจริง)
+  'ห้องผู้บริหาร': mkRoom('ชั้น 1 ห้องผู้บริหาร', 'Chalerm_Building', 25.6, 35, -6.5, -1.5, 0), 'ห้องธุรการ': mkRoom('ชั้น 1 ห้องธุรการ', 'Chalerm_Building', 25.6, 35, -1.5, 5.5, 0),
+  'Bankhum Studio': mkRoom('ชั้น 1 Bankhum Studio', 'Chalerm_Building', 25.6, 35, 5.5, 12, 0), 'ห้องประชุม': mkRoom('ชั้น 1 ห้องประชุม', 'Chalerm_Building', 25.6, 35, 12, 25.9, 0),
   'ห้องวิทยาศาสตร์': mkRoom('ชั้น 1 ห้องวิทยาศาสตร์', 'Wooden_Building', 22.2 + WOOD.dx, 32 + WOOD.dx, -43 + WOOD.dz, -22.2 + WOOD.dz, 0), 'ห้องภาษาอังกฤษ': mkRoom('ชั้น 2 ห้องภาษาอังกฤษ', 'Wooden_Building', 22.2 + WOOD.dx, 32 + WOOD.dx, -43 + WOOD.dz, -22.2 + WOOD.dz, F2),
   'ห้องคอมพิวเตอร์': mkRoom('ชั้น 2 ห้องคอมพิวเตอร์', 'Technology_Building', 9.6, 19, -47.6, -40.4, F2),
   'ห้องเก็บของ อาคารเทคโนโลยี': mkRoom('ชั้น 1 ห้องเก็บของ', 'Technology_Building', 9.6, 19, -47.6, -40.4, 0),
@@ -526,7 +526,7 @@ const MOTO_LANE = [4.5, LANE, -34.5];
 // ต้นไม้ใบสีน้ำตาลอ่อน 2 ต้น (ในโมเดล Site) ที่เคยขวางแนวถนนเชื่อม ย้ายลงไปทางลานเสาธงตามกรอบสีแดงที่ครูวง
 const TAN_TREE_DZ = 6.5;
 const SCAN_PT = [21.6, -11];   // จุดสแกนหน้า หน้าอาคารเฉลิมพระเกียรติ (นักเรียน)
-const TSCAN_PT = [26.7, -1];   // จุดสแกนหน้าครู อยู่ในห้องธุรการ ชั้น 1 อาคารเฉลิมพระเกียรติ (ครูแจ้ง)
+const TSCAN_PT = [26.7, 2];   // จุดสแกนหน้าครู อยู่ในห้องธุรการ ชั้น 1 อาคารเฉลิมพระเกียรติ (ครูแจ้ง)
 const V_SCHOOL = 130, V_ROAD = 450, V_BIKE = 180, GAP = 1.8;   // ม./นาที (≈ 8 กม./ชม. ในโรงเรียน)
 const VEH = [];
 const GATE_IN_Z = 24, GATE_OUT_Z = -26.8, FENCE = {x0: -64, x1: 63, z0: -49.5, z1: 48.5};
@@ -2887,11 +2887,13 @@ function buildChalermF2(){
 // ชั้น 1: ห้องประชุมต่อกับ Bankhum Studio ตามรูปจริง 3 รูปที่ครูส่ง · พื้นกระเบื้องเขียวลายวงกลมดอกไม้ ผนังฟ้าเขียว ช่องแสงบนลวดตาข่าย
 // ห้องประชุม: ผนังเทาท้ายห้องโลโก้ + "โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)" โต๊ะประชุมยาวโค้งหัวท้ายคลุมผ้าครีม เก้าอี้พลาสติกแดง โต๊ะวางแฟ้มริมหน้าต่างม่านเขียว ตู้น้ำเงิน แอร์ พัดลมติดผนัง โปรเจกเตอร์
 // Studio: เสา/ฉากไม้กั้น ผนังเทาท้ายห้อง โต๊ะคอมหลายจอ เก้าอี้เกมมิ่ง ไฟสตูดิโอ 2 ชุด เครื่องเลเซอร์ ชั้นเหล็กโชว์งาน ชั้นถ้วยรางวัล โต๊ะผ้าลูกไม้
-function buildChalermF1(g){
+function buildChalermF1(gp){
+  // จัดของในพิกัดสมมุติที่ห้องประชุมอยู่ด้าน z น้อย แล้วสะท้อนกลับแกน z ทั้งกลุ่ม (ห้องประชุมอยู่ปลายอาคาร Studio อยู่ติดห้องธุรการ)
+  const zS = ROOMS['Bankhum Studio'].c.z - ROOMS['Bankhum Studio'].sz/2 + ROOMS['ห้องประชุม'].c.z + ROOMS['ห้องประชุม'].sz/2, g = new THREE.Group(); g.position.z = zS; g.scale.z = -1; gp.add(g);
   const M = c => new THREE.MeshLambertMaterial({color: c});
   const B = (w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), typeof m === 'string' ? M(m) : m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
   const C = (rt, rb, h, m, x, y, z, seg = 12) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), typeof m === 'string' ? M(m) : m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
-  const RM = ROOMS['ห้องประชุม'], RS = ROOMS['Bankhum Studio'], x0 = RM.c.x - RM.sx/2, x1 = RM.c.x + RM.sx/2, za = RM.c.z - RM.sz/2, zd = RS.c.z - RS.sz/2, zb = RS.c.z + RS.sz/2, H = 3.3, W = x1 - x0;
+  const RM = ROOMS['ห้องประชุม'], RS = ROOMS['Bankhum Studio'], x0 = RM.c.x - RM.sx/2, x1 = RM.c.x + RM.sx/2, za = zS - (RM.c.z + RM.sz/2), zd = zS - (RS.c.z + RS.sz/2), zb = zS - (RS.c.z - RS.sz/2), H = 3.3, W = x1 - x0;
   // พื้นกระเบื้องเขียวลายวงกลม
   const tT = chTex(1.2, 1.2, 96, (q, S) => { q.fillStyle = '#1f6b3a'; q.fillRect(0, 0, S, S); q.strokeStyle = '#e8efe4'; q.lineWidth = 3; q.beginPath(); q.arc(S/2, S/2, S*.36, 0, 7); q.stroke(); q.beginPath(); q.arc(S/2, S/2, S*.3, 0, 7); q.stroke();
     q.fillStyle = '#e8efe4'; for (let k = 0; k < 8; k++) { const a = k*Math.PI/4; q.beginPath(); q.ellipse(S/2 + Math.cos(a)*S*.13, S/2 + Math.sin(a)*S*.13, S*.09, S*.04, a, 0, 7); q.fill(); }
@@ -2911,14 +2913,15 @@ function buildChalermF1(g){
   chWall(L, H, backT, x1 - .03, H/2, (za + zb)/2, -Math.PI/2, g);
   const logoT = chTex(W, H, 48, (q, Wp, Hp, Yp, U) => { q.fillStyle = AQ; q.fillRect(0, 0, Wp, Hp); const cx = U(W/2); q.fillStyle = '#5b6064'; q.fillRect(cx - U(2.2), Yp(2.6), U(4.4), U(2.6)); q.fillStyle = '#f5f5f4'; q.fillRect(cx - U(2.2), Yp(2.62), U(4.4), 3);
     q.fillStyle = '#f8fafc'; q.beginPath(); q.arc(cx, Yp(2.25), U(.17), 0, 7); q.fill(); q.fillStyle = '#15803d'; q.beginPath(); q.arc(cx, Yp(2.25), U(.13), 0, 7); q.fill();
-    q.fillStyle = '#f1f5f9'; q.textAlign = 'center'; q.font = `bold ${U(.17)|0}px sans-serif`; q.fillText('โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)', cx, Yp(1.88)); q.font = `${U(.12)|0}px sans-serif`; q.fillText('BANKHUM SCHOOL PHRAE', cx, Yp(1.7));
+    q.save(); q.translate(Wp, 0); q.scale(-1, 1);   // กลุ่มถูกสะท้อนแกน z ตัวอักษรต้องกลับด้านไว้ก่อน
+    q.fillStyle = '#f1f5f9'; q.textAlign = 'center'; q.font = `bold ${U(.17)|0}px sans-serif`; q.fillText('โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)', cx, Yp(1.88)); q.font = `${U(.12)|0}px sans-serif`; q.fillText('BANKHUM SCHOOL PHRAE', cx, Yp(1.7)); q.restore();
     for (const s of [-1, 1]) { q.fillStyle = '#1f2937'; q.fillRect(cx + s*U(1.75) - U(.18), Yp(2.45), U(.36), U(.22)); } });
   chWall(W, H, logoT, RM.c.x, H/2, za + .03, 0, g);
   const endT = chTex(W, H, 48, (q, Wp, Hp, Yp, U) => { q.fillStyle = AQ; q.fillRect(0, 0, Wp, Hp); q.fillStyle = '#8f9599'; q.fillRect(U(.8), Yp(2.9), U(W - 1.6), U(2.9)); q.fillStyle = '#e5e7eb'; q.fillRect(U(.6), Yp(2.2), U(.9), U(2.2));
     for (const [u, col] of [[4.1, '#fbbf24'], [4.6, '#60a5fa'], [5.2, '#f8fafc']]) { q.fillStyle = col; q.fillRect(U(u), Yp(2.0), U(.35), U(.28)); } });
   chWall(W, H, endT, RM.c.x, H/2, zb - .03, Math.PI, g);
   // ห้องประชุม: โต๊ะประชุมยาวคลุมผ้าครีม (2 แถวต่อกัน ช่องกลาง หัวท้ายโค้ง) + เก้าอี้แดง
-  const cream = M('#d9b57e'), red = M('#e11d27'), tx = RM.c.x + .2, tz0 = za + 1.6, tz1 = zd - 1.3, TL = tz1 - tz0, tzc = (tz0 + tz1)/2;
+  const cream = M('#d9b57e'), red = M('#e11d27'), tx = RM.c.x + .2, tz0 = za + 1.6, tz1 = Math.min(zd - 1.3, za + 8.6), TL = tz1 - tz0, tzc = (tz0 + tz1)/2;
   for (const dx of [-.55, .55]) B(.75, .74, TL, cream, tx + dx, .37, tzc);
   for (const z of [tz0, tz1]) { const e = C(1.3, 1.3, .74, cream, tx, .37, z, 24); e.scale.z = .45; }
   const chair = (x, z, ry) => { const o = new THREE.Group(); o.position.set(x, 0, z); o.rotation.y = ry; g.add(o);
