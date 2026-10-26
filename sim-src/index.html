@@ -1347,6 +1347,7 @@ function buildRoad(){
   // ขอบทางเท้าสีแดง-ขาว ริมถนนในโรงเรียนด้านซ้ายมือตามทิศรถวิ่ง (จากประตูเข้าวนไปประตูออก) ตามภาพจริง
   const kerbs = [];
   for (let i = 1; i < P.length; i++) {
+    if (i >= 8 && i <= 15) continue;   // P[i-1] = MAIN[i]: ถนนรอบลานกลางหน้าเสาธง (หน้าห้องดนตรี → หน้าอาคารเฉลิมฯ → ป้อมยาม → ถนนเชื่อม) ไม่มีขอบลายขาวแดง ให้พื้นต่อกับลาน (ตามที่ครูขีดสีน้ำเงิน)
     const a = P[i-1], b = P[i], L = a.distanceTo(b), dx = (b.x - a.x)/L, dz = (b.z - a.z)/L, lx = dz, lz = -dx, off = W/2 + .2;
     for (let d = .9; d < L - .9; d += .7) { const x = a.x + dx*d + lx*off, z = a.z + dz*d + lz*off; if (x < FENCE.x0 + .6) continue; kerbs.push([x, z, Math.atan2(dx, dz)]); }
   }
