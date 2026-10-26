@@ -3406,16 +3406,18 @@ function declutter(){
 frame();
 </script>
 <script>
-/* เพลงสบาย ๆ สดใส: สร้างเสียงสด ๆ ด้วย Web Audio ในเครื่องผู้ชม (ไม่มีไฟล์เสียง ไม่มีลิขสิทธิ์ของใคร)
+/* เพลงสบาย ๆ สดใส: สร้างเสียงด้วย Web Audio ในเครื่องผู้ชม (ไม่มีไฟล์เสียง ไม่มีลิขสิทธิ์ของใคร)
    C เมเจอร์ 104 BPM: เบสเด้ง ๆ + ตีคอร์ดแบบอูคูเลเล่ + ทำนองมาริมบา (ท่อนซ้ำแล้วแปรตามคอร์ด) + กลองเบา ๆ เชกเกอร์
-   เบราว์เซอร์ไม่ให้เล่นเสียงเอง จึงเริ่มเมื่อผู้ใช้แตะ/คลิก/กดปุ่มครั้งแรก · ปุ่ม 🎵 เปิด/ปิด จำค่าไว้ในเครื่อง */
+   เรนเดอร์ล่วงหน้า 32 ห้อง (~74 วินาที) ด้วย OfflineAudioContext ทีละห้อง แล้ววนเล่นบัฟเฟอร์เดียว → ไม่แย่งเครื่องกับภาพ 3D เพลงไม่กระตุก
+   ลองเปิดเองตอนเข้าเว็บ ถ้าเบราว์เซอร์บล็อกจะเริ่มเมื่อคลิก/แตะ/กดปุ่มครั้งแรก · ปุ่ม 🎵 เปิด/ปิด จำค่าไว้ในเครื่อง */
 (() => {
   const btn = document.getElementById('vMusic'), KEY = 'bkSimMusic', AC = window.AudioContext || window.webkitAudioContext;
+  const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
   if (!btn) return;
-  if (!AC) { btn.hidden = true; return; }
+  if (!AC || !OAC) { btn.hidden = true; return; }
   let want = true; try { want = localStorage.getItem(KEY) !== 'off'; } catch (e) {}
-  let ctx = null, master = null, out = null, verb = null, noise = null, timer = 0, next = 0, step = 0, playing = false, motifs = null;
-  const E8 = 60/104/2, SWING = .12;
+  let ctx = null, master = null, src = null, track = null, playing = false;
+  const E8 = 60/104/2, SWING = .12, BARS = 32, RATE = 32000, TAIL = 2;
   const SC = [0, 2, 4, 5, 7, 9, 11];
   const deg = (d, base) => base + 12*Math.floor(d/7) + SC[((d % 7) + 7) % 7];
   const hz = m => 440*Math.pow(2, (m - 69)/12);
@@ -3423,80 +3425,62 @@ frame();
   const PROG = [0, -3, -2, -4, 0, -4, -3, 0];
   const RHY = [[0, 2, 3, 4, 6], [0, 1, 2, 4, 5, 6], [0, 3, 4, 6, 7], [0, 2, 4, 5, 6], [1, 2, 3, 4, 6]];
   const rnd = a => a[Math.floor(Math.random()*a.length)];
-
   function makeMotif(){   // ทำนอง 1 ห้อง: จังหวะ + ขั้นเสียงเทียบกับรากคอร์ด (จังหวะหนักลงโน้ตในคอร์ด)
     const r = rnd(RHY); let d = rnd([2, 4, 4, 7]);
     return r.map(p => { if (p % 4 === 0) d = [0, 2, 4, 7].reduce((a, b) => Math.abs(b - d) < Math.abs(a - d) ? b : a); else d += rnd([-1, 1, 1, 2, -2]); d = Math.max(0, Math.min(9, d)); return [p, d]; });
   }
-  function build(){
-    ctx = new AC();
-    ctx.onstatechange = () => { if (playing && ctx.state !== 'running' && !document.hidden) setTimeout(() => { if (playing) ctx.resume().catch(() => {}); }, 300); };   // iOS ขัดจังหวะเอง ลองเล่นต่อ
-    master = ctx.createGain(); master.gain.value = 0;
-    const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 3;
-    master.connect(comp); comp.connect(ctx.destination);
-    const len = Math.floor(ctx.sampleRate*1.3), ir = ctx.createBuffer(2, len, ctx.sampleRate);
-    for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random()*2 - 1)*Math.pow(1 - i/len, 4); }
-    verb = ctx.createConvolver(); verb.buffer = ir;
-    const wet = ctx.createGain(); wet.gain.value = .25; verb.connect(wet); wet.connect(master);
-    out = master;
-    noise = ctx.createBuffer(1, ctx.sampleRate*.5, ctx.sampleRate); const nd = noise.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random()*2 - 1;
-  }
-  function env(t, v, a, dur){ const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + a); g.gain.exponentialRampToValueAtTime(.0004, t + dur); return g; }
-  function marimba(t, m, v){
-    const g = env(t, v, .005, .7); g.connect(out); g.connect(verb);
-    [[1, 1], [4, .18], [10, .04]].forEach(([r, a]) => { const o = ctx.createOscillator(), og = ctx.createGain(); o.frequency.value = hz(m)*r; og.gain.value = a; o.connect(og); og.connect(g); o.start(t); o.stop(t + .75); });
-  }
-  function uke(t, m, v){
-    const o = ctx.createOscillator(), lp = ctx.createBiquadFilter(), g = env(t, v, .004, .45);
-    o.type = 'sawtooth'; o.frequency.value = hz(m); lp.frequency.setValueAtTime(3200, t); lp.frequency.exponentialRampToValueAtTime(700, t + .3);
-    o.connect(lp); lp.connect(g); g.connect(out); g.connect(verb); o.start(t); o.stop(t + .5);
-  }
-  function bass(t, m, v){
-    const o = ctx.createOscillator(), g = env(t, v, .01, .38); o.type = 'triangle'; o.frequency.value = hz(m);
-    o.connect(g); g.connect(out); o.start(t); o.stop(t + .4);
-  }
-  function kick(t){
-    const o = ctx.createOscillator(), g = env(t, .3, .003, .25); o.frequency.setValueAtTime(130, t); o.frequency.exponentialRampToValueAtTime(48, t + .12);
-    o.connect(g); g.connect(out); o.start(t); o.stop(t + .3);
-  }
-  function hit(t, f, q, v, dur){   // เชกเกอร์/สแนร์จากเสียงซ่า
-    const s = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), g = env(t, v, .003, dur);
-    s.buffer = noise; bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q;
-    s.connect(bp); bp.connect(g); g.connect(out); s.start(t); s.stop(t + dur + .05);
-  }
-  function tick(){
-    while (next < ctx.currentTime + .6) {
-      const e = step % 8, bar = Math.floor(step/8), pb = bar % 8, cyc = Math.floor(bar/8);
-      const t = next + (e % 2 ? SWING*E8 : 0), root = PROG[pb], chord = [0, 2, 4].map(x => deg(root + x, 60));
-      if (e === 0 && pb === 0) motifs = [makeMotif(), makeMotif(), makeMotif()];
-      const breakdown = cyc % 4 === 3 && pb < 4;   // ทุก 4 รอบ พักกลองครึ่งรอบ ให้เพลงมีช่วงโล่ง ๆ
-      // กลอง: กระเดื่องจังหวะ 1, 3 · สแนร์เบา ๆ จังหวะ 2, 4 · เชกเกอร์ทุกครึ่งจังหวะ
-      if (!breakdown) {
+
+  // เรนเดอร์ทีละห้อง (ห้องละไม่กี่ร้อยโน้ต เร็วกว่าเรนเดอร์ทั้งเพลงในครั้งเดียวมาก) แล้วต่อกันเป็นบัฟเฟอร์เดียว
+  const IRL = Math.floor(RATE*1.3), IRD = [0, 1].map(() => Float32Array.from({length: IRL}, (_, i) => (Math.random()*2 - 1)*Math.pow(1 - i/IRL, 4)));
+  const NZ = Float32Array.from({length: RATE/2}, () => Math.random()*2 - 1);
+  function renderBar(bar, motifs){
+    const oc = new OAC(1, Math.ceil((8*E8 + TAIL)*RATE), RATE), out = oc.createGain(); out.connect(oc.destination);
+    const ir = oc.createBuffer(2, IRL, RATE); IRD.forEach((d, c) => ir.getChannelData(c).set(d));
+    const verb = oc.createConvolver(); verb.buffer = ir; const wet = oc.createGain(); wet.gain.value = .25; verb.connect(wet); wet.connect(out);
+    const noise = oc.createBuffer(1, NZ.length, RATE); noise.getChannelData(0).set(NZ);
+    const env = (t, v, a, dur) => { const g = oc.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + a); g.gain.exponentialRampToValueAtTime(.0004, t + dur); return g; };
+    const marimba = (t, m, v) => { const g = env(t, v, .005, .7); g.connect(out); g.connect(verb);
+      [[1, 1], [4, .18], [10, .04]].forEach(([r, a]) => { const o = oc.createOscillator(), og = oc.createGain(); o.frequency.value = hz(m)*r; og.gain.value = a; o.connect(og); og.connect(g); o.start(t); o.stop(t + .75); }); };
+    const uke = (t, m, v) => { const o = oc.createOscillator(), lp = oc.createBiquadFilter(), g = env(t, v, .004, .45);
+      o.type = 'sawtooth'; o.frequency.value = hz(m); lp.frequency.setValueAtTime(3200, t); lp.frequency.exponentialRampToValueAtTime(700, t + .3);
+      o.connect(lp); lp.connect(g); g.connect(out); g.connect(verb); o.start(t); o.stop(t + .5); };
+    const bass = (t, m, v) => { const o = oc.createOscillator(), g = env(t, v, .01, .38); o.type = 'triangle'; o.frequency.value = hz(m); o.connect(g); g.connect(out); o.start(t); o.stop(t + .4); };
+    const kick = t => { const o = oc.createOscillator(), g = env(t, .3, .003, .25); o.frequency.setValueAtTime(130, t); o.frequency.exponentialRampToValueAtTime(48, t + .12); o.connect(g); g.connect(out); o.start(t); o.stop(t + .3); };
+    const hit = (t, f, q, v, dur) => { const s = oc.createBufferSource(), bp = oc.createBiquadFilter(), g = env(t, v, .003, dur);   // เชกเกอร์/สแนร์จากเสียงซ่า
+      s.buffer = noise; bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q; s.connect(bp); bp.connect(g); g.connect(out); s.start(t); s.stop(t + dur + .05); };
+    const pb = bar % 8, cyc = Math.floor(bar/8), root = PROG[pb], chord = [0, 2, 4].map(x => deg(root + x, 60)), bm = deg(root, 48);
+    const breakdown = cyc === 3 && pb < 4;   // รอบสุดท้ายพักกลองครึ่งรอบ ให้เพลงมีช่วงโล่ง ๆ
+    const mo = motifs[[0, 0, 1, 1, 0, 2, 2, 0][pb]];   // ทำนอง A A B A' ตามคอร์ด ห้องสุดท้ายจบที่โด
+    for (let e = 0; e < 8; e++) {
+      const t = .005 + e*E8 + (e % 2 ? SWING*E8 : 0);
+      if (!breakdown) {   // กระเดื่องจังหวะ 1, 3 · สแนร์เบา ๆ จังหวะ 2, 4
         if (e === 0 || e === 4 || (e === 7 && pb % 2)) kick(t);
         if (e === 2 || e === 6) hit(t, 1800, .8, .07, .12);
       }
-      hit(t, 7000, 1.2, e % 2 ? .035 : .02, .05);
-      // เบส: ราก - ห้า - ราก(คู่แปด) เด้ง ๆ
-      const bm = deg(root, 48);
-      if (e === 0) bass(t, bm, .2); else if (e === 3) bass(t, bm + 7, .13); else if (e === 4) bass(t, bm + 12, .15); else if (e === 6) bass(t, bm + 7, .11);
-      // คอร์ดอูคูเลเล่: ลง-ลงขึ้น-ขึ้นลงขึ้น
-      if ([0, 2, 3, 5, 6, 7].includes(e)) { const up = e % 2 === 1, ns = up ? [...chord].reverse() : chord, v = e === 0 || e === 6 ? .045 : .03; ns.forEach((m, i) => uke(t + i*.012, m + 12, v)); }
-      // ทำนอง: A A B A' ตามคอร์ด ห้องสุดท้ายจบที่โด
-      const mi = [0, 0, 1, 1, 0, 2, 2, 0][pb], mo = motifs[mi];
+      hit(t, 7000, 1.2, e % 2 ? .035 : .02, .05);   // เชกเกอร์ทุกครึ่งจังหวะ
+      if (e === 0) bass(t, bm, .2); else if (e === 3) bass(t, bm + 7, .13); else if (e === 4) bass(t, bm + 12, .15); else if (e === 6) bass(t, bm + 7, .11);   // เบส ราก-ห้า-คู่แปด
+      if ([0, 2, 3, 5, 6, 7].includes(e)) { const ns = e % 2 ? [...chord].reverse() : chord, v = e === 0 || e === 6 ? .045 : .03; ns.forEach((m, i) => uke(t + i*.012, m + 12, v)); }   // อูคูเลเล่ ลง-ลงขึ้น-ขึ้นลงขึ้น
       if (pb === 7) { if (e === 0) marimba(t, deg(7, 60), .13); }
       else for (const [p, d] of mo) if (p === e) marimba(t, deg(root + d, 72), .1 + (p % 4 === 0 ? .03 : 0));
-      next += E8; step++;
     }
+    return new Promise((ok, no) => { oc.oncomplete = e => ok(e.renderedBuffer.getChannelData(0)); const p = oc.startRendering(); if (p && p.catch) p.catch(no); });
   }
-  const hint = document.createElement('div'); hint.id = 'musicHint'; hint.textContent = '🎵 แตะที่ใดก็ได้เพื่อเปิดเพลง'; document.body.appendChild(hint);
-  function ui(){
-    hint.hidden = !(want && !playing);
-    btn.classList.toggle('on', playing); btn.classList.toggle('wait', want && !playing);
-    btn.innerHTML = (want ? '🎵' : '🔇') + '<span class="tx"> ' + (playing ? 'ปิดเพลง' : 'เปิดเพลง') + '</span>'; btn.setAttribute('aria-pressed', String(playing));
-    btn.title = playing ? 'ปิดเพลง' : want ? 'แตะที่ใดก็ได้เพื่อเริ่มเพลง' : 'เปิดเพลง';
+  async function render(){
+    const n = Math.round(BARS*8*E8*RATE), mix = new Float32Array(n);
+    let motifs = null;
+    for (let bar = 0; bar < BARS; bar++) {
+      if (bar % 8 === 0) motifs = [makeMotif(), makeMotif(), makeMotif()];
+      const d = await renderBar(bar, motifs), off = Math.round(bar*8*E8*RATE);
+      for (let i = 0; i < d.length; i++) mix[(off + i) % n] += d[i];   // หางเสียงก้องห้องสุดท้ายวนไปซ้อนต้นเพลง ให้วนต่อเนียน
+    }
+    let pk = 0; for (let i = 0; i < n; i++) pk = Math.max(pk, Math.abs(mix[i]));
+    const k = .9/Math.max(pk, .3); for (let i = 0; i < n; i++) mix[i] *= k;
+    const tmp = new OAC(1, 1, RATE), buf = tmp.createBuffer(1, n, RATE); buf.getChannelData(0).set(mix);
+    return buf;
   }
+
   let unlockEl = null;
-  function unlockIOS(){   // iPhone/iPad: Web Audio เงียบเมื่อเปิดสวิตช์ปิดเสียง จึงบอกเบราว์เซอร์ว่าเป็นการเล่นเพลง + เล่นเสียงเงียบผ่าน <audio> หนึ่งครั้ง
+  function unlockIOS(){   // iPhone/iPad: Web Audio เงียบเมื่อเปิดสวิตช์ปิดเสียง จึงบอกเบราว์เซอร์ว่าเป็นการเล่นเพลง
     try { if (navigator.audioSession) { navigator.audioSession.type = 'playback'; return; } } catch (e) {}   // iOS 17+ ใช้วิธีนี้พอ
     if (unlockEl || !/iP(hone|ad|od)|Macintosh.*Mobile/.test(navigator.userAgent) && !(navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform))) return;
     const n = 4410, buf = new ArrayBuffer(44 + n*2), v = new DataView(buf), w = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
@@ -3505,25 +3489,37 @@ frame();
     unlockEl = new Audio(URL.createObjectURL(new Blob([buf], {type: 'audio/wav'}))); unlockEl.loop = true; unlockEl.setAttribute('playsinline', '');
     unlockEl.play().catch(() => { unlockEl = null; });
   }
+  const hint = document.createElement('div'); hint.id = 'musicHint'; hint.textContent = '🎵 แตะที่ใดก็ได้เพื่อเปิดเพลง'; document.body.appendChild(hint);
+  function ui(){
+    hint.hidden = !(want && !playing);
+    btn.classList.toggle('on', playing); btn.classList.toggle('wait', want && !playing);
+    btn.innerHTML = (want ? '🎵' : '🔇') + '<span class="tx"> ' + (playing ? 'ปิดเพลง' : 'เปิดเพลง') + '</span>'; btn.setAttribute('aria-pressed', String(playing));
+    btn.title = playing ? 'ปิดเพลง' : want ? 'แตะที่ใดก็ได้เพื่อเริ่มเพลง' : 'เปิดเพลง';
+  }
   function start(){
     if (document.hidden) return;
     if (unlockEl && unlockEl.paused) unlockEl.play().catch(() => {});
     if (playing) { if (ctx.state !== 'running') ctx.resume().catch(() => {}); return; }   // iOS ขัดจังหวะ (มีสายเข้า ฯลฯ) แตะอีกครั้งเล่นต่อ
-    if (!ctx) build();
+    if (!ctx) {
+      ctx = new AC();
+      ctx.onstatechange = () => { if (playing && ctx.state !== 'running' && !document.hidden) setTimeout(() => { if (playing) ctx.resume().catch(() => {}); }, 300); };
+      master = ctx.createGain(); master.gain.value = 0; master.connect(ctx.destination);
+    }
     unlockIOS();
-    ctx.resume().then(() => {
+    Promise.all([ctx.resume(), track]).then(([, buf]) => {
       if (!want || playing) return;
-      playing = true; next = Math.max(next, ctx.currentTime + .1); step = step - step % 64;
+      playing = true;
+      if (!src) { src = ctx.createBufferSource(); src.buffer = buf; src.loop = true; src.connect(master); src.start(); }
       master.gain.cancelScheduledValues(ctx.currentTime); master.gain.setValueAtTime(master.gain.value, ctx.currentTime);
-      master.gain.linearRampToValueAtTime(1, ctx.currentTime + 2);
-      tick(); timer = setInterval(tick, 150); ui();
+      master.gain.linearRampToValueAtTime(.5, ctx.currentTime + 1.5); ui();
     }).catch(() => {});
   }
   function stop(){
-    if (!playing) return; playing = false; clearInterval(timer);
+    if (!playing) return; playing = false;
     const t = ctx.currentTime; master.gain.cancelScheduledValues(t); master.gain.setValueAtTime(master.gain.value, t); master.gain.linearRampToValueAtTime(0, t + .6);
     setTimeout(() => { if (!playing) { ctx.suspend(); if (unlockEl) unlockEl.pause(); } }, 700); ui();
   }
+  track = render(); track.catch(() => { btn.hidden = true; hint.hidden = true; });
   btn.addEventListener('click', e => {
     e.stopPropagation();
     want = !(want && playing); try { localStorage.setItem(KEY, want ? 'on' : 'off'); } catch (er) {}
