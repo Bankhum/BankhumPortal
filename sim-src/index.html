@@ -572,9 +572,10 @@ function posAt(s){
   const f = Math.min(1, Math.max(0, (s - CUM[i-1]) / (CUM[i] - CUM[i-1])));
   return [MAIN[i-1][0] + (MAIN[i][0]-MAIN[i-1][0])*f, MAIN[i-1][1] + (MAIN[i][1]-MAIN[i-1][1])*f];
 }
-const FIELD = {x0: -51.6, x1: -17.4, z0: -9, z1: 24.2};   // สนามฟุตบอล ขยายเต็มพื้นที่หลังย้ายโดมไปชิดรั้ว (ตามที่ครูขอ)
-const ASSEMBLY = {x0: -17.1, x1: -0.4, z0: -5.9, z1: 15.6};   // ลานปูนสีเทาหน้าเสาธง (ที่เข้าแถว)
-const lineupSpot = (ci, k) => [ASSEMBLY.x1 - 2.2 - (k >> 1)*.7, ASSEMBLY.z0 + 1.6 + ci*2.5 + (k & 1)*.8];   // จุดยืนเข้าแถวที่ทาสีบนลาน: ชั้นละ 2 แถว คนที่ k ของชั้น
+const FIELD = {x0: -51.6, x1: -11.5, z0: -9, z1: 24.2};   // สนามฟุตบอล ขยายเต็มพื้นที่หลังย้ายโดมไปชิดรั้ว แล้วขยายไปทางลานเสาธงถึงเส้นแดงที่ครูวาด (ทับลานเสาธงฝั่งซ้ายเดิม)
+const ASSEMBLY = {x0: FIELD.x1 + .3, x1: -0.4, z0: -5.9, z1: 15.6};   // ลานปูนสีเทาหน้าเสาธง (ที่เข้าแถว) ฝั่งซ้ายเดิมกลายเป็นสนามฟุตบอลแล้ว
+const LINEUP = {dx: .55, dz: 1.25, rows: 16};   // จุดยืนเข้าแถวสีขาวเป็นตารางเต็มลาน: แถวห่าง 1.25 ม. คนห่าง .55 ม. ชั้นละ 2 แถว
+const lineupSpot = (ci, k) => [ASSEMBLY.x1 - 1.6 - (k >> 1)*LINEUP.dx, ASSEMBLY.z0 + 1.2 + (ci*2 + (k & 1))*LINEUP.dz];   // คนที่ k ของชั้น ci ยืนบนจุดสีขาว
 const VBALL = {x: (ASSEMBLY.x0 + ASSEMBLY.x1)/2, z: (ASSEMBLY.z0 + ASSEMBLY.z1)/2, W: 9, L: 18};   // สนามวอลเลย์บอลกลางแจ้งบนลานเสาธง 9×18 ม. เน็ตขวางกลางสนาม
 const LEN = {truck: 8.6, van: 6.6, car: 5.6, moto: 2.4, bike: 1.8};
 function addVeh(type, color, trips, label){ const v = {type, color, trips, label, riders: 0, runs: []}; VEH.push(v); return v; }
@@ -1089,7 +1090,7 @@ function playGroupRaw(a){
 }
 // ลูกฟุตบอลวิ่งไปมาระหว่างประตูสองฝั่ง ผู้เล่นวิ่งตามลูก
 const ballAt = m => { const {x0, x1, z0, z1} = FIELD, cx = (x0 + x1)/2, cz = (z0 + z1)/2;
-  return [cx + 11*Math.sin(m*.21) + 3*Math.sin(m*.67 + 1), cz + 6*Math.sin(m*.29 + 2) + 2*Math.sin(m*.9)]; };
+  return [cx + ((x1 - x0)/2 - 7)*Math.sin(m*.21) + 3*Math.sin(m*.67 + 1), cz + 6*Math.sin(m*.29 + 2) + 2*Math.sin(m*.9)]; };   // วิ่งเกือบสุดความยาวสนาม
 // ลูกวอลเลย์ข้ามเน็ตไปมา: [x, y, z]
 function vballAt(m){
   const s = m*1.4, k = Math.floor(s), f = s - k, side = k % 2 ? 1 : -1, xr = j => VBALL.x + ((j*53) % 7 - 3)*.9;
@@ -1304,7 +1305,7 @@ function exitWalk(a, m){
   const ci = CLASSES.findIndex(([c]) => c === a.cls), coh = a.cohort ??= STUDENTS.filter(s => s.cls === a.cls && s.scan != null), k = coh.indexOf(a.ref);
   if (k < 0 || placeOfAgent(a, 499.9)[0] !== 'Flagpole') return null;
   const grp = CLASSES.filter(([c]) => HOMEROOM[c] === hb).map(([c]) => c), gi = grp.indexOf(a.cls);   // ชั้นที่ไปอาคารเดียวกันออกต่อกัน
-  const S = new THREE.Vector3(ASSEMBLY.x1 - 1.2, 0, ASSEMBLY.z0 + 1.6 + ci*2.5 + .4);
+  const S = new THREE.Vector3(ASSEMBLY.x1 - 1.2, 0, lineupSpot(ci, 0)[1] + LINEUP.dz/2);
   const [ex, ez] = EXIT_ROUTE[hb] || [keyRect(HOMEROOM_ROOM[a.cls] || hb).c.x, -22.8], W = navPath(S, new THREE.Vector3(ex, 0, ez)), L = W.L;
   const wait = grp.slice(0, gi).reduce((t, c) => t + (STUDENTS.filter(s => s.cls === c && s.scan != null).length*EXIT_GAP + 3)/EXIT_V, 0);
   let d = (m - 500 - wait)*EXIT_V - k*EXIT_GAP;
@@ -1737,17 +1738,20 @@ function buildKgPool(){
   const ballG = new THREE.SphereGeometry(.09, 10, 8), ballM = new THREE.MeshStandardMaterial({color: '#cbd5e1', metalness: .8, roughness: .3});
   for (const [bx, bz] of [[2.2, -.5], [2.5, -.9], [1.9, -.2], [-2.4, .6], [-2.0, .9], [-2.6, .3]]) add(ballG, ballM, bx, .17, bz, pc);
   add(new THREE.SphereGeometry(.05, 8, 6), M('#ef4444'), 2.6, .14, -.6, pc); add(new THREE.SphereGeometry(.05, 8, 6), M('#facc15'), -2.6, .14, .6, pc);
-  // ลานเสาธง: สนามวอลเลย์บอลกลางแจ้ง (เส้นขาว เสา เน็ต) + จุดยืนเข้าแถวทาสีตามสีของแต่ละชั้น (ตามที่ครูบอก)
+  // ลานเสาธง: สนามวอลเลย์บอลกลางแจ้ง (เส้นขาว เสา เน็ต) + จุดยืนเข้าแถวสีขาวเต็มลาน (ตามที่ครูบอก) สนามย้ายไปฝั่งเสาธงหลังขยายสนามฟุตบอล
   const AW = ASSEMBLY.x1 - ASSEMBLY.x0, AD = ASSEMBLY.z1 - ASSEMBLY.z0, PX = 48;
   const paint = cvTex(Math.round(AW*PX), Math.round(AD*PX), (c) => { const X = x => (x - ASSEMBLY.x0)*PX, Z = z => (z - ASSEMBLY.z0)*PX;
-    const {x: vx, z: vz, W, L} = VBALL;
-    c.strokeStyle = '#f8fafc'; c.lineWidth = .06*PX; c.strokeRect(X(vx - W/2), Z(vz - L/2), W*PX, L*PX);
-    for (const dz of [0, -3, 3]) { c.beginPath(); c.moveTo(X(vx - W/2), Z(vz + dz)); c.lineTo(X(vx + W/2), Z(vz + dz)); c.stroke(); }   // เส้นกลาง + เส้นรุก 3 ม.
-    const DOT = ['#f472b6', '#c084fc', '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#1e3a8a'];
-    c.font = `bold ${Math.round(.42*PX)}px sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
-    CLASSES.forEach(([cls, n], ci) => { c.fillStyle = DOT[ci];
-      for (let k = 0; k < n; k++) { const [x, z] = lineupSpot(ci, k); c.beginPath(); c.arc(X(x), Z(z), .15*PX, 0, 7); c.fill(); }
-      const [lx, lz] = lineupSpot(ci, 0); c.fillText(cls, X(lx + .95), Z(lz + .4)); });
+    // จุดยืนเข้าแถวสีขาวเต็มลาน (ครูขอ) ป้ายชื่อชั้นอยู่หัวแถวฝั่งเสาธง
+    c.fillStyle = '#f8fafc'; c.font = `bold ${Math.round(.42*PX)}px sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    for (let r = 0; r < LINEUP.rows; r++) for (let k = 0; ; k++) { const [x, z] = lineupSpot(r >> 1, (k << 1) | (r & 1)); if (x < ASSEMBLY.x0 + .35) break; c.beginPath(); c.arc(X(x), Z(z), .11*PX, 0, 7); c.fill(); }
+    CLASSES.forEach(([cls], ci) => { const [lx, lz] = lineupSpot(ci, 0); c.fillText(cls, X(lx + .85), Z(lz + LINEUP.dz/2)); });
+    // สนามวอลเลย์บอล 9×18 ม.: เส้นข้าง เส้นหลัง เส้นแบ่งแดน (ใต้เน็ต) เส้นรุก 3 ม. + เส้นประต่อเส้นรุกนอกสนาม + ขีดเขตเสิร์ฟหลังเส้นหลัง
+    const {x: vx, z: vz, W, L} = VBALL, xl = X(vx - W/2), xr = X(vx + W/2);
+    c.strokeStyle = '#ffffff'; c.lineWidth = .1*PX; c.strokeRect(xl, Z(vz - L/2), W*PX, L*PX);
+    const ln = (x0, z0, x1, z1) => { c.beginPath(); c.moveTo(x0, z0); c.lineTo(x1, z1); c.stroke(); };
+    ln(xl, Z(vz), xr, Z(vz)); for (const sd of [-1, 1]) ln(xl, Z(vz + sd*3), xr, Z(vz + sd*3));
+    c.setLineDash([.15*PX, .2*PX]); for (const sd of [-1, 1]) { ln(xl - .2*PX, Z(vz + sd*3), xl - 1.75*PX, Z(vz + sd*3)); ln(xr + .2*PX, Z(vz + sd*3), xr + 1.75*PX, Z(vz + sd*3)); } c.setLineDash([]);
+    for (const sd of [-1, 1]) { const zb = Z(vz + sd*L/2); for (const x of [xl, xr]) ln(x, zb + sd*.2*PX, x, zb + sd*.35*PX); }
   });
   const pl = new THREE.Mesh(new THREE.PlaneGeometry(AW, AD), new THREE.MeshLambertMaterial({map: paint, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2}));
   pl.rotation.x = -Math.PI/2; pl.position.set((ASSEMBLY.x0 + ASSEMBLY.x1)/2, .03, (ASSEMBLY.z0 + ASSEMBLY.z1)/2); pl.receiveShadow = true; g.add(pl);
@@ -1756,9 +1760,9 @@ function buildKgPool(){
   netT.wrapS = THREE.RepeatWrapping; netT.repeat.set(4, 1);
   const net = new THREE.Mesh(new THREE.PlaneGeometry(VBALL.W + 1, 1), new THREE.MeshLambertMaterial({map: netT, transparent: true, alphaTest: .3, side: THREE.DoubleSide}));
   net.position.set(VBALL.x, 1.74, VBALL.z); g.add(net);
-  B(VBALL.W + 2, .015, .015, '#e5e7eb', VBALL.x, 2.245, VBALL.z).castShadow = false;   // ลวดสลิงขึงเน็ตระหว่างเสา
+  B(VBALL.W + 1.6, .015, .015, '#e5e7eb', VBALL.x, 2.245, VBALL.z).castShadow = false;   // ลวดสลิงขึงเน็ตระหว่างเสา
   add(new THREE.SphereGeometry(.11, 12, 10), M('#facc15'), VBALL.x + 2.1, .11, VBALL.z + 2.4);   // ลูกวอลเลย์บอล
-  for (const sx of [-1, 1]) { const px = VBALL.x + sx*(VBALL.W/2 + 1);
+  for (const sx of [-1, 1]) { const px = VBALL.x + sx*(VBALL.W/2 + .8);
     add(new THREE.CylinderGeometry(.05, .05, 2.5, 10), M('#2563eb'), px, 1.25, VBALL.z); add(new THREE.CylinderGeometry(.16, .18, .12, 12), M('#9ca3af'), px, .06, VBALL.z);
     const an = add(new THREE.CylinderGeometry(.012, .012, 1.8, 6), M('#ef4444'), VBALL.x + sx*VBALL.W/2, 1.9, VBALL.z); an.castShadow = false; }   // เสาอากาศบนเน็ต
   // ลูกมะม่วงบนต้นมะม่วง 2 ต้น
@@ -3371,7 +3375,7 @@ function buildField(){
   c.beginPath(); c.arc(cv.width/2, cv.height/2, 4.5*k, 0, 7); c.stroke();
   for (const sd of [0, 1]) { const bx = sd ? cv.width - m - 8*k : m, gx = sd ? cv.width - m - 3*k : m; L(bx, cv.height/2 - 9*k, 8*k, 18*k); L(gx, cv.height/2 - 4.5*k, 3*k, 9*k); }
   const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
-  const turf = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshLambertMaterial({map: t})); turf.rotation.x = -Math.PI/2; turf.position.set(cx, .05, cz); turf.receiveShadow = true; g.add(turf);
+  const turf = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshLambertMaterial({map: t})); turf.rotation.x = -Math.PI/2; turf.position.set(cx, .07, cz); turf.receiveShadow = true; g.add(turf);   // สูงกว่าพื้นปูนลานเสาธงเดิมที่สนามขยายทับ
   const wM = new THREE.MeshLambertMaterial({color: '#f8fafc'}), netM = new THREE.MeshLambertMaterial({color: '#e2e8f0', transparent: true, opacity: .45, side: THREE.DoubleSide});
   for (const sd of [-1, 1]) {   // ประตูฟุตบอล 5×2 ม. มีตาข่าย
     const gx = cx + sd*(W/2 - 1.2), q = new THREE.Group(); q.position.set(gx, 0, cz); g.add(q);
