@@ -366,6 +366,8 @@ const isGirl = s => s.no > BOYS[s.cls];   // เลขที่จำลอง: 
 const HOMEROOM = {'อ.2':'Kindergarten','อ.3':'Kindergarten','ป.1':'P1P2_Classroom','ป.2':'P1P2_Classroom','ป.3':'Chalerm_Building','ป.4':'Chalerm_Building','ป.5':'Chalerm_Building','ป.6':'Chalerm_Building'};
 /* ---------- อาคาร 2 ชั้น: ห้องเรียนและห้องต่างๆ (ตามที่ครูบอก) ---------- */
 const F2 = 3.7;   // ความสูงพื้นชั้น 2
+// อาคารไม้เลื่อนให้ขอบตรงแนวเดียวกับอาคารเฉลิมพระเกียรติ (กว้าง 12 ม. เท่ากัน) และถอยออกให้ชายคาไม่ทับกัน (ตามที่ครูขอ)
+const WOOD = {dx: 3.3, dz: -.5};
 const mkRoom = (th, b, x0, x1, z0, z1, y) => ({th, b, y, c: new THREE.Vector3((x0+x1)/2, y, (z0+z1)/2), sx: x1-x0, sz: z1-z0});
 const ROOMS = {
   // ชั้น 2 เรียงจากฝั่งบันได (หัวอาคารด้านอาคารไม้) ตามป้ายหน้าห้องในรูปจริง: ป.5 → ป.6 → ป.4 → ป.3 (ครูบอก ป.3 ป.4 ป.6 ป.5 นับจากปลายอีกด้าน)
@@ -374,7 +376,7 @@ const ROOMS = {
   'ห้องประชุม': mkRoom('ชั้น 1 ห้องประชุม', 'Chalerm_Building', 25.6, 35, -6.5, 4, 0), 'Bankhum Studio': mkRoom('ชั้น 1 Bankhum Studio', 'Chalerm_Building', 25.6, 35, 4, 11, 0),
   'ห้องธุรการ': mkRoom('ชั้น 1 ห้องธุรการ', 'Chalerm_Building', 25.6, 35, 11, 17, 0), 'ห้องผู้บริหาร': mkRoom('ชั้น 1 ห้องผู้บริหาร', 'Chalerm_Building', 25.6, 35, 17, 22, 0),
   'ห้องน้ำครู': mkRoom('ชั้น 1 ห้องน้ำครูชาย/หญิง', 'Chalerm_Building', 25.6, 35, 22, 25.9, 0),
-  'ห้องวิทยาศาสตร์': mkRoom('ชั้น 1 ห้องวิทยาศาสตร์', 'Wooden_Building', 22.2, 32, -43, -22.2, 0), 'ห้องภาษาอังกฤษ': mkRoom('ชั้น 2 ห้องภาษาอังกฤษ', 'Wooden_Building', 22.2, 32, -43, -22.2, F2),
+  'ห้องวิทยาศาสตร์': mkRoom('ชั้น 1 ห้องวิทยาศาสตร์', 'Wooden_Building', 22.2 + WOOD.dx, 32 + WOOD.dx, -43 + WOOD.dz, -22.2 + WOOD.dz, 0), 'ห้องภาษาอังกฤษ': mkRoom('ชั้น 2 ห้องภาษาอังกฤษ', 'Wooden_Building', 22.2 + WOOD.dx, 32 + WOOD.dx, -43 + WOOD.dz, -22.2 + WOOD.dz, F2),
   'ห้องคอมพิวเตอร์': mkRoom('ชั้น 2 ห้องคอมพิวเตอร์', 'Technology_Building', 9.6, 19, -47.6, -40.4, F2),
   'ห้องเก็บของ อาคารเทคโนโลยี': mkRoom('ชั้น 1 ห้องเก็บของ', 'Technology_Building', 9.6, 19, -47.6, -40.4, 0),
   // อาคาร ป.1 ป.2 ชั้นเดียว 3 ห้อง เรียงจากฝั่งประตูทางออก (ตะวันตก): ห้องเก็บของ → ป.2 → ป.1 (ครูบอก)
@@ -386,7 +388,7 @@ const HOMEROOM_ROOM = {'ป.1':'ห้อง ป.1','ป.2':'ห้อง ป.2'
 const EAST_ROOMS = new Set(['ห้อง ป.1', 'ห้อง ป.2', 'ห้องคอมพิวเตอร์']);
 const faceOf = r => r.east ? Math.PI/2 : undefined;   // หุ่นหันหน้า +z ที่ yaw 0 → π/2 = หันไปทางตะวันออก
 // บันไดขึ้นชั้น 2 (ในอาคาร): จุดล่าง → จุดบน
-const STAIR = {Chalerm_Building: {bot: [24.9, -12.8], top: [24.9, -7.2]}, Wooden_Building: {bot: [21.2, -15.6], top: [21.2, -21.4]}, Technology_Building: {bot: [8.5, -39.3], top: [14.3, -39.3]}};
+const STAIR = {Chalerm_Building: {bot: [24.9, -12.8], top: [24.9, -7.2]}, Wooden_Building: {bot: [21.2 + WOOD.dx, -15.6 + WOOD.dz], top: [21.2 + WOOD.dx, -21.4 + WOOD.dz]}, Technology_Building: {bot: [8.5, -39.3], top: [14.3, -39.3]}};
 for (const s of Object.values(STAIR)) { s.bot3 = new THREE.Vector3(s.bot[0], 0, s.bot[1]); s.top3 = new THREE.Vector3(s.top[0], F2, s.top[1]); }
 function roomOf(sub){
   if (/เทคโนโลยี|วิทยาการคำนวณ/.test(sub)) return 'ห้องคอมพิวเตอร์';
@@ -790,6 +792,7 @@ addEventListener('resize',resize); resize();
 function onModel(g) {
   const root = g.scene; scene.add(root);
   for (const [n, dz] of Object.entries(ROW_DZ)) { const o = root.getObjectByName(n); if (o) o.position.z += dz; }
+  const wood = root.getObjectByName('Wooden_Building'); if (wood) { wood.position.x += WOOD.dx; wood.position.z += WOOD.dz; }
   const hall = root.getObjectByName('Multipurpose_Hall'); if (hall) { hall.userData.t0 = [hall.position.clone(), hall.quaternion.clone()]; hall.position.x = HALL_POS[0]; hall.position.z = HALL_POS[1]; hall.rotateY(HALL_ROT); }
   const music = root.getObjectByName('Music_Room'); if (music) { music.position.x = MUSIC.x; music.position.z = MUSIC.z; music.rotateY(Math.PI); music.scale.set(...MUSIC.s); }
   root.updateMatrixWorld(true);
@@ -2258,7 +2261,7 @@ function buildStoreFx(){
 // สะพานเชื่อมชั้น 2 อาคารเทคโนโลยี ↔ อาคารไม้ (ครูบอก): ทางเดินปูนมีหลังคา ราวกันตก
 function buildBridge(){
   const M = c => new THREE.MeshLambertMaterial({color: c}), g = new THREE.Group(); g.name = 'SkyBridge'; scene.add(g);
-  const xa = 18.9, xb = 20.6, cz = -41.9, Wd = 2.2, L = xb - xa, cx = (xa + xb)/2;
+  const xa = 18.9, xb = 20.6 + WOOD.dx, cz = -41.9 + WOOD.dz, Wd = 2.2, L = xb - xa, cx = (xa + xb)/2;
   const bx = (w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; g.add(o); return o; };
   bx(L, .22, Wd, M('#d6d3d1'), cx, F2 - .11, cz);                                               // พื้นสะพาน
   bx(L, .3, .12, M('#cbd5e1'), cx, F2 - .3, cz - Wd/2); bx(L, .3, .12, M('#cbd5e1'), cx, F2 - .3, cz + Wd/2);   // คานขอบ
@@ -2866,7 +2869,7 @@ function chalermRoomFx(c, g){
 const roomLabs = [];
 function buildFloors(){
   const slabM = new THREE.MeshLambertMaterial({color:'#e2e8f0', transparent:true, opacity:.5, depthWrite:false}), stairM = new THREE.MeshLambertMaterial({color:'#94a3b8'});
-  const SLAB = {Chalerm_Building: [23.5, 35.5, -7.2, 26.4], Wooden_Building: [20.2, 32.2, -43.7, -21.4], Technology_Building: [7.3, 19.3, -48.1, -40.1]};
+  const SLAB = {Chalerm_Building: [23.5, 35.5, -7.2, 26.4], Wooden_Building: [20.2 + WOOD.dx, 32.2 + WOOD.dx, -43.7 + WOOD.dz, -21.4 + WOOD.dz], Technology_Building: [7.3, 19.3, -48.1, -40.1]};
   for (const [b, [x0, x1, z0, z1]] of Object.entries(SLAB)) {
     const s = new THREE.Mesh(new THREE.BoxGeometry(x1-x0, .16, z1-z0), slabM); s.position.set((x0+x1)/2, F2 - .08, (z0+z1)/2); s.renderOrder = 1; scene.add(s);
     if (b === 'Chalerm_Building') continue;   // บันไดผนังเขียว สร้างใน buildChalermF2
