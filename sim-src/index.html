@@ -983,7 +983,7 @@ function placeOfAgent(a, m){
     const L = lunchAt(a.cls, m); if (!L) return placeOfAgent(a, 679.9);
     return [L[0], L[0] === 'FREE' ? playOf(a).th : L[1]];
   }
-  if (where === 'homeroom' && a.kind === 's' && m < 516 && EXIT_ROUTE[HOMEROOM[a.cls]] && placeOfAgent(a, 499.9)[0] === 'Flagpole' && exitWalk(a, m)?.file) return [HOMEROOM[a.cls], 'เลิกแถว เดินแถวเรียงหนึ่งกลับห้อง (ไม่ลัดสนาม)'];
+  if (where === 'homeroom' && a.kind === 's' && m < 516 && HOMEROOM[a.cls] in EXIT_ROUTE && placeOfAgent(a, 499.9)[0] === 'Flagpole' && exitWalk(a, m)?.file) return [HOMEROOM[a.cls], 'เลิกแถว เดินแถวเรียงหนึ่งกลับห้อง (ไม่ลัดสนาม)'];
   if (where == null) return ['GATE',''];
   if (a.kind === 's') { const lu = lineUp(a, m, where); if (lu) return [lu.from, lu.walk ? `เดินแถวเรียงหนึ่งไป${ZONES[lu.to][0]}` : `เข้าแถว 2 แถว (ชาย/หญิง) หน้าห้อง เตรียมไป${ZONES[lu.to][0]}`]; }
   if (a.kind === 't') return teacherPlace(r, where);
@@ -1155,35 +1155,135 @@ function lineUp(a, m, p){
   const T = keyRect(tk), RT = ROOMS[tk];
   const D = RT && RT.y > 1.8 && STAIR[RT.b] ? STAIR[RT.b].bot3.clone()
     : new THREE.Vector3(Math.min(T.c.x + T.sx/2, Math.max(T.c.x - T.sx/2, S.x)), 0, Math.min(T.c.z + T.sz/2, Math.max(T.c.z - T.sz/2, S.z)));
-  const L = S.distanceTo(D), order = girl ? boys + row : row;
+  const W = navPath(S, D), L = W.L, order = girl ? boys + row : row;   // เดินตามถนน ไม่ลัดสนาม
   const d = (m - P - LINE_MIN - ci*(coh.length*FILE_GAP + 4)/FILE_V)*FILE_V - order*FILE_GAP;
   if (d >= L) return null;
   if (d < 0) return {from, to, pos};
-  return {from, to, walk: true, pos: S.clone().lerp(D, L ? d/L : 1)};
+  return {from, to, walk: true, pos: navAt(W, d)};
+}
+/* ---------- ทางเดิน: ห้ามเดินลัดสนามทุกสนาม (รวมลานหน้าเสาธง) ให้เดินชิดซ้ายมือตามถนน (ครูสั่ง) ---------- */
+// เข้าไปในสนามได้เฉพาะเมื่อกิจกรรมอยู่ในสนามนั้นเอง (เข้าแถว เล่นกีฬา คาบพละ) โดยออกจากถนนตรงจุดที่ใกล้ที่สุด
+// ลานเสาธงนับรวมพื้นที่หน้าเสาธงจนถึงฐานเสา (x 5) และช่องระหว่างสนามฟุตบอลกับลาน · ลานกลางรอบเสาธง/อนุสาวรีย์ (x 5..15.2 ถึงขอบถนน) ก็ห้ามเดินผ่าน
+const NO_CROSS = [FIELD, {x0: FIELD.x1, x1: 5, z0: ASSEMBLY.z0, z1: ASSEMBLY.z1}, {x0: 5, x1: 15.2, z0: -18.6, z1: 24.6},
+  {x0: PETANQUE.x - 3.8, x1: PETANQUE.x + 3.8, z0: PETANQUE.z - 3.2, z1: PETANQUE.z + 3.2},
+  {x0: PLAY_C[0] - 3.5, x1: PLAY_C[0] + 3.5, z0: PLAY_C[1] - 7, z1: PLAY_C[1] + 7}];   // สนามฟุตบอล ลานเสาธง/วอลเลย์ เปตอง โดมเด็กเล่น
+const NAV_ROAD = 2.0, NAV_PATH = .5, NAV_OFF = 3, NAV_DIRECT = 12;   // ระยะชิดซ้ายจากกลางถนน/ทางเดิน, ค่าเดินนอกถนนแพงกว่า 3 เท่า, ระยะที่เดินตรงได้
+// เส้นถนนในโรงเรียน (ตามเส้นทางรถ MAIN) และทางเดินรอบอาคารฝั่งตะวันออก (ไปโรงอาหาร ห้องน้ำ แปลงเกษตร)
+const NAV_LINES = () => [
+  [NAV_ROAD, [[FENCE.x0 - 1, GATE_IN_Z], ...MAIN.slice(3, 20), [FENCE.x0 - 1, GATE_OUT_Z]]],
+  [NAV_PATH, [[DROP_X, 27.5], [22, 29.6], [39.5, 29.6], [39.5, -46.8], [21.4, -46.8], [21.4, -24], [18, LANE]]],
+];
+let NAV = null;
+function navGraph(){
+  if (NAV) return NAV;
+  const N = [], E = [], node = (x, z) => { let i = N.findIndex(n => Math.hypot(n.x - x, n.z - z) < .3); if (i < 0) { i = N.length; N.push({x, z}); } return i; };
+  for (const [off, pts] of NAV_LINES()) for (let k = 1; k < pts.length; k++) { const a = node(...pts[k-1]), b = node(...pts[k]); if (a !== b) E.push({a, b, off}); }
+  for (let split = true; split;) {   // จุดต่อที่อยู่กลางเส้นถนนอีกเส้น (เช่น ปลายถนนเชื่อม) → แบ่งเส้นตรงนั้น
+    split = false;
+    for (const [ei, e] of E.entries()) for (let i = 0; i < N.length && !split; i++) {
+      if (i === e.a || i === e.b) continue;
+      const A = N[e.a], B = N[e.b], dx = B.x - A.x, dz = B.z - A.z, L2 = dx*dx + dz*dz, t = ((N[i].x - A.x)*dx + (N[i].z - A.z)*dz)/L2;
+      if (t > .01 && t < .99 && Math.hypot(A.x + dx*t - N[i].x, A.z + dz*t - N[i].z) < .3) { E.splice(ei, 1, {a: e.a, b: i, off: e.off}, {a: i, b: e.b, off: e.off}); split = true; }
+    }
+  }
+  const n = N.length, D = [...Array(n)].map((_, i) => Array(n).fill(Infinity).map((v, j) => i === j ? 0 : v)), nx = [...Array(n)].map((_, i) => Array(n).fill(-1).map((v, j) => j));
+  const off = new Map();
+  for (const e of E) { const L = Math.hypot(N[e.a].x - N[e.b].x, N[e.a].z - N[e.b].z); D[e.a][e.b] = D[e.b][e.a] = L; off.set(e.a + ',' + e.b, e.off); off.set(e.b + ',' + e.a, e.off); }
+  for (let k = 0; k < n; k++) for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (D[i][k] + D[k][j] < D[i][j]) { D[i][j] = D[i][k] + D[k][j]; nx[i][j] = nx[i][k]; }
+  // อาคาร: ห้ามเดินทะลุ (เดินเข้าได้เฉพาะอาคารที่เป็นจุดหมาย/จุดเริ่ม)
+  const blk = Object.entries(zones).filter(([k]) => !['Flagpole', 'Field', 'SmartFarm'].includes(k)).map(([, z]) => ({x0: z.c.x - z.sx/2, x1: z.c.x + z.sx/2, z0: z.c.z - z.sz/2, z1: z.c.z + z.sz/2}));
+  blk.push({x0: -9.8, x1: .2, z0: 18.1, z1: 21.6});   // ม้านั่งโค้งรอบต้นมะม่วง 2 ต้น ใต้ลานเสาธง
+  return NAV = {N, E, D, nx, off, rects: [...NO_CROSS, ...blk]};
+}
+const inRect = (p, r, m = 0) => p.x > r.x0 - m && p.x < r.x1 + m && p.z > r.z0 - m && p.z < r.z1 + m;
+function segHits(ax, az, bx, bz, r){   // เส้นตรง a→b ผ่านเข้าในกรอบ r (หดขอบ .25 ม. ให้เดินเลียบขอบได้)
+  let t0 = 0, t1 = 1; const dx = bx - ax, dz = bz - az, x0 = r.x0 + .25, x1 = r.x1 - .25, z0 = r.z0 + .25, z1 = r.z1 - .25;
+  for (const [p, q] of [[-dx, ax - x0], [dx, x1 - ax], [-dz, az - z0], [dz, z1 - az]]) {
+    if (Math.abs(p) < 1e-9) { if (q < 0) return false; continue; }
+    const t = q/p; if (p < 0) { if (t > t1) return false; if (t > t0) t0 = t; } else { if (t < t0) return false; if (t < t1) t1 = t; }
+  }
+  return t1 - t0 > 1e-6;
+}
+// เดินตรงได้ไหม: ไม่ผ่านสนาม/อาคารอื่น นอกจากที่ตัวเองอยู่หรือจุดหมายอยู่ข้างใน
+const navClear = (S, T, rects) => rects.every(r => inRect(S, r) || inRect(T, r) || !segHits(S.x, S.z, T.x, T.z, r));
+// เส้นทางจาก S ไป T: ออกถนนที่ใกล้ที่สุด เดินตามถนนชิดซ้าย แล้วเข้าจุดหมาย (คืนรายการจุด จุดสุดท้ายคือ T)
+function navRoute(S, T){
+  const G = navGraph(), {N, E, D, nx, off} = G, d = Math.hypot(S.x - T.x, S.z - T.z);
+  if (d < .05 || G.rects.some(r => inRect(S, r) && inRect(T, r)) || (d <= NAV_DIRECT && navClear(S, T, G.rects))) return [T];
+  const cands = P => {   // จุดขึ้นถนน: จุดตั้งฉาก + จุดทุก 2 ม. บนแต่ละเส้น เลือกจุดใกล้สุดที่เดินไปได้โดยไม่ผ่านสนาม/อาคาร 12 จุด
+    const all = [];
+    E.forEach((e, ei) => { const A = N[e.a], B = N[e.b], dx = B.x - A.x, dz = B.z - A.z, L = Math.hypot(dx, dz), ts = [Math.max(0, Math.min(1, ((P.x - A.x)*dx + (P.z - A.z)*dz)/(L*L)))];
+      for (let s = 0; s <= L; s += 2) ts.push(s/L);
+      for (const t of ts) { const q = {x: A.x + dx*t, z: A.z + dz*t}; all.push({ei, e, q, c: Math.hypot(P.x - q.x, P.z - q.z)*NAV_OFF}); } });
+    all.sort((u, v) => u.c - v.c); const ok = [];
+    for (const c of all) { if (navClear(P, c.q, G.rects)) ok.push(c); if (ok.length >= 12) break; }
+    return ok.length ? ok : all.slice(0, 4); };
+  const cs = cands(S), ct = cands(T), dq = (q, i) => Math.hypot(q.x - N[i].x, q.z - N[i].z);
+  let best = null;
+  for (const s of cs) for (const t of ct) {
+    if (s.c + t.c >= (best?.cost ?? Infinity)) continue;
+    if (s.ei === t.ei) { const c = s.c + t.c + Math.hypot(s.q.x - t.q.x, s.q.z - t.q.z); if (c < (best?.cost ?? Infinity)) best = {cost: c, s, t, path: []}; continue; }
+    for (const i of [s.e.a, s.e.b]) for (const j of [t.e.a, t.e.b]) { const c = s.c + t.c + dq(s.q, i) + D[i][j] + dq(t.q, j); if (c < (best?.cost ?? Infinity)) best = {cost: c, s, t, path: [i, j]}; }
+  }
+  const C = [{p: best.s.q, off: best.s.e.off}];   // จุดบนเส้นกลางถนน + ระยะชิดซ้ายของช่วงที่จะเดินต่อ
+  if (best.path.length) { let [i, j] = best.path; C.push({p: N[i], off: i === j ? best.t.e.off : off.get(i + ',' + nx[i][j])}); while (i !== j) { i = nx[i][j]; C.push({p: N[i], off: i === j ? best.t.e.off : off.get(i + ',' + nx[i][j])}); } }
+  C.push({p: best.t.q});
+  const seg = [];
+  for (let k = 1; k < C.length; k++) {   // เลื่อนแต่ละช่วงไปทางซ้ายมือของทิศที่เดิน (ซ้าย = (dz, -dx))
+    const A = C[k-1].p, B = C[k].p, L = Math.hypot(B.x - A.x, B.z - A.z); if (L < .05) continue;
+    const o = C[k-1].off, ux = (B.x - A.x)/L, uz = (B.z - A.z)/L;
+    seg.push({ax: A.x + uz*o, az: A.z - ux*o, bx: B.x + uz*o, bz: B.z - ux*o, ux, uz});
+  }
+  const out = [];
+  seg.forEach((s, k) => {
+    if (!k) out.push(new THREE.Vector3(s.ax, 0, s.az));
+    const n = seg[k + 1]; if (!n) { out.push(new THREE.Vector3(s.bx, 0, s.bz)); return; }
+    const cr = s.ux*n.uz - s.uz*n.ux;   // หัวมุม: ใช้จุดตัดของแนวเดินสองช่วง (ไม่เดินย้อนกลับตรงมุมเลี้ยว)
+    const t = Math.abs(cr) > .05 ? ((n.ax - s.ax)*n.uz - (n.az - s.az)*n.ux)/cr : null, mx = t == null ? 0 : s.ax + s.ux*t, mz = t == null ? 0 : s.az + s.uz*t;
+    if (t != null && Math.hypot(mx - s.bx, mz - s.bz) < 6) out.push(new THREE.Vector3(mx, 0, mz)); else out.push(new THREE.Vector3(s.bx, 0, s.bz), new THREE.Vector3(n.ax, 0, n.az));
+  });
+  out.push(T); return out;
+}
+// เส้นทางคงที่ (เดินแถวเรียงหนึ่ง): จุด S + เส้นทางตามถนน พร้อมระยะสะสม
+const NAV_CACHE = new Map();
+function navPath(S, T){
+  const k = [S.x, S.z, T.x, T.z].map(v => v.toFixed(1)).join(','); let R = NAV_CACHE.get(k);
+  if (!R) { const pts = [S.clone(), ...navRoute(S, T)], cum = [0]; for (let i = 1; i < pts.length; i++) cum.push(cum[i-1] + pts[i-1].distanceTo(pts[i])); NAV_CACHE.set(k, R = {pts, cum, L: cum[cum.length-1]}); }
+  return R;
+}
+function navAt(R, d){ let i = 1; while (i < R.pts.length - 1 && R.cum[i] < d) i++; const s = R.cum[i] - R.cum[i-1]; return R.pts[i-1].clone().lerp(R.pts[i], s ? Math.min(1, Math.max(0, (d - R.cum[i-1])/s)) : 1); }
+// เดินไปจุดหมาย (บนพื้นชั้นล่าง) ตามเส้นทาง: หาเส้นทางใหม่เมื่อจุดหมายเปลี่ยนเกิน 3 ม. ไม่งั้นเดินต่อตามเดิม (จุดสุดท้ายตามจุดหมายจริง)
+function walkTo(a, dest, dt){
+  if (a.pos.y > 1 || dest.y > 1) { a.nav = null; return stepTo(a, dest, dt); }
+  let R = a.nav;
+  if (!R || R.dest.distanceToSquared(dest) > 9) R = a.nav = {dest: dest.clone(), pts: navRoute(a.pos, dest), i: 0};
+  R.pts[R.pts.length - 1] = dest;
+  while (R.i < R.pts.length - 1 && a.pos.distanceToSquared(R.pts[R.i]) < 1e-4) R.i++;
+  const p = R.pts[R.i]; let rest = 0; for (let k = R.i + 1; k < R.pts.length; k++) rest += R.pts[k-1].distanceTo(R.pts[k]);
+  const dv = p.clone().sub(a.pos), len = dv.length(), step = Math.max(16*dt, (len + rest)*Math.min(1, dt*.9));
+  if (len > step) { a.pos.addScaledVector(dv, step/len); return false; }
+  a.pos.copy(p); if (R.i < R.pts.length - 1) { R.i++; return false; } return true;
 }
 // เลิกแถวหน้าเสาธง: เดินแถวเรียงหนึ่งทีละชั้นไปห้องโฮมรูม ตามทางรอบสนาม (ห้ามเดินลัดสนาม)
 const EXIT_V = 13, EXIT_GAP = .75;
-const EXIT_ROUTE = {   // จุดเลี้ยวของแต่ละอาคาร (อยู่นอกสนามหญ้า x -40.6..-16.6, z -7.2..27.1)
-  Chalerm_Building: [[1.5, 2], [4, -9.5], [16, -11.5], [STAIR.Chalerm_Building.bot[0], STAIR.Chalerm_Building.bot[1]]],
-  P1P2_Classroom: [[-1.5, -8.5], [-12, -10], [-14.5, -17.5]],
-  Kindergarten: [[-1.5, 16], [-8, 16.5], [-12, 24], [-16, 29.6], [-24, 29.6]],
+const EXIT_ROUTE = {   // ปลายทางของแต่ละอาคาร: เดินออกจากลานไปถนนที่ใกล้ที่สุด แล้วเดินชิดซ้ายตามถนน (ไม่ลัดสนาม/หน้าเสาธง)
+  Chalerm_Building: [STAIR.Chalerm_Building.bot[0], STAIR.Chalerm_Building.bot[1]],
+  P1P2_Classroom: null,   // หน้าห้องของแต่ละชั้น
+  Kindergarten: [-30, 33.3],
 };
 function exitWalk(a, m){
   if (a.kind !== 's' || m < 500 || m >= 516) return null;
-  const hb = HOMEROOM[a.cls], R = EXIT_ROUTE[hb]; if (!R) return null;
+  const hb = HOMEROOM[a.cls]; if (!(hb in EXIT_ROUTE)) return null;
   const ci = CLASSES.findIndex(([c]) => c === a.cls), coh = a.cohort ??= STUDENTS.filter(s => s.cls === a.cls && s.scan != null), k = coh.indexOf(a.ref);
   if (k < 0 || placeOfAgent(a, 499.9)[0] !== 'Flagpole') return null;
   const grp = CLASSES.filter(([c]) => HOMEROOM[c] === hb).map(([c]) => c), gi = grp.indexOf(a.cls);   // ชั้นที่ไปอาคารเดียวกันออกต่อกัน
   const S = new THREE.Vector3(ASSEMBLY.x1 - 1.2, 0, ASSEMBLY.z0 + 1.6 + ci*2.5 + .4);
-  const pts = [S, ...R.map(([x, z]) => new THREE.Vector3(x, 0, z))];
-  if (hb === 'P1P2_Classroom') { const T = keyRect(HOMEROOM_ROOM[a.cls] || hb); pts.push(new THREE.Vector3(T.c.x, 0, -17.5), new THREE.Vector3(T.c.x, 0, -22.8)); }
-  let L = 0; const seg = []; for (let i = 1; i < pts.length; i++) { const d = pts[i-1].distanceTo(pts[i]); seg.push(d); L += d; }
+  const [ex, ez] = EXIT_ROUTE[hb] || [keyRect(HOMEROOM_ROOM[a.cls] || hb).c.x, -22.8], W = navPath(S, new THREE.Vector3(ex, 0, ez)), L = W.L;
   const wait = grp.slice(0, gi).reduce((t, c) => t + (STUDENTS.filter(s => s.cls === c && s.scan != null).length*EXIT_GAP + 3)/EXIT_V, 0);
   let d = (m - 500 - wait)*EXIT_V - k*EXIT_GAP;
   if (d >= L) return null;
   if (d < 0) return {p: targetOf(a, 499.9).p, pose: 'stand', yaw: Math.PI/2};
-  for (let i = 0; i < seg.length; i++) { if (d <= seg[i]) return {p: pts[i].clone().lerp(pts[i+1], seg[i] ? d/seg[i] : 1), pose: 'walk', file: true}; d -= seg[i]; }
-  return null;
+  return {p: navAt(W, d), pose: 'walk', file: true};
 }
 function targetOf(a, m){
   const [z] = placeOfAgent(a, m);
@@ -2012,10 +2112,10 @@ function moveAgents(dt){
     if (T && T.ball && a.pos.distanceTo(tgt) < 3) inPlay[T.ball] = (inPlay[T.ball] || 0) + 1;
     if (!tgt) { a.shown = false; }
     else {
-      if (!a.shown) { a.shown = true; a.pos.copy(spawnOf(a)); }
+      if (!a.shown) { a.shown = true; a.pos.copy(spawnOf(a)); a.nav = null; }
       const was = a.pos.clone();
-      if (a.stair) { if (stepTo(a, a.stair.dir > 0 ? STAIR[a.stair.b].top3 : STAIR[a.stair.b].bot3, dt * .5)) a.stair = null; }
-      else { const w = waypoint(a, tgt); if (stepTo(a, w.p, dt) && w.start) a.stair = w.start; }
+      if (a.stair) { a.nav = null; if (stepTo(a, a.stair.dir > 0 ? STAIR[a.stair.b].top3 : STAIR[a.stair.b].bot3, dt * .5)) a.stair = null; }
+      else { const w = waypoint(a, tgt); if (walkTo(a, w.p, dt) && w.start) a.stair = w.start; }   // ชั้นล่างเดินตามถนน ชิดซ้าย ไม่ลัดสนาม
       if (a.pos.y < 1) yieldToCars(a, was, cars);
     }
     const arrived = T && a.pos.distanceTo(tgt) < (T.pose === 'swim' ? 1.5 : .4), pose = arrived ? T.pose : 'walk';
