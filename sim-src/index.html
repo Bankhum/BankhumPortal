@@ -1040,8 +1040,9 @@ const teacherFront = (r, pose) => pose === 'sit' ? (([x, z]) => new THREE.Vector
 // เวลาว่าง (ก่อนเข้าแถว / พักเที่ยง): นักเรียนส่วนใหญ่เล่นหน้าห้องเรียนของตัวเอง (ตามที่ครูบอก) กลางสนามมีแค่กลุ่มเตะฟุตบอล
 // บางกลุ่มตีวอลเลย์บอลที่ลานเสาธง เล่นเปตองที่ลานเปตอง ป.1–2 บางคนเล่นโดมสนามเด็กเล่น บางคนนั่งเล่นอาคารเอนกประสงค์
 const PETANQUE = {x: -13, z: 19.5};   // ลานเปตอง 2 ลู่ ลู่ยาวตามแนว x (ดู buildDecor)
+const SALA_X = [-38.6, -34.7, -30.8, -26.9, -23, -19.1, -15.2, -11.3], SALA_Z = -15.3;   // ศาลาทรงไทย 8 หลังริมสนามหน้าอาคาร ป.1 ป.2 (ม้านั่ง 2 ฝั่ง)
 const PLAY_TH = {front: 'เล่นหน้าห้องเรียน', below: 'เล่นหน้าอาคารเฉลิมพระเกียรติ', football: 'เตะฟุตบอลที่สนาม', volley: 'ตีวอลเลย์บอลที่ลานเสาธง',
-  petanque: 'เล่นเปตอง', dome: 'เล่นโดมสนามเด็กเล่น', hall: 'นั่งเล่นอาคารเอนกประสงค์'};
+  petanque: 'เล่นเปตอง', sala: 'นั่งเล่นที่ศาลาริมสนาม', dome: 'เล่นโดมสนามเด็กเล่น', hall: 'นั่งเล่นอาคารเอนกประสงค์'};
 function playOf(a){
   if (a.play) return a.play;
   const g = playGroupRaw(a), same = AGENTS.filter(b => b.kind === 's' && !isKG(b.cls) && playGroupRaw(b) === g);
@@ -1056,6 +1057,7 @@ function playGroupRaw(a){
   if (ci >= 6 && h >= 80 && h < 90) return 'petanque';
   if (ci <= 3 && h < 22) return 'dome';
   if (h >= 94) return 'hall';
+  if (ci <= 3 ? h % 2 === 0 : h % 3 === 1) return 'sala';             // ครูขอให้เล่นที่ศาลาเยอะ ๆ: ป.1–2 ครึ่งหนึ่ง ป.3–6 ราว 1 ใน 3
   if (ci >= 4 && h % 3 === 0) return 'below';
   return 'front';
 }
@@ -1087,6 +1089,11 @@ function freePlay(a, m){
   if (P.g === 'petanque') {
     const lane = P.k % 2 ? 1.6 : -1.6, j = P.k >> 1;
     return {p: new THREE.Vector3(PETANQUE.x + 4.4 + (j % 2)*.6, 0, PETANQUE.z + lane + ((j >> 1) - .5)*.8), pose: j === 0 ? 'brush' : 'stand', yaw: -Math.PI/2, ball: 'boule'};
+  }
+  if (P.g === 'sala') {   // นั่งม้านั่งในศาลา 2 ฝั่งหันหน้าเข้าหากัน บางคนยืนคุยระหว่างศาลา (เห็นจากมุมสูง ไม่โดนหลังคาบัง)
+    const i = P.k % 8, slot = P.k >> 3, x = SALA_X[i], [dx, dz] = jit(.15), seat = [0, 1, -1, -1, 2, 3][slot] ?? -1;
+    if (seat >= 0) { const sd = seat < 2 ? -1 : 1; return {p: new THREE.Vector3(x + (seat % 2 ? .45 : -.45), .5, SALA_Z + sd*.95), pose: 'bench', yaw: sd < 0 ? 0 : Math.PI}; }
+    return {p: new THREE.Vector3(x + 1.95 + dx*.5, 0, SALA_Z + (slot % 2 ? .6 : -.6) + dz), pose: 'circle'};
   }
   if (P.g === 'dome') { const [dx, dz] = jit(1.2); return {p: new THREE.Vector3(PLAY_C[0] + (a.ox-.5)*6 + dx, 0, PLAY_C[1] + (a.oz-.5)*12 + dz), pose: 'run'}; }
   if (P.g === 'hall') { const [dx, dz] = jit(.4); return {p: new THREE.Vector3(17 + (a.ox-.5)*8 + dx, 0, 32 + (a.oz-.5)*10 + dz), pose: 'circle'}; }
@@ -1735,7 +1742,7 @@ function buildP12Lane(){
   const g = new THREE.Group(); g.name = 'P12Lane'; scene.add(g);
   const M = c => new THREE.MeshLambertMaterial({color: c}), add = (geo, mat, x, y, z, par = g) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; par.add(o); return o; };
   const B = (w, h, d, c, x, y, z, par = g) => add(new THREE.BoxGeometry(w, h, d), typeof c === 'string' ? M(c) : c, x, y, z, par);
-  const TREES = [-38.4, -34.1, -29.9, -25.6, -21.3, -17, -12.7, -8.4], TZ = -18.2, SALA = [-38.6, -34.7, -30.8, -26.9, -23, -19.1, -15.2, -11.3], SZ = -15.3;   // ศาลาวางชิดแนวต้นไม้ริมถนน (ตามที่ครูชี้)
+  const TREES = [-38.4, -34.1, -29.9, -25.6, -21.3, -17, -12.7, -8.4], TZ = -18.2, SALA = SALA_X, SZ = SALA_Z;   // ศาลาวางชิดแนวต้นไม้ริมถนน (ตามที่ครูชี้)
   fixP12Site(); buildParkingSite();
   // กระถางปูนกลมสีขาวรอบโคนต้นไม้ + พุ่มเข็ม/ไม้ประดับ
   const potG = new THREE.CylinderGeometry(.78, .82, .5, 18), bushG = new THREE.SphereGeometry(.55, 9, 7), dotG = new THREE.SphereGeometry(.09, 5, 4);
@@ -2016,7 +2023,7 @@ function moveAgents(dt){
     dummy.position.copy(a.pos); dummy.rotation.set(0, arrived && T.yaw != null ? T.yaw : 0, 0);
     let sy = 1;
     if (pose === 'walk' || pose === 'run') dummy.position.y += Math.abs(Math.sin(t*11 + a.i))*.25;
-    if (pose === 'sit') sy = .62;
+    if (pose === 'sit' || pose === 'bench') sy = .62;
     if (pose === 'sleep') { dummy.rotation.x = -Math.PI/2; dummy.position.y += .3; }
     if (pose === 'sweep') dummy.rotation.x = .35 + Math.sin(t*6 + a.i)*.18;
     if (pose === 'brush') dummy.rotation.z = Math.sin(t*9 + a.i)*.06;
