@@ -2707,8 +2707,8 @@ function buildChalerm(){   // ลานหน้าอาคารเฉลิ�
   const MX = 10.4, MZ = .6, white = M('#f1f1ee');
   B(1.5, .3, 1.5, white, MX, .15, MZ); B(1.25, .55, 1.25, white, MX, .57, MZ); B(1.05, .35, 1.05, white, MX, 1.02, MZ); B(1.15, .08, 1.15, '#e8c9a8', MX, 1.23, MZ);
   for (const y of [.35, .8]) for (const [dx, dz] of [[-.64, 0], [.64, 0], [0, -.64], [0, .64]]) B(dx ? .04 : .2, .12, dz ? .04 : .2, gold, MX + dx, y, MZ + dz);
-  const bronze = M('#5f574d'); add(new THREE.CylinderGeometry(.22, .28, 1.35, 10), bronze, MX, 1.95, MZ); add(new THREE.SphereGeometry(.15, 10, 8), bronze, MX, 2.75, MZ); B(.04, 1.4, .04, '#5b3a22', MX, 1.95, MZ + .35);
-  B(.06, 3.5, .06, '#b91c1c', MX - .9, 1.75, MZ); B(.9, .06, .06, '#b91c1c', MX - .45, 3.5, MZ);
+  const bronze = M('#5f574d'); add(new THREE.CylinderGeometry(.22, .28, 1.35, 10), bronze, MX, 1.95, MZ); add(new THREE.SphereGeometry(.15, 10, 8), bronze, MX, 2.75, MZ); B(.04, 1.4, .04, '#5b3a22', MX - .12, 1.95, MZ - .35);   // องค์หันหน้าออกจากอาคาร (-x) ไม้เท้าอยู่มือขวา
+  B(.06, 3.5, .06, '#b91c1c', MX + .9, 1.75, MZ); B(.9, .06, .06, '#b91c1c', MX + .45, 3.5, MZ);   // เสาแดงฉัตรอยู่ด้านหลังองค์ ฝั่งอาคารเฉลิมฯ
   add(new THREE.CylinderGeometry(.95, .95, .14, 20), gold, MX, 3.55, MZ); add(new THREE.ConeGeometry(.9, .3, 20), gold, MX, 3.77, MZ); add(new THREE.CylinderGeometry(.02, .05, .5, 6), gold, MX, 4.1, MZ);
   const fr = add(new THREE.CylinderGeometry(.97, .97, .25, 20, 1, true), new THREE.MeshLambertMaterial({color: '#c9a646', side: THREE.DoubleSide, transparent: true, opacity: .8}), MX, 3.36, MZ);
   // กำแพงคลื่นสีเขียวน้ำทะเลพร้อมพุ่มไม้ ที่ฐานเสาธง
