@@ -1519,6 +1519,7 @@ function buildFence(){ // รั้วรอบโรงเรียน เว�
 /* ---------- หน้าโรงเรียนตามภาพถ่ายจริง (school-photos/01-ภาพรวม-ประตู-รั้ว) ----------
    รั้วระแนงขาว-เขียว เสาเขียว, ป้ายผลงาน/รางวัลเรียงริมรั้ว, ป้ายชื่อโรงเรียนสีดำบนกำแพงเขียวมิ้นต์ (พ.ศ. 2548),
    ทางเท้าปูกระเบื้อง, ศาลาแปดเหลี่ยมขาว-เขียว 2 หลังข้างประตู, ขอบทางแดง-ขาว, ป้ายบอกทาง, โรงเรือนตาข่ายพรางแสง, ตึกแถว 3 ชั้นข้างโรงเรียน */
+let signFx = null;   // ไฟส่องป้ายชื่อโรงเรียน (ปรับตามเวลาใน applyLook)
 const SIGN_Z = 7;   // ป้ายชื่อโรงเรียน: กลางแนวรั้วหน้าโรงเรียน ระหว่างสวนดอกไม้กับประตูทางเข้า
 // ถนนหน้าอาคาร ป.1 ป.2 (ตามรูปจริง school-photos/05-อาคาร-ป1-ป2): ฝั่งสนามมีแนวต้นไม้ในกระถางปูนกลมสีขาวริมขอบทางแดง-ขาว,
 // ศาลาทรงไทยหลากสี (น้ำตาล ฟ้า ชมพู เขียว) และยางรถทาสีเรียงริมสนาม · ฝั่งอาคารมีเส้นประเหลืองริมถนน และซุ้มระแนงขาว "ขอบคุณที่มาเยือน" ท้ายอาคาร
@@ -1801,11 +1802,35 @@ function buildFrontage(segs){
   const nameTex = tex(512, 300, (c, w, h) => { c.fillStyle = '#111111'; c.fillRect(0, 0, w, h); c.strokeStyle = '#c9a227'; c.lineWidth = 6; c.strokeRect(8, 8, w - 16, h - 16);
     c.fillStyle = '#e6c25a'; c.textAlign = 'center'; c.font = 'bold 54px sans-serif'; c.fillText('โรงเรียนบ้านคุ้ม', w/2, 82); c.font = '36px sans-serif'; c.fillText('(ประสารราษฎร์วิทยา)', w/2, 132);
     c.font = 'bold 44px serif'; c.fillText('Bankhum School', w/2, 190); c.font = '30px sans-serif'; c.fillText('อำเภอสอง จังหวัดแพร่', w/2, 240); c.font = '20px sans-serif'; c.fillText('2548', w - 46, h - 22); });
-  const board = new THREE.Mesh(new THREE.PlaneGeometry(4.3, 2.5), new THREE.MeshLambertMaterial({map: nameTex})); board.rotation.y = -Math.PI/2; board.position.set(-.1, 2.0, 0); sg.add(board);
+  const boardM = new THREE.MeshLambertMaterial({map: nameTex, emissiveMap: nameTex, emissive: new THREE.Color('#ffffff'), emissiveIntensity: 0}); boardM.userData.noWarm = true;   // ตัวอักษรทองเรืองแสงตอนค่ำ (พื้นดำยังดำ)
+  const board = new THREE.Mesh(new THREE.PlaneGeometry(4.3, 2.5), boardM); board.rotation.y = -Math.PI/2; board.position.set(-.1, 2.0, 0); sg.add(board);
   B(.14, 2.7, 4.5, '#1f2937', .02, 2.0, 0, sg);
   const peak = new THREE.Mesh(new THREE.ExtrudeGeometry(new THREE.Shape([new THREE.Vector2(-1.1, 0), new THREE.Vector2(1.1, 0), new THREE.Vector2(0, .75)]), {depth: .14, bevelEnabled: false}), M('#1f2937'));
   peak.rotation.y = Math.PI/2; peak.position.set(-.05, 3.36, 0); sg.add(peak); B(.06, .45, .06, '#c9a227', 0, 4.25, 0, sg);   // หน้าจั่วเล็กเหนือป้าย
   const hedge = new THREE.Mesh(new THREE.BoxGeometry(.8, .55, 8.6), M('#4d7c0f')); hedge.position.set(-.85, .28, 0); hedge.castShadow = true; sg.add(hedge);
+  // สปอตไลต์ส่องป้าย 2 ดวงบนพื้นหน้าพุ่มไม้ เปิดตอนค่ำพร้อมเสาไฟ (LOOK.lamps): ลำแสงจาง ๆ + แสงตกบนกำแพงและป้าย + วงแสงบนพื้น
+  const glowTex = (inner, mid) => tex(128, 128, (c, w, h) => { const gr = c.createRadialGradient(w/2, h/2, 0, w/2, h/2, w/2); gr.addColorStop(0, inner); gr.addColorStop(.45, mid); gr.addColorStop(1, 'rgba(255,220,150,0)'); c.fillStyle = gr; c.fillRect(0, 0, w, h); });
+  const addM = map => new THREE.MeshBasicMaterial({map, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide});
+  const washM = addM(glowTex('rgba(255,236,190,.95)', 'rgba(255,214,150,.45)')), poolM = addM(glowTex('rgba(255,226,170,.8)', 'rgba(255,205,140,.3)'));
+  const beamM = addM(tex(16, 128, (c, w, h) => { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(255,236,190,.5)'); gr.addColorStop(.6, 'rgba(255,236,190,.12)'); gr.addColorStop(1, 'rgba(255,236,190,0)'); c.fillStyle = gr; c.fillRect(0, 0, w, h); }));
+  const lensM = new THREE.MeshLambertMaterial({color: '#fff7e0', emissive: new THREE.Color('#ffe2a0'), emissiveIntensity: 0}); lensM.userData.noWarm = true;
+  const wash = new THREE.Mesh(new THREE.PlaneGeometry(9.5, 4.6), washM); wash.rotation.y = -Math.PI/2; wash.position.set(.15, 2.25, 0); wash.renderOrder = 3; sg.add(wash);   // แสงตกบนกำแพงเขียว
+  const wash2 = new THREE.Mesh(new THREE.PlaneGeometry(6, 3.6), washM); wash2.rotation.y = -Math.PI/2; wash2.position.set(-.12, 2.1, 0); wash2.renderOrder = 3; sg.add(wash2);   // แสงตกบนป้าย
+  const pool = new THREE.Mesh(new THREE.PlaneGeometry(4, 9), poolM); pool.rotation.x = -Math.PI/2; pool.position.set(-1.7, .14, 0); pool.renderOrder = 2; sg.add(pool);
+  const tgt = new THREE.Vector3(), up = new THREE.Vector3(0, -1, 0);
+  for (const fz of [-1.7, 1.7]) {
+    const fx = new THREE.Group(); fx.position.set(-1.75, 0, fz); sg.add(fx);
+    B(.3, .1, .3, '#1f2937', 0, .05, 0, fx);   // ฐานโคม
+    const head = new THREE.Group(); head.position.y = .25; fx.add(head);
+    const can = new THREE.Mesh(new THREE.CylinderGeometry(.13, .15, .32, 10), M('#111827')); can.rotation.z = -Math.PI/2.6; head.add(can);
+    const lens = new THREE.Mesh(new THREE.CircleGeometry(.12, 12), lensM); lens.position.set(.15, .06, 0); lens.rotation.y = Math.PI/2; lens.rotation.x = 0; lens.rotateX(-.55); head.add(lens);
+    head.rotation.y = 0; B(.04, .2, .04, '#374151', 0, .15, 0, fx);
+    // ลำแสงทรงกรวย: ยอดที่โคม ปากกรวยที่ป้าย
+    tgt.set(-.15 + 1.75, 2.15, -fz*.35);
+    const len = tgt.length(), beam = new THREE.Mesh(new THREE.ConeGeometry(1.25, len, 20, 1, true).translate(0, -len/2, 0), beamM);
+    beam.quaternion.setFromUnitVectors(up, tgt.clone().normalize()); beam.position.y = .3; beam.renderOrder = 3; fx.add(beam);
+  }
+  signFx = {boardM, washM, poolM, beamM, lensM};
   // ศาลาแปดเหลี่ยมสีขาว-เขียว 2 หลังข้างประตูทางเข้า-ออก
   const gazebo = (x, z) => { const gz = new THREE.Group(); gz.position.set(x, 0, z); g.add(gz);
     const base = new THREE.Mesh(new THREE.CylinderGeometry(1.9, 1.9, .35, 8), M('#e5e7eb')); base.position.y = .17; base.receiveShadow = true; gz.add(base);
@@ -3344,6 +3369,8 @@ function animLook(dt, t){
   const L = LOOK.lamps;
   for (const m of winMats) if (m.emissive) { m.emissive.set('#ffc56e'); m.emissiveIntensity = L*.85; }
   if (lampFx) { lampFx.bulbM.emissiveIntensity = L*2.2; lampFx.glowM.opacity = Math.min(1, L*.75); lampFx.glowM.visible = L > .02; }
+  if (signFx) { const on = L > .02, k = Math.min(1, L); signFx.boardM.emissiveIntensity = L*.9; signFx.lensM.emissiveIntensity = L*3;
+    for (const [m, a] of [[signFx.washM, 1], [signFx.poolM, .8], [signFx.beamM, .3]]) { m.opacity = k*a; m.visible = on; } }
   // ฝน
   if (rainFx) {
     rainFx.m.visible = rainK > 0; rainFx.m.material.opacity = .25 + .45*rainK; rainFx.m.geometry.setDrawRange(0, Math.floor(rainFx.N*rainK)*2);
