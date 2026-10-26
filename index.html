@@ -3427,7 +3427,7 @@ frame();
   function ui(){
     hint.hidden = !(want && !playing);
     btn.classList.toggle('on', playing); btn.classList.toggle('wait', want && !playing);
-    btn.innerHTML = (want ? '🎵' : '🔇') + '<span class="tx"> ' + (playing ? 'เพลงเปิด' : 'เพลงปิด') + '</span>'; btn.setAttribute('aria-pressed', String(playing));
+    btn.innerHTML = (want ? '🎵' : '🔇') + '<span class="tx"> ' + (playing ? 'ปิดเพลง' : 'เปิดเพลง') + '</span>'; btn.setAttribute('aria-pressed', String(playing));
     btn.title = playing ? 'ปิดเพลง' : want ? 'แตะที่ใดก็ได้เพื่อเริ่มเพลง' : 'เปิดเพลง';
   }
   let unlockEl = null;
@@ -3468,6 +3468,7 @@ frame();
   ['pointerdown', 'pointerup', 'touchstart', 'touchend', 'click', 'keydown'].forEach(ev => addEventListener(ev, first, {capture: true, passive: true}));
   document.addEventListener('visibilitychange', () => { document.hidden ? stop() : first(); });
   ui();
+  first();   // ลองเปิดเพลงทันทีตอนเข้าเว็บ (เบราว์เซอร์ที่อนุญาตจะเล่นเลย ที่ไม่อนุญาตจะเริ่มเมื่อคลิก/แตะ/กดปุ่มครั้งแรก)
 })();
 </script>
 </body>
