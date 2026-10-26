@@ -1841,16 +1841,17 @@ function buildParkingSite(){
   for (const f of [-1, 1]) { const r = add(new THREE.PlaneGeometry(SX1 - SX0 + .8, Math.hypot(half, rise)), tinM, (SX0 + SX1)/2, H + .3 + rise/2, (SZ0 + SZ1)/2 + f*half/2); r.rotation.x = -Math.PI/2 + f*Math.atan2(rise, half); }
   // ของในโรงจอด: ยางรถเก่า โต๊ะ ชั้นวางของชิดผนังเรือนไม้
   B(1.6, .9, .6, '#a16207', -10.2, .45, SZ0 + .5); B(.8, 1.4, .45, '#64748b', 2.4, .7, SZ0 + .45);
-  // ต้นชมพูพันธุ์ทิพย์ต้นใหญ่หน้าโรงจอดรถ (ครูบอก): ลำต้นเทาน้ำตาลแตกกิ่งกว้าง ทรงพุ่มกลมแผ่ ดอกชมพูเต็มต้น
-  { const TX = -3.2, TZ = -15.6, bark = M('#6f6259'), pinks = ['#f9a8d4', '#f472b6', '#fbcfe8', '#ec4899'].map(M), lf = M('#6b8f3a');
+  // ต้นชมพูพันธุ์ทิพย์ต้นใหญ่ มุมหน้าโรงจอดรถฝั่งซุ้มขอบคุณที่มาเยือน ริมถนน (ครูวง): ลำต้นเทาน้ำตาลแตกกิ่งกว้าง ทรงพุ่มกลมแผ่ ดอกชมพูแซมใบเขียว
+  { const TX = -11.2, TZ = -24.7, bark = M('#6f6259'), pinks = ['#f9a8d4', '#f472b6', '#fbcfe8', '#ec4899'].map(M), lf = M('#5a8a32'), lf2 = M('#3f7d32');
     add(new THREE.CylinderGeometry(.32, .5, 3.4, 9), bark, TX, 1.7, TZ);
     const tops = [[0, 0, 7.4, 2.4]];
     for (let k = 0; k < 6; k++) { const a = k*Math.PI/3 + .3, r = 2.6, bx = TX + Math.cos(a)*r, bz = TZ + Math.sin(a)*r, by = 5.4 + (k % 2)*.7;
       const L = Math.hypot(r, by - 3.2), br = add(new THREE.CylinderGeometry(.11, .22, L, 6), bark, (TX + bx)/2, (3.2 + by)/2, (TZ + bz)/2);
       br.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(bx - TX, by - 3.2, bz - TZ).normalize()); tops.push([bx - TX, bz - TZ, by + .6, 1.9]); }
     tops.forEach(([dx, dz, y, r], k) => { add(new THREE.SphereGeometry(r, 10, 8), pinks[k % 4], TX + dx, y, TZ + dz).scale.y = .7;
-      for (let j = 0; j < 4; j++) { const a = j*1.6 + k, d = r*.75; add(new THREE.SphereGeometry(r*.45, 8, 6), pinks[(k + j + 1) % 4], TX + dx + Math.cos(a)*d, y + .35 + (j % 2)*.3, TZ + dz + Math.sin(a)*d).scale.y = .75; } });
-    for (let j = 0; j < 5; j++) { const a = j*1.3; add(new THREE.SphereGeometry(.7, 7, 5), lf, TX + Math.cos(a)*2, 5.0, TZ + Math.sin(a)*2).scale.y = .6; }   // ใบเขียวแซมใต้ทรงพุ่ม
+      for (let j = 0; j < 4; j++) { const a = j*1.6 + k, d = r*.75; add(new THREE.SphereGeometry(r*.45, 8, 6), j === 2 ? lf : pinks[(k + j + 1) % 4], TX + dx + Math.cos(a)*d, y + .35 + (j % 2)*.3, TZ + dz + Math.sin(a)*d).scale.y = .75; }
+      for (let j = 0; j < 3; j++) { const a = j*2.1 + k*.7 + .8, d = r*.95; add(new THREE.SphereGeometry(r*.38, 7, 5), j ? lf : lf2, TX + dx + Math.cos(a)*d, y - .25, TZ + dz + Math.sin(a)*d).scale.y = .7; } });   // ใบเขียวแซมรอบกระจุกดอก
+    for (let j = 0; j < 8; j++) { const a = j*.8; add(new THREE.SphereGeometry(.8, 7, 5), j % 2 ? lf : lf2, TX + Math.cos(a)*2.2, 4.9, TZ + Math.sin(a)*2.2).scale.y = .6; }   // ใบเขียวใต้ทรงพุ่ม
     const petals = new THREE.InstancedMesh(new THREE.CircleGeometry(.12, 6), new THREE.MeshBasicMaterial({color: '#f9a8d4', side: THREE.DoubleSide}), 70), mm = new THREE.Matrix4();   // ดอกร่วงบนพื้น
     for (let k = 0; k < 70; k++) { const a = k*2.399, d = 1 + (k*37 % 40)/10; mm.makeRotationX(-Math.PI/2).setPosition(TX + Math.cos(a)*d, .09, TZ + Math.sin(a)*d); petals.setMatrixAt(k, mm); } g.add(petals); }
   // หอถังน้ำ: เสาปูนสูง ถังทรงกลมสีเหลือง มีปาล์มรอบโคน
