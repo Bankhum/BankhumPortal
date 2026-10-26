@@ -389,7 +389,9 @@ const HOMEROOM_ROOM = {'ป.1':'ห้อง ป.1','ป.2':'ห้อง ป.2'
 const EAST_ROOMS = new Set(['ห้อง ป.1', 'ห้อง ป.2', 'ห้องคอมพิวเตอร์']);
 // ห้องเรียนอื่นทุกอาคาร: กระดานอยู่ผนังด้าน +z นักเรียนนั่งหันหน้าเข้ากระดาน โต๊ะครูประจำชั้นอยู่หลังห้อง (ครูบอก) · โรงอาหารจัดแบบเดิม
 // r.rot = มุมหมุนกรอบห้อง: หัวห้อง (กระดาน) อยู่ด้าน -z ของกรอบ แล้วหมุนไปตามจริง (-90° = ผนังตะวันออก, 180° = ผนัง +z)
-const roomRot = z => EAST_ROOMS.has(z) ? -Math.PI/2 : z === 'Canteen' ? 0 : Math.PI;
+// ห้อง ป.3 (ห้องหัวมุม) ห้องเดียวกระดานอยู่ผนังด้าน -z ติดห้อง ป.4 ผนังปลายอาคารเป็นท้ายห้อง (ครูบอก)
+const NORTH_ROOMS = new Set(['Canteen', 'ห้อง ป.3']);
+const roomRot = z => EAST_ROOMS.has(z) ? -Math.PI/2 : NORTH_ROOMS.has(z) ? 0 : Math.PI;
 const toWorld = (r, lx, lz) => { const co = Math.cos(r.rot), si = Math.sin(r.rot); return [r.cx + lx*co + lz*si, r.cz - lx*si + lz*co]; };
 const sideways = r => Math.abs(Math.sin(r.rot)) > .5;   // กรอบหมุน 90°: ด้านกว้าง/ลึกของห้องสลับกับแกนโลก
 const faceOf = r => Math.atan2(-Math.sin(r.rot), -Math.cos(r.rot));   // หุ่นหันหน้า +z ที่ yaw 0 → หันเข้ากระดาน
@@ -2886,21 +2888,23 @@ function chalermRoomFx(c, g){
     q.fillStyle = '#1e1b4b'; q.fillRect(cx - U(2.4), Yp(.9), U(4.8), U(.38)); for (const [k, col] of [[-1.9, '#f59e0b'], [-1.2, '#ef4444'], [-.4, '#60a5fa'], [.5, '#fbbf24'], [1.3, '#a78bfa'], [2.0, '#34d399']]) { q.fillStyle = col; q.beginPath(); q.arc(cx + U(k), Yp(.71), U(.12), 0, 7); q.fill(); }
     q.fillStyle = '#7c2d12'; q.fillRect(cx - U(.55), Yp(2.9), U(1.1), U(.5)); q.fillStyle = '#fde68a'; q.fillRect(cx - U(.5), Yp(2.86), U(.45), U(.42)); q.fillStyle = '#1d4ed8'; q.fillRect(cx + U(.05), Yp(2.86), U(.45), U(.14)); q.fillStyle = '#f8fafc'; q.fillRect(cx + U(.05), Yp(2.72), U(.45), U(.14)); q.fillStyle = '#dc2626'; q.fillRect(cx + U(.05), Yp(2.58), U(.45), U(.14));
     for (const [u, col] of [[.4, '#fde047'], [1.1, '#fca5a5'], [W - 1.6, '#93c5fd'], [W - .9, '#86efac']]) { q.fillStyle = col; q.fillRect(U(u), Yp(2.3), U(.55), U(1.0)); q.fillStyle = '#334155'; q.font = `bold ${U(.2)|0}px sans-serif`; q.fillText(['8×','3×','10×','12×'][(u*7|0) % 4], U(u) + 4, Yp(2.05)); } });
-  chWall(W, H, boardT, R.c.x, y + H/2, z1 - .01, Math.PI, g);   // กระดานย้ายไปผนังด้าน +z (ครูบอกให้อยู่อีกฝั่ง)
-  // ผนังท้ายห้อง (ด้าน -z หลังโต๊ะครูประจำชั้น): ป.6 ภาพวาดภูเขาสายรุ้ง · ห้องอื่นบอร์ดสีรุ้ง/โปสเตอร์
+  const zf = corner ? z0 : z1, zr = corner ? z1 : z0, fs = corner ? 1 : -1;   // ผนังหัวห้อง/ท้ายห้อง: ห้องอื่นกระดานผนัง +z · ป.3 กระดานผนัง -z ท้ายห้องเป็นผนังปลายอาคาร (ครูบอก)
+  chWall(W, H, boardT, R.c.x, y + H/2, zf + fs*.01, corner ? 0 : Math.PI, g);
+  // ผนังท้ายห้อง (หลังโต๊ะครูประจำชั้น): ป.6 ภาพวาดภูเขาสายรุ้ง · ป.3 หน้าต่างม่านระบาย (ผนังปลายอาคาร) · ห้องอื่นบอร์ดสีรุ้ง/โปสเตอร์
   const rearT = chTex(W, H, 48, (q, Wp, Hp, Yp, U) => { base(q, Wp, Hp, Yp, U);
     if (mural) { q.fillStyle = '#7dd3fc'; q.fillRect(U(1.2), Yp(3.1), U(W - 2.4), U(2.4)); q.fillStyle = '#f8fafc'; for (const u of [1.8, 3.4, 5.6]) { q.beginPath(); q.arc(U(u), Yp(2.75), U(.22), 0, 7); q.arc(U(u + .3), Yp(2.8), U(.28), 0, 7); q.fill(); }
       for (const [u, h, col] of [[2.4, 1.6, '#3b5bdb'], [6.6, 1.4, '#4263eb']]) { q.fillStyle = col; q.beginPath(); q.moveTo(U(u - 1.5), Yp(.7)); q.lineTo(U(u), Yp(.7 + h)); q.lineTo(U(u + 1.5), Yp(.7)); q.fill(); q.fillStyle = '#f8fafc'; q.beginPath(); q.moveTo(U(u - .35), Yp(.7 + h*.78)); q.lineTo(U(u), Yp(.7 + h)); q.lineTo(U(u + .35), Yp(.7 + h*.78)); q.fill(); }
       ['#ef4444', '#f97316', '#facc15', '#22c55e', '#3b82f6', '#8b5cf6'].forEach((col, k) => { q.strokeStyle = col; q.lineWidth = U(.08); q.beginPath(); q.arc(U(W/2), Yp(.75), U(1.6 - k*.08), Math.PI, 0); q.stroke(); });
       q.fillStyle = '#4ade80'; q.fillRect(U(1.2), Yp(.95), U(W - 2.4), U(.25)); }
+    else if (corner) { for (let u = .6; u < W - 1; u += 1.9) { win(q, Yp, U, u, 1.6, 1.0, 1.15, true); win(q, Yp, U, u + .1, 1.4, 2.5, .5, false); } }
     else { ['#ef4444', '#f97316', '#facc15', '#22c55e', '#3b82f6', '#8b5cf6'].forEach((col, k) => { q.fillStyle = col; q.fillRect(U(1.4 + k*.5), Yp(2.3), U(.5), U(1.1)); q.fillRect(U(W - 4.4 + k*.5), Yp(2.3), U(.5), U(1.1)); }); }
-    if (!mural) posters(q, Yp, U, .6, W - .6, 2.55, .3); });
-  chWall(W, H, rearT, R.c.x, y + H/2, z0 + .01, 0, g);
-  if (corner) for (let k = 0; k < 4; k++) B(1.3, .45, .03, ['#ef4444', '#facc15', '#22c55e', '#3b82f6'][k], x0 + 1.5 + k*1.9, 2.6, z1 - .03);   // บอร์ดสีรุ้งแถวบนผนังหัวห้อง
+    if (!mural && !corner) posters(q, Yp, U, .6, W - .6, 2.55, .3); });
+  chWall(W, H, rearT, R.c.x, y + H/2, zr - fs*.01, corner ? Math.PI : 0, g);
+  if (corner) for (let k = 0; k < 4; k++) B(1.3, .45, .03, ['#ef4444', '#facc15', '#22c55e', '#3b82f6'][k], x0 + 1.5 + k*1.9, 2.6, zf + fs*.03);   // บอร์ดสีรุ้งแถวบนผนังหัวห้อง
   // จอทีวีกลางไวท์บอร์ด (โต๊ะครูประจำชั้นและจอคอมอยู่หลังห้อง จาก buildClassFx)
-  B(1.25, .72, .06, '#111827', R.c.x, 1.6, z1 - .39); B(1.15, .64, .01, new THREE.MeshBasicMaterial({color: '#1f2937'}), R.c.x, 1.6, z1 - .425);
+  B(1.25, .72, .06, '#111827', R.c.x, 1.6, zf + fs*.39); B(1.15, .64, .01, new THREE.MeshBasicMaterial({color: '#1f2937'}), R.c.x, 1.6, zf + fs*.425);
   // ชั้นช่องหนังสือเขียว-แดง ชิดผนังฝั่งระเบียง (ท้ายห้อง)
-  if (cub) { const L = 2.6, cz = z0 + 1.9 + L/2, cx = x0 + .25;
+  if (cub) { const L = 2.6, cz = zr - fs*(1.9 + L/2), cx = x0 + .25;
     B(.4, 1.25, L, '#7cb342', cx, .63, cz);
     for (let i = 0; i < 4; i++) B(.42, .03, L, '#9b1c31', cx, .2 + i*.33, cz);
     for (let k = 0; k <= 5; k++) B(.42, 1.2, .03, k % 2 ? '#9b1c31' : '#7cb342', cx, .63, cz - L/2 + k*L/5);
@@ -2909,7 +2913,7 @@ function chalermRoomFx(c, g){
   for (const [x, z, ry] of [[x0 + .12, R.c.z, Math.PI/2], [x1 - .12, R.c.z - 1.6, -Math.PI/2], [x1 - .12, R.c.z + 1.8, -Math.PI/2]]) {
     B(.12, .18, .12, '#e5e7eb', x, 2.75, z); const f = new THREE.Mesh(new THREE.CylinderGeometry(.24, .24, .05, 16), new THREE.MeshLambertMaterial({color: '#f8fafc', transparent: true, opacity: .75})); f.rotation.z = Math.PI/2; f.rotation.y = ry; f.position.set(x + Math.sign(R.c.x - x)*.12, y + 2.6, z); g.add(f); }
   for (const dx of [-2.4, 0, 2.4]) for (const dz of [-1.8, 1.8]) B(.12, .05, 1.2, new THREE.MeshBasicMaterial({color: '#f8fafc'}), R.c.x + dx, H - .05, R.c.z + dz);
-  if (corner) { B(.06, 1.1, .06, '#e5e7eb', x0 + .9, .55, z1 - 1.5); const f = new THREE.Mesh(new THREE.CylinderGeometry(.3, .3, .1, 18), M('#f1f5f9')); f.rotation.x = Math.PI/2; f.position.set(x0 + .9, y + 1.2, z1 - 1.5); g.add(f); B(.4, .05, .4, '#e5e7eb', x0 + .9, .03, z1 - 1.5); }   // พัดลมตั้งพื้น
+  if (corner) { B(.06, 1.1, .06, '#e5e7eb', x0 + .9, .55, zf + fs*1.5); const f = new THREE.Mesh(new THREE.CylinderGeometry(.3, .3, .1, 18), M('#f1f5f9')); f.rotation.x = Math.PI/2; f.position.set(x0 + .9, y + 1.2, zf + fs*1.5); g.add(f); B(.4, .05, .4, '#e5e7eb', x0 + .9, .03, zf + fs*1.5); }   // พัดลมตั้งพื้น
 }
 // พื้นชั้น 2 (โปร่งแสงให้เห็นชั้นล่าง) + บันได + ป้ายชื่อห้อง
 const roomLabs = [];
