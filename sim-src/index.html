@@ -2133,16 +2133,11 @@ function moveAgents(dt){
     else {
       if (!a.shown) { a.shown = true; a.pos.copy(spawnOf(a)); a.nav = null; }
       const was = a.pos.clone();
-<<<<<<< Updated upstream
-      if (a.stair) { a.nav = null; if (stepTo(a, a.stair.dir > 0 ? STAIR[a.stair.b].top3 : STAIR[a.stair.b].bot3, dt * .5)) a.stair = null; }
-      else { const w = waypoint(a, tgt); if (walkTo(a, w.p, dt) && w.start) a.stair = w.start; }   // ชั้นล่างเดินตามถนน ชิดซ้าย ไม่ลัดสนาม
-=======
       if (a.stair) {   // เดินตามจุดบนบันได (บันไดหักกลับ: ช่วงล่าง → ชานพัก → ช่วงบน)
-        const P = a.stair.s.pts; a.stair.k ??= a.stair.dir > 0 ? 1 : P.length - 2;
+        a.nav = null; const P = a.stair.s.pts; a.stair.k ??= a.stair.dir > 0 ? 1 : P.length - 2;
         if (stepTo(a, P[a.stair.k], dt * .5)) { a.stair.k += a.stair.dir; if (a.stair.k < 0 || a.stair.k >= P.length) a.stair = null; }
       }
-      else { const w = waypoint(a, tgt); if (stepTo(a, w.p, dt) && w.start) a.stair = w.start; }
->>>>>>> Stashed changes
+      else { const w = waypoint(a, tgt); if (walkTo(a, w.p, dt) && w.start) a.stair = w.start; }   // ชั้นล่างเดินตามถนน ชิดซ้าย ไม่ลัดสนาม
       if (a.pos.y < 1) yieldToCars(a, was, cars);
     }
     const arrived = T && a.pos.distanceTo(tgt) < (T.pose === 'swim' ? 1.5 : .4), pose = arrived ? T.pose : 'walk';
