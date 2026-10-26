@@ -516,10 +516,14 @@ const V_SCHOOL = 130, V_ROAD = 450, V_BIKE = 180, GAP = 1.8;   // ม./นาท
 const VEH = [];
 const GATE_IN_Z = 24, GATE_OUT_Z = -26.8, FENCE = {x0: -64, x1: 63, z0: -49.5, z1: 48.5};
 // แนวอาคารริมรั้วฝั่งถนน (ห้องน้ำอนุบาล อาคารอนุบาล สระว่ายน้ำ ห้องดนตรี อาคารอเนกประสงค์ ห้องธนาคาร) ขยับไปชิดรั้ว (ตามที่ครูขอ): ระยะเลื่อน z ของแต่ละอาคาร ให้หลังอาคารห่างรั้ว ~1 ม.
-const ROW_DZ = {Kinder_Toilet: 5.5, Kindergarten: 6.5, Swimming_Pool: 4.5, Music_Room: 9.2, Multipurpose_Hall: 3.4, Bank_Room: 10};
+const ROW_DZ = {Kinder_Toilet: 5.5, Kindergarten: 6.5, Swimming_Pool: 4.5};   // ห้องธนาคารชิดกำแพงบ้านข้างโรงเรียนอยู่แล้ว
+// อาคารอเนกประสงค์หมุนไปอีกแนว (ด้านยาวขนานรั้ว ด้านยาวที่มีหน้าต่าง/ประตูม้วนหันออกถนน) ชิดรั้ว ระหว่างสระว่ายน้ำกับกำแพงบ้านข้างโรงเรียน (ตามที่ครูขอ)
+const HALL_POS = [12.5, 39.8], HALL_ROT = -Math.PI/2;
+// ห้องดนตรี/ศิลปะย่อขนาดลง (ตามที่ครูขอ) ย้ายไปฝั่งตรงข้ามถนน ข้างลานกลอง/ขิมกลางแจ้ง หันหน้าออกถนน เพราะแนวรั้วเต็มด้วยอาคารอเนกประสงค์แล้ว
+const MUSIC = {x: 11.5, z: 21.5, s: [.6, .8, .6]};
 // จุดรับส่ง 2 จุด: A หน้าอาคารเฉลิมพระเกียรติ, B หน้าห้องคอมพิวเตอร์
 // ประตูรถเข้าย้ายไปข้างอาคารอนุบาล (ตามที่ครูวงไว้) ถนนในโรงเรียนวิ่งตามเส้นที่ครูวาด
-const MAIN = [[ROAD_IN,-64],[ROAD_IN,22],[-66,GATE_IN_Z],[-60,25],[-56,26],[-52,26],[-42,27.5],[-20,27.5],[-15,25.5],[7,25],[8,17],[DROP_X,17],[DROP_X,-13],
+const MAIN = [[ROAD_IN,-64],[ROAD_IN,22],[-66,GATE_IN_Z],[-60,25],[-56,26],[-52,26],[-42,27.5],[-20,27.5],[-8,27.5],[4,27.5],[DROP_X,27.5],[DROP_X,17],[DROP_X,-13],
   [18,-16],[18,-34.5],[4.5,-34.5],[4.5,LANE],[-44,LANE],[-54,-18],[-63,-26.5],[ROAD_OUT,-28],[ROAD_OUT,-66]];
 // ที่จอดรถโรงเรียน (ใต้หลังคาโรงจอดรถ ตามที่ครูชี้): รถ 6 ล้อ + รถตู้ 3 คัน จอดหันหัวเข้า จากถนนหน้าอาคาร ป.1 ป.2
 const CANOPY_Z = -29.4, BUS_X = {truck: -8.6, van: [-5.1, -1.8, 1.5]};
@@ -787,6 +791,9 @@ addEventListener('resize',resize); resize();
 function onModel(g) {
   const root = g.scene; scene.add(root);
   for (const [n, dz] of Object.entries(ROW_DZ)) { const o = root.getObjectByName(n); if (o) o.position.z += dz; }
+  const hall = root.getObjectByName('Multipurpose_Hall'); if (hall) { hall.userData.t0 = [hall.position.clone(), hall.quaternion.clone()]; hall.position.x = HALL_POS[0]; hall.position.z = HALL_POS[1]; hall.rotateY(HALL_ROT); }
+  const music = root.getObjectByName('Music_Room'); if (music) { music.position.x = MUSIC.x; music.position.z = MUSIC.z; music.rotateY(Math.PI); music.scale.set(...MUSIC.s); }
+  root.updateMatrixWorld(true);
   root.updateMatrixWorld(true);
   root.traverse(o => { if (o.isMesh) {
     o.castShadow = o.receiveShadow = true;
@@ -2665,7 +2672,9 @@ function buildChalerm(){   // ลานหน้าอาคารเฉลิ�
     for (let k = 0; k < 5; k++) { const a = Math.PI + .35 + k*(Math.PI - .7)/4, bx = tx + Math.cos(a)*2.4, bz = 20.7 + Math.sin(a)*2.4;
       const s = B(1.05, .07, .32, bM, bx, .42, bz); s.rotation.y = -a - Math.PI/2; for (const d of [-.35, .35]) { const l = B(.1, .38, .22, bM, bx - Math.sin(a)*d, .19, bz + Math.cos(a)*d); l.rotation.y = -a - Math.PI/2; } } }
   // --- อาคารอเนกประสงค์ (หอประชุม): ผนังล่างสีเขียวน้ำทะเล ประตูม้วน หน้าต่างไม้น้ำตาล ช่องลมตะแกรงกรอบแดง ---
-  const hc = zones.Multipurpose_Hall?.obj; if (!hc) return; const hb = new THREE.Box3().setFromObject(hc.getObjectByName('Multipurpose_Hall_col-colonly') || hc);   // ใช้กล่องผนัง ไม่รวมชายคา
+  const hc = zones.Multipurpose_Hall?.obj; if (!hc) return;
+  const hT = [hc.position.clone(), hc.quaternion.clone()]; if (hc.userData.t0) { hc.position.copy(hc.userData.t0[0]); hc.quaternion.copy(hc.userData.t0[1]); hc.updateMatrixWorld(true); }   // ตกแต่งผนังในแนวเดิมของโมเดล แล้วค่อยหมุนกลับไปแนวใหม่ทั้งชุด
+  const hb = new THREE.Box3().setFromObject(hc.getObjectByName('Multipurpose_Hall_col-colonly') || hc);   // ใช้กล่องผนัง ไม่รวมชายคา
   const HW = 3.3, hallT = (L, plan) => cvTex(Math.round(L*40), Math.round(HW*40), (c, w, h) => { const Y = m => h - m*40, X = m => m*40;
     c.fillStyle = '#f1f5f9'; c.fillRect(0, 0, w, h); c.fillStyle = '#3aa79d'; c.fillRect(0, Y(2.5), w, 2.5*40);
     c.fillStyle = '#7f1d1d'; c.fillRect(0, Y(3.05), w, .55*40); c.strokeStyle = '#475569'; c.lineWidth = 1; for (let x = 0; x < w; x += 5) { c.beginPath(); c.moveTo(x, Y(3.05)); c.lineTo(x, Y(2.5)); c.stroke(); }
@@ -2675,9 +2684,9 @@ function buildChalerm(){   // ลานหน้าอาคารเฉลิ�
   const hgS = new THREE.Group(), HX0 = hb.min.x, HX1 = Math.min(hb.max.x, 23.4), HZ0 = hb.min.z, HZ1 = hb.max.z;
   plane(HX1 - HX0, HW, hallT(HX1 - HX0, [[1.2, 'w'], [5.4, 's'], [9, 'w']]), (HX0 + HX1)/2, HW/2, HZ0 - .04, Math.PI, hgS);
   plane(HZ1 - HZ0, HW, hallT(HZ1 - HZ0, [[1.5, 'w'], [6, 's'], [10, 'w'], [14.5, 's'], [18, 'w']]), HX0 - .04, HW/2, (HZ0 + HZ1)/2, -Math.PI/2, hgS);
-  attach('Multipurpose_Hall', hgS);
   const hs = cvTex(128, 32, (c, w, h) => { c.fillStyle = '#166534'; c.fillRect(0, 0, w, h); c.fillStyle = '#f8fafc'; c.font = 'bold 20px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('หอประชุม', w/2, h/2); });
-  plane(.8, .2, hs, HX0 + 6.6, 2.75, HZ0 - .07, Math.PI);
+  plane(.8, .2, hs, HX0 + 6.6, 2.75, HZ0 - .07, Math.PI, hgS);
+  attach('Multipurpose_Hall', hgS); hc.position.copy(hT[0]); hc.quaternion.copy(hT[1]); hc.updateMatrixWorld(true);
 }
 function buildRestroom(root){
   for (const n of ['Toilet_P3_P6_a', 'Toilet_P3_P6_b']) { const o = root.getObjectByName(n); if (o) o.visible = false; }
