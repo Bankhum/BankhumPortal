@@ -538,7 +538,8 @@ const MOTO_LANE = [4.5, LANE, -34.5];
 // ต้นไม้ใบสีน้ำตาลอ่อน 2 ต้น (ในโมเดล Site) ที่เคยขวางแนวถนนเชื่อม ย้ายลงไปทางลานเสาธงตามกรอบสีแดงที่ครูวง
 const TAN_TREE_DZ = 6.5;
 // ต้นมะม่วง 2 ต้นย้ายไปริมถนนหน้าลานเสาธง ([x, z] เดิม → ใหม่) สนามเปตองย้ายไปแทนที่วงดนตรีไทยกลางแจ้ง (ขิม กลอง เก้าอี้) ซึ่งย้ายไปที่สนามเปตองเดิม (ตามที่ครูวง)
-const MANGO = [[-7.2, 20.7, -2, 23.2], [-2.3, 20.7, 4.6, 23.2]], THAI_BAND_DX = -12.5;
+// วงขิม/กลองตั้งกลางแจ้งในโมเดล และแปลงหญ้าใต้วง เอาออก (ตามที่ครูวงแดง)
+const MANGO = [[-7.2, 20.7, -2, 23.2], [-2.3, 20.7, 4.6, 23.2]], BAND_GRASS = {x0: -11.5, x1: -4.4, z0: 13.4, z1: 30.1};
 const SCAN_PT = [21.6, -11];   // จุดสแกนหน้า หน้าอาคารเฉลิมพระเกียรติ (นักเรียน)
 const TSCAN_PT = [26.7, 2];   // จุดสแกนหน้าครู อยู่ในห้องธุรการ ชั้น 1 อาคารเฉลิมพระเกียรติ (ครูแจ้ง)
 const V_SCHOOL = 130, V_ROAD = 450, V_BIKE = 180, GAP = 1.8;   // ม./นาที (≈ 8 กม./ชม. ในโรงเรียน)
@@ -869,7 +870,7 @@ function onModel(g) {
   }
   for (const [n, o] of Object.entries(houseShell)) if (zones[n]) zones[n].obj = o;   // บ้านพักครู/ห้องน้ำ ป.1-2 อาจสร้างก่อนโซน ผูกผนังไว้มองทะลุ
   if (zones.Swimming_Pool) zones.Swimming_Pool.y = POOL.H - .3;   // สระยกพื้น: คนว่ายที่ระดับผิวน้ำ ไม่จมใต้พื้น
-  root.children.forEach(o => { if (/^(Student|Teacher)_/.test(o.name)) o.visible = false; if (/^(Khim|Stool|Drum)\d*$/.test(o.name)) o.position.x += THAI_BAND_DX; });
+  root.children.forEach(o => { if (/^(Student|Teacher)_/.test(o.name)) o.visible = false; if (/^(Khim|Stool|Drum)\d*$/.test(o.name)) o.visible = false; });
   const dome = root.getObjectByName('Playground_Dome');
   if (dome) { dome.rotation.y = Math.PI/2; dome.position.x = PLAY_C[0]; dome.position.z = PLAY_C[1]; buildPlayset(); }
   const tent = root.getObjectByName('Museum_Walk'); if (tent) tent.removeFromParent();
@@ -1065,7 +1066,7 @@ const teacherFront = (r, pose) => pose === 'sit' ? (([x, z]) => new THREE.Vector
 // ตำแหน่ง + ท่าทาง ณ เวลา m
 // เวลาว่าง (ก่อนเข้าแถว / พักเที่ยง): นักเรียนส่วนใหญ่เล่นหน้าห้องเรียนของตัวเอง (ตามที่ครูบอก) กลางสนามมีแค่กลุ่มเตะฟุตบอล
 // บางกลุ่มตีวอลเลย์บอลที่ลานเสาธง เล่นเปตองที่ลานเปตอง ป.1–2 บางคนเล่นโดมสนามเด็กเล่น บางคนนั่งเล่นอาคารเอนกประสงค์
-const PETANQUE = {x: 1.2, z: 18.6};   // ลานเปตอง 2 ลู่ ลู่ยาวตามแนว x (ดู buildDecor)
+const PETANQUE = {x: 1.2, z: 20.2};   // เหลือลู่เดียว (ลู่ฝั่งลานเสาธงเอาออกตามที่ครูวงแดง)   // ลานเปตอง 2 ลู่ ลู่ยาวตามแนว x (ดู buildDecor)
 const SALA_X = [-38.6, -34.7, -30.8, -26.9, -23, -19.1, -15.2, -11.3], SALA_Z = -15.3;   // ศาลาทรงไทย 8 หลังริมสนามหน้าอาคาร ป.1 ป.2 (ม้านั่ง 2 ฝั่ง)
 const PLAY_TH = {front: 'เล่นหน้าห้องเรียน', below: 'เล่นหน้าอาคารเฉลิมพระเกียรติ', football: 'เตะฟุตบอลที่สนาม', volley: 'ตีวอลเลย์บอลที่ลานเสาธง',
   petanque: 'เล่นเปตอง', sala: 'นั่งเล่นที่ศาลาริมสนาม', dome: 'เล่นโดมสนามเด็กเล่น', hall: 'นั่งเล่นอาคารเอนกประสงค์'};
@@ -1097,7 +1098,7 @@ function vballAt(m){
   return [xa + (xb - xa)*f, 2 + 3.2*Math.sin(Math.PI*f), za + (zb - za)*f];
 }
 // ลูกเปตองกลิ้งจากฝั่งตะวันออกไปหาลูกเป้า
-function boulesAt(m){ const s = m*.8, k = Math.floor(s), f = Math.min(1, (s - k)*1.6), lane = k % 2 ? 1.6 : -1.6;
+function boulesAt(m){ const s = m*.8, k = Math.floor(s), f = Math.min(1, (s - k)*1.6), lane = k % 2 ? .4 : -.4;
   return [PETANQUE.x + 3.2 - 5.6*Math.sin(f*Math.PI/2), .09 + Math.max(0, Math.sin(f*Math.PI*2.2))*.5*(1 - f), PETANQUE.z + lane + (k % 3 - 1)*.25]; }
 function freePlay(a, m){
   const P = playOf(a), w = m*1.3 + a.i*1.7, jit = (r) => [Math.sin(w)*r, Math.cos(w*.9)*r];
@@ -1113,8 +1114,8 @@ function freePlay(a, m){
     return {p: new THREE.Vector3(VBALL.x + ((j % 3) - 1)*2.8 + dx, 0, VBALL.z + side*row + dz), pose: 'circle', yaw: side > 0 ? Math.PI : 0, ball: 'volley'};
   }
   if (P.g === 'petanque') {
-    const lane = P.k % 2 ? 1.6 : -1.6, j = P.k >> 1;
-    return {p: new THREE.Vector3(PETANQUE.x + 4.4 + (j % 2)*.6, 0, PETANQUE.z + lane + ((j >> 1) - .5)*.8), pose: j === 0 ? 'brush' : 'stand', yaw: -Math.PI/2, ball: 'boule'};
+    const lane = P.k % 2 ? .6 : -.6, j = P.k >> 1;
+    return {p: new THREE.Vector3(PETANQUE.x + 4.4 + (j % 2)*.6, 0, PETANQUE.z + lane + ((j >> 1) - .5)*.4), pose: j === 0 ? 'brush' : 'stand', yaw: -Math.PI/2, ball: 'boule'};
   }
   if (P.g === 'sala') {   // นั่งม้านั่งในศาลา 2 ฝั่งหันหน้าเข้าหากัน บางคนยืนคุยระหว่างศาลา (เห็นจากมุมสูง ไม่โดนหลังคาบัง)
     const i = P.k % 8, slot = P.k >> 3, x = SALA_X[i], [dx, dz] = jit(.15), seat = [0, 1, -1, -1, 2, 3][slot] ?? -1;
@@ -1192,7 +1193,7 @@ function lineUp(a, m, p){
 // เข้าไปในสนามได้เฉพาะเมื่อกิจกรรมอยู่ในสนามนั้นเอง (เข้าแถว เล่นกีฬา คาบพละ) โดยออกจากถนนตรงจุดที่ใกล้ที่สุด
 // ลานเสาธงนับรวมพื้นที่หน้าเสาธงจนถึงฐานเสา (x 5) และช่องระหว่างสนามฟุตบอลกับลาน · ลานกลางรอบเสาธง/อนุสาวรีย์ (x 5..15.2 ถึงขอบถนน) ก็ห้ามเดินผ่าน
 const NO_CROSS = [FIELD, {x0: FIELD.x1, x1: 5, z0: ASSEMBLY.z0, z1: ASSEMBLY.z1}, {x0: 5, x1: 15.2, z0: -18.6, z1: 24.6},
-  {x0: PETANQUE.x - 3.8, x1: PETANQUE.x + 3.8, z0: PETANQUE.z - 3.2, z1: PETANQUE.z + 3.2},
+  {x0: PETANQUE.x - 3.8, x1: PETANQUE.x + 3.8, z0: PETANQUE.z - 1.6, z1: PETANQUE.z + 1.6},
   {x0: PLAY_C[0] - 3.5, x1: PLAY_C[0] + 3.5, z0: PLAY_C[1] - 7, z1: PLAY_C[1] + 7}];   // สนามฟุตบอล ลานเสาธง/วอลเลย์ เปตอง โดมเด็กเล่น
 const NAV_ROAD = 2.0, NAV_PATH = .5, NAV_OFF = 3, NAV_DIRECT = 12;   // ระยะชิดซ้ายจากกลางถนน/ทางเดิน, ค่าเดินนอกถนนแพงกว่า 3 เท่า, ระยะที่เดินตรงได้
 // เส้นถนนในโรงเรียน (ตามเส้นทางรถ MAIN) และทางเดินรอบอาคารฝั่งตะวันออก (ไปโรงอาหาร ห้องน้ำ แปลงเกษตร)
@@ -1684,6 +1685,10 @@ function fixP12Site(){   // ศาลาเดิมในโมเดล (ก�
   scene.traverse(o => { if (o.name === 'poly_7' || o.name === 'Futsal_Ball') o.visible = false; });   // เส้นขาวเส้นเดียวเดิมกลางลานเสาธง และลูกฟุตซอล (ลานเป็นสนามวอลเลย์แล้ว)
   scene.traverse(o => { if (/^box330(_2|_3)?$/.test(o.name)) { o.visible = false; n++; } });   // กล่องสระเดิมในโมเดล แทนด้วยสระยกพื้นตามรูป
   scene.traverse(o => { if (o.name === 'poly_14' && o.material && !o.userData.mango) { o.material = o.material.clone(); o.material.color.set('#2f6b2a'); o.userData.mango = 1; n++; } });   // ต้นมะม่วง 2 ต้นข้างสนามเปตอง (ใบเขียวเข้ม)
+  scene.traverse(o => { if (o.name === 'poly_3' && o.geometry?.index) { n++; const g = o.geometry; if (g.userData.bandGrass) return;   // ลบแปลงหญ้าใต้วงขิมเดิม
+      const a = g.attributes.position, I = g.index, inB = v => { const x = a.getX(v), z = a.getZ(v); return x > BAND_GRASS.x0 && x < BAND_GRASS.x1 && z > BAND_GRASS.z0 && z < BAND_GRASS.z1; };
+      for (let t = 0; t < I.count; t += 3) if (inB(I.getX(t)) && inB(I.getX(t + 1)) && inB(I.getX(t + 2))) { I.setX(t + 1, I.getX(t)); I.setX(t + 2, I.getX(t)); }
+      I.needsUpdate = true; g.userData.bandGrass = 1; } });
   scene.traverse(o => { if ((o.name === 'poly_14' || o.name === 'poly_9') && o.geometry) { n++; if (o.geometry.userData.mangoMoved) return;   // ย้ายต้นมะม่วง (ใบ poly_14 + ลำต้นใน poly_9)
       const a = o.geometry.attributes.position;
       for (let i = 0; i < a.count; i++) { const x = a.getX(i), z = a.getZ(i), t = MANGO.find(([ox, oz]) => Math.hypot(x - ox, z - oz) < 2.6); if (t && (o.name === 'poly_14' || a.getY(i) < 2.5)) { a.setX(i, x + t[2] - t[0]); a.setZ(i, z + t[3] - t[1]); } }
@@ -1692,7 +1697,7 @@ function fixP12Site(){   // ศาลาเดิมในโมเดล (ก�
       const a = o.geometry.attributes.position, all = o.name === 'poly_13';
       for (let i = 0; i < a.count; i++) { const x = a.getX(i), z = a.getZ(i); if (all || (x > 6.8 && x < 12.6 && z > -22 && z < -13 && a.getY(i) < 3)) a.setZ(i, z + TAN_TREE_DZ); }
       a.needsUpdate = true; o.geometry.computeBoundingBox(); o.geometry.computeBoundingSphere(); o.geometry.userData.tanMoved = 1; } });
-  return p12Fixed = n >= 11;
+  return p12Fixed = n >= 12;
 }
 // สระว่ายน้ำ (ขยายตามที่ครูบอก 12×5 → 15×7 ม. ปลายฝั่งถังกรองอยู่ที่เดิม) และที่อาบน้ำกลางแจ้งระหว่างสระกับอาคารอนุบาล
 const POOL = {x: -13.1, z: 37.3 + ROW_DZ.Swimming_Pool, L: 19, W: 7, H: 1.3}, SHOWER = {x: -27.5, z: 39.6 + ROW_DZ.Swimming_Pool};   // ปลายฝั่งถังกรองอยู่ที่เดิม (x -3.6) ยาวขึ้นไปทางอาคารอนุบาล
@@ -1727,12 +1732,12 @@ function buildKgPool(){
   const sg = new THREE.Mesh(new THREE.PlaneGeometry(1.6, .64), new THREE.MeshLambertMaterial({map: sT, transparent: true, side: THREE.DoubleSide})); sg.position.set(KG_X.x0 + .5, 1.5, 29.35 + ROW_DZ.Kindergarten); sg.rotation.y = Math.PI; g.add(sg);
   // สนามเปตอง 2 ลู่ (ทราย ขอบไม้) ข้างต้นมะม่วง ริมถนนหน้าลานเสาธง (ตามที่ครูบอก)
   const pc = new THREE.Group(); pc.position.set(PETANQUE.x, 0, PETANQUE.z); g.add(pc);
-  B(7.6, .08, 6.4, '#d6c3a0', 0, .04, 0, pc);
-  for (const dz of [-3.2, 0, 3.2]) B(7.8, .2, .14, '#7c5a3a', 0, .1, dz, pc);
-  for (const dx of [-3.85, 3.85]) B(.14, .2, 6.5, '#7c5a3a', dx, .1, 0, pc);
+  B(7.6, .08, 3.2, '#d6c3a0', 0, .04, 0, pc);
+  for (const dz of [-1.6, 1.6]) B(7.8, .2, .14, '#7c5a3a', 0, .1, dz, pc);
+  for (const dx of [-3.85, 3.85]) B(.14, .2, 3.3, '#7c5a3a', dx, .1, 0, pc);
   const ballG = new THREE.SphereGeometry(.09, 10, 8), ballM = new THREE.MeshStandardMaterial({color: '#cbd5e1', metalness: .8, roughness: .3});
-  for (const [bx, bz] of [[2.2, -1.4], [2.5, -1.9], [1.9, -1.1], [-2.4, 1.5], [-2.0, 1.9], [-2.6, 1.2]]) add(ballG, ballM, bx, .17, bz, pc);
-  add(new THREE.SphereGeometry(.05, 8, 6), M('#ef4444'), 2.6, .14, -1.6, pc); add(new THREE.SphereGeometry(.05, 8, 6), M('#facc15'), -2.6, .14, 1.6, pc);
+  for (const [bx, bz] of [[2.2, -.5], [2.5, -.9], [1.9, -.2], [-2.4, .6], [-2.0, .9], [-2.6, .3]]) add(ballG, ballM, bx, .17, bz, pc);
+  add(new THREE.SphereGeometry(.05, 8, 6), M('#ef4444'), 2.6, .14, -.6, pc); add(new THREE.SphereGeometry(.05, 8, 6), M('#facc15'), -2.6, .14, .6, pc);
   // ลานเสาธง: สนามวอลเลย์บอลกลางแจ้ง (เส้นขาว เสา เน็ต) + จุดยืนเข้าแถวทาสีตามสีของแต่ละชั้น (ตามที่ครูบอก)
   const AW = ASSEMBLY.x1 - ASSEMBLY.x0, AD = ASSEMBLY.z1 - ASSEMBLY.z0, PX = 48;
   const paint = cvTex(Math.round(AW*PX), Math.round(AD*PX), (c) => { const X = x => (x - ASSEMBLY.x0)*PX, Z = z => (z - ASSEMBLY.z0)*PX;
