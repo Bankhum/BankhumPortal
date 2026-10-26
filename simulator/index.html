@@ -428,7 +428,10 @@ const KG = ['เตรียมความพร้อม','ศิลปะ','�
 // เข้าห้องนอน 12:20 (ตามที่ครูบอก) · ช่วงเล่นอิสระ 11:45–12:20 และตื่นนอน 14:45 เป็นค่าสมมติ
 const KG_DAY = [[510,'กิจกรรมเตรียมความพร้อม','Kindergarten','sit'],[570,'กิจกรรมสร้างสรรค์ ศิลปะ นิทาน','Kindergarten','sit'],
   [630,'รับประทานอาหารกลางวัน','Canteen','sit'],[675,'แปรงฟัน','BRUSH','stand'],[705,'เล่นอิสระ สนามเด็กเล่นมีหลังคา','PLAY','play'],
-  [740,'นอนกลางวัน','Kindergarten','sleep'],[885,'ตื่นนอน ดื่มนม เตรียมกลับบ้าน','Kindergarten','sit']];
+  [740,'เก็บโต๊ะเก้าอี้ซ้อนชิดผนัง ปูที่นอน','Kindergarten','stand'],[750,'นอนกลางวัน','Kindergarten','sleep'],
+  [880,'ตื่นนอน เก็บที่นอน จัดโต๊ะเก้าอี้กลับ','Kindergarten','stand'],[890,'ดื่มนม เตรียมกลับบ้าน','Kindergarten','sit']];
+// ห้องอนุบาลช่วงนอน (ครูบอก): เก็บโต๊ะเก้าอี้ก่อน แล้วปูที่นอนบนพื้น จึงนอน · ตื่นแล้วเก็บที่นอน วางโต๊ะเก้าอี้กลับ
+const KG_NAP = {stack: [742, 885], mat: [746, 882]};
 const kgAt = m => { if (m < 510 || m >= 930) return null; let k = null; for (const r of KG_DAY) if (m >= r[0]) k = r; return k; };
 const isKG = c => c.startsWith('อ');
 const NAMED_T = Object.keys(FULLNAME);
@@ -2492,6 +2495,16 @@ function buildClassFx(){
     }
     dk.castShadow = ch.castShadow = true; g.add(dk, ch);
     if (chal) chalermRoomFx(c, g);
+    if (isKG(c)) {   // ช่วงนอน: โต๊ะเก้าอี้ซ้อนชิดผนัง + ที่นอนปูเป็นแถว (ตำแหน่งเดียวกับที่นั่ง หัวไปทางท้ายห้อง)
+      const stack = new THREE.Group(), sxw = W/2 - .45; g.add(stack);
+      for (let k = 0; k < Math.ceil(n/4); k++) for (let j = 0; j < Math.min(4, n - k*4); j++) {
+        const [x1, z1] = at(r.cx, r.cz, sxw, -D/4 + k*.75); const d = new THREE.Mesh(new THREE.BoxGeometry(.6, .08, .95), dk.material); d.position.set(x1, y + .62 + j*.1, z1); d.rotation.y = rot + Math.PI/2; stack.add(d);
+        const [x2, z2] = at(r.cx, r.cz, sxw, D/8 + k*.5); const h = new THREE.Mesh(new THREE.BoxGeometry(.42, .05, .38), ch.material); h.position.set(x2, y + .4 + j*.09, z2); stack.add(h); }
+      const matG = new THREE.BoxGeometry(.62, .06, 1.35), mats = new THREE.InstancedMesh(matG, M('#93c5fd'), n), pil = new THREE.InstancedMesh(new THREE.BoxGeometry(.4, .08, .25), M('#f8fafc'), n), cl = new THREE.Color();
+      for (let i = 0; i < n; i++) { const q = slotOf(r, 'sit', i, n, .5, .5); mats.setMatrixAt(i, mm.compose(V.set(q.x, y + .04, q.z - .62), new THREE.Quaternion(), S.set(1, 1, 1))); mats.setColorAt(i, cl.set(['#93c5fd', '#f9a8d4', '#fde68a', '#a7f3d0'][i % 4]));
+        pil.setMatrixAt(i, mm.compose(V.set(q.x, y + .1, q.z - 1.15), new THREE.Quaternion(), S.set(1, 1, 1))); }
+      g.add(mats, pil); g.userData.nap = {desk: [dk, ch], stack, mats: [mats, pil]};
+    }
     g.visible = false; scene.add(g); classFx[c] = g;
     const el = document.createElement('div'); el.className = 'rlab'; el.textContent = 'ห้อง ' + c; $('labels').appendChild(el);
     roomLabs.push({el, R: {b: HOMEROOM[c]}, p: new THREE.Vector3(r.cx, y + 2.6, r.cz)});
@@ -2618,6 +2631,8 @@ function buildBridge(){
   roomLabs.push({el, R: {b: 'Technology_Building'}, p: new THREE.Vector3(cx, F2 + 3.2, cz)});
 }
 function showClassFx(){
+  const inR = ([a, b]) => simMin >= a && simMin < b, stk = inR(KG_NAP.stack), mat = inR(KG_NAP.mat);
+  for (const c in classFx) { const n = classFx[c].userData.nap; if (n) { for (const o of n.desk) o.visible = !stk; n.stack.visible = stk; for (const o of n.mats) o.visible = mat; } }
   for (const c in classFx) classFx[c].visible = roomView ? roomView === c : view.zoom >= 2.4 || selected === (fxB(c) || (c === 'ห้องพยาบาล/เปลี่ยนชุด' ? 'Kindergarten' : null));
   for (const {b, g} of storeFx) g.visible = roomView ? fxB(roomView) === b : view.zoom >= 2.4 || selected === b;
   const zs = zones[selected]; if (zs) zs.mat.opacity = view.zoom >= 2.4 ? .08 : .36;   // ซูมใกล้: ลดสีไฮไลต์อาคารที่เลือก ให้เห็นของข้างในชัด
