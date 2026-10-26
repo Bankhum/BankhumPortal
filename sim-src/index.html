@@ -373,9 +373,9 @@ const ROOMS = {
   // ชั้น 2 เรียงจากฝั่งบันได (หัวอาคารด้านอาคารไม้) ตามป้ายหน้าห้องในรูปจริง: ป.5 → ป.6 → ป.4 → ป.3 (ครูบอก ป.3 ป.4 ป.6 ป.5 นับจากปลายอีกด้าน)
   'ห้อง ป.5': mkRoom('ชั้น 2 ห้อง ป.5', 'Chalerm_Building', 25.6, 35, -6.5, 1.6, F2), 'ห้อง ป.6': mkRoom('ชั้น 2 ห้อง ป.6', 'Chalerm_Building', 25.6, 35, 1.6, 9.7, F2),
   'ห้อง ป.4': mkRoom('ชั้น 2 ห้อง ป.4', 'Chalerm_Building', 25.6, 35, 9.7, 17.8, F2), 'ห้อง ป.3': mkRoom('ชั้น 2 ห้อง ป.3', 'Chalerm_Building', 25.6, 35, 17.8, 25.9, F2),
-  'ห้องประชุม': mkRoom('ชั้น 1 ห้องประชุม', 'Chalerm_Building', 25.6, 35, -6.5, 4, 0), 'Bankhum Studio': mkRoom('ชั้น 1 Bankhum Studio', 'Chalerm_Building', 25.6, 35, 4, 11, 0),
-  'ห้องธุรการ': mkRoom('ชั้น 1 ห้องธุรการ', 'Chalerm_Building', 25.6, 35, 11, 17, 0), 'ห้องผู้บริหาร': mkRoom('ชั้น 1 ห้องผู้บริหาร', 'Chalerm_Building', 25.6, 35, 17, 22, 0),
-  'ห้องน้ำครู': mkRoom('ชั้น 1 ห้องน้ำครูชาย/หญิง', 'Chalerm_Building', 25.6, 35, 22, 25.9, 0),
+  // ชั้น 1 จากฝั่งบันได/จุดสแกนหน้า: ห้องธุรการ → ห้องผู้บริหาร → ห้องประชุม ต่อกับ Bankhum Studio เป็นห้องยาวกั้นด้วยเสาไม้ (ครูบอก + รูปจริง)
+  'ห้องธุรการ': mkRoom('ชั้น 1 ห้องธุรการ', 'Chalerm_Building', 25.6, 35, -6.5, 4, 0), 'ห้องผู้บริหาร': mkRoom('ชั้น 1 ห้องผู้บริหาร', 'Chalerm_Building', 25.6, 35, 4, 11, 0),
+  'ห้องประชุม': mkRoom('ชั้น 1 ห้องประชุม', 'Chalerm_Building', 25.6, 35, 11, 19.5, 0), 'Bankhum Studio': mkRoom('ชั้น 1 Bankhum Studio', 'Chalerm_Building', 25.6, 35, 19.5, 25.9, 0),
   'ห้องวิทยาศาสตร์': mkRoom('ชั้น 1 ห้องวิทยาศาสตร์', 'Wooden_Building', 22.2 + WOOD.dx, 32 + WOOD.dx, -43 + WOOD.dz, -22.2 + WOOD.dz, 0), 'ห้องภาษาอังกฤษ': mkRoom('ชั้น 2 ห้องภาษาอังกฤษ', 'Wooden_Building', 22.2 + WOOD.dx, 32 + WOOD.dx, -43 + WOOD.dz, -22.2 + WOOD.dz, F2),
   'ห้องคอมพิวเตอร์': mkRoom('ชั้น 2 ห้องคอมพิวเตอร์', 'Technology_Building', 9.6, 19, -47.6, -40.4, F2),
   'ห้องเก็บของ อาคารเทคโนโลยี': mkRoom('ชั้น 1 ห้องเก็บของ', 'Technology_Building', 9.6, 19, -47.6, -40.4, 0),
@@ -525,7 +525,7 @@ const MOTO_LANE = [4.5, LANE, -34.5];
 // ต้นไม้ใบสีน้ำตาลอ่อน 2 ต้น (ในโมเดล Site) ที่เคยขวางแนวถนนเชื่อม ย้ายลงไปทางลานเสาธงตามกรอบสีแดงที่ครูวง
 const TAN_TREE_DZ = 6.5;
 const SCAN_PT = [21.6, -11];   // จุดสแกนหน้า หน้าอาคารเฉลิมพระเกียรติ (นักเรียน)
-const TSCAN_PT = [26.7, 14];   // จุดสแกนหน้าครู อยู่ในห้องธุรการ ชั้น 1 อาคารเฉลิมพระเกียรติ (ครูแจ้ง)
+const TSCAN_PT = [26.7, -1];   // จุดสแกนหน้าครู อยู่ในห้องธุรการ ชั้น 1 อาคารเฉลิมพระเกียรติ (ครูแจ้ง)
 const V_SCHOOL = 130, V_ROAD = 450, V_BIKE = 180, GAP = 1.8;   // ม./นาที (≈ 8 กม./ชม. ในโรงเรียน)
 const VEH = [];
 const GATE_IN_Z = 24, GATE_OUT_Z = -26.8, FENCE = {x0: -64, x1: 63, z0: -49.5, z1: 48.5};
@@ -2874,6 +2874,91 @@ function buildChalermF2(){
   for (let x = SX0; x <= SX1 + .01; x += .14) B(.025, .95, .025, barM, x, Y + .47, SZ0 - .04);
   B(SX1 - SX0 + .1, .06, .06, '#6b4f3a', (SX0 + SX1)/2, Y + .97, SZ0 - .04);
   B(.12, .5, .12, '#dc2626', XW - .15, Y + .6, SZ0 + .6);   // ถังดับเพลิง
+  buildChalermF1(g);
+}
+// ชั้น 1: ห้องประชุมต่อกับ Bankhum Studio ตามรูปจริง 3 รูปที่ครูส่ง · พื้นกระเบื้องเขียวลายวงกลมดอกไม้ ผนังฟ้าเขียว ช่องแสงบนลวดตาข่าย
+// ห้องประชุม: ผนังเทาท้ายห้องโลโก้ + "โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)" โต๊ะประชุมยาวโค้งหัวท้ายคลุมผ้าครีม เก้าอี้พลาสติกแดง โต๊ะวางแฟ้มริมหน้าต่างม่านเขียว ตู้น้ำเงิน แอร์ พัดลมติดผนัง โปรเจกเตอร์
+// Studio: เสา/ฉากไม้กั้น ผนังเทาท้ายห้อง โต๊ะคอมหลายจอ เก้าอี้เกมมิ่ง ไฟสตูดิโอ 2 ชุด เครื่องเลเซอร์ ชั้นเหล็กโชว์งาน ชั้นถ้วยรางวัล โต๊ะผ้าลูกไม้
+function buildChalermF1(g){
+  const M = c => new THREE.MeshLambertMaterial({color: c});
+  const B = (w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), typeof m === 'string' ? M(m) : m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
+  const C = (rt, rb, h, m, x, y, z, seg = 12) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), typeof m === 'string' ? M(m) : m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
+  const RM = ROOMS['ห้องประชุม'], RS = ROOMS['Bankhum Studio'], x0 = RM.c.x - RM.sx/2, x1 = RM.c.x + RM.sx/2, za = RM.c.z - RM.sz/2, zd = RS.c.z - RS.sz/2, zb = RS.c.z + RS.sz/2, H = 3.3, W = x1 - x0;
+  // พื้นกระเบื้องเขียวลายวงกลม
+  const tT = chTex(1.2, 1.2, 96, (q, S) => { q.fillStyle = '#1f6b3a'; q.fillRect(0, 0, S, S); q.strokeStyle = '#e8efe4'; q.lineWidth = 3; q.beginPath(); q.arc(S/2, S/2, S*.36, 0, 7); q.stroke(); q.beginPath(); q.arc(S/2, S/2, S*.3, 0, 7); q.stroke();
+    q.fillStyle = '#e8efe4'; for (let k = 0; k < 8; k++) { const a = k*Math.PI/4; q.beginPath(); q.ellipse(S/2 + Math.cos(a)*S*.13, S/2 + Math.sin(a)*S*.13, S*.09, S*.04, a, 0, 7); q.fill(); }
+    for (const [cx, cy] of [[0, 0], [S, 0], [0, S], [S, S]]) { q.beginPath(); q.arc(cx, cy, S*.09, 0, 7); q.fill(); } q.strokeStyle = '#174f2b'; q.lineWidth = 1; q.strokeRect(0, 0, S, S); });
+  tT.wrapS = tT.wrapT = THREE.RepeatWrapping; tT.repeat.set(W/1.2, (zb - za)/1.2);
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(W - .05, zb - za - .05), new THREE.MeshLambertMaterial({map: tT})); fl.rotation.x = -Math.PI/2; fl.position.set(RM.c.x, .04, (za + zb)/2); fl.receiveShadow = true; g.add(fl);
+  // ผนัง: ฝั่งหน้า (x0) หน้าต่างม่านเขียว + ช่องแสง · ฝั่งหลัง (x1) ช่องแสงบน ประตูบานคู่เทา · ท้ายห้องประชุม/Studio ผนังเทาสองโทน
+  const AQ = '#6fbfb3', base = (q, Wp, Hp, Yp, U, low = '#b9c1c3') => { q.fillStyle = AQ; q.fillRect(0, 0, Wp, Hp); q.fillStyle = low; q.fillRect(0, Yp(1.0), Wp, U(1.0)); };
+  const hiWin = (q, Yp, U, u, w) => { q.fillStyle = '#4b3a2a'; q.fillRect(U(u), Yp(3.05), U(w), U(.6)); q.fillStyle = '#e9eef0'; const n = Math.round(w/.6); for (let k = 0; k < n; k++) q.fillRect(U(u + k*w/n) + 3, Yp(3.05) + 3, U(w/n) - 6, U(.6) - 6); };
+  const L = zb - za;
+  const frontT = chTex(L, H, 40, (q, Wp, Hp, Yp, U) => { base(q, Wp, Hp, Yp, U); for (let u = .3; u < L - .6; u += 1.6) hiWin(q, Yp, U, u, 1.4);
+    q.fillStyle = '#e6f2e6'; q.fillRect(U(.6), Yp(2.25), U(L - 1.2), U(1.45)); q.fillStyle = '#22a447'; q.fillRect(U(.6), Yp(2.35), U(L - 1.2), U(.3)); q.fillStyle = 'rgba(30,120,60,.25)'; for (let u = .6; u < L - .6; u += .35) q.fillRect(U(u), Yp(2.05), 3, U(1.25)); });
+  chWall(L, H, frontT, x0 + .03, H/2, (za + zb)/2, Math.PI/2, g);
+  const backT = chTex(L, H, 40, (q, Wp, Hp, Yp, U) => { base(q, Wp, Hp, Yp, U); for (let u = .3; u < L - .6; u += 1.6) hiWin(q, Yp, U, u, 1.4); const Zu = z => U(zb - z);
+    q.fillStyle = '#4b5563'; q.fillRect(Zu(za + 6.2), Yp(2.2), U(1.7), U(2.2)); q.fillStyle = '#374151'; q.fillRect(Zu(za + 5.35) - 1, Yp(2.2), 2, U(2.2));   // ประตูบานคู่เทา ห้องประชุม
+    q.fillStyle = '#4b5563'; q.fillRect(Zu(zb - .3), Yp(2.1), U(1.0), U(2.1)); });
+  chWall(L, H, backT, x1 - .03, H/2, (za + zb)/2, -Math.PI/2, g);
+  const logoT = chTex(W, H, 48, (q, Wp, Hp, Yp, U) => { q.fillStyle = AQ; q.fillRect(0, 0, Wp, Hp); const cx = U(W/2); q.fillStyle = '#5b6064'; q.fillRect(cx - U(2.2), Yp(2.6), U(4.4), U(2.6)); q.fillStyle = '#f5f5f4'; q.fillRect(cx - U(2.2), Yp(2.62), U(4.4), 3);
+    q.fillStyle = '#f8fafc'; q.beginPath(); q.arc(cx, Yp(2.25), U(.17), 0, 7); q.fill(); q.fillStyle = '#15803d'; q.beginPath(); q.arc(cx, Yp(2.25), U(.13), 0, 7); q.fill();
+    q.fillStyle = '#f1f5f9'; q.textAlign = 'center'; q.font = `bold ${U(.17)|0}px sans-serif`; q.fillText('โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)', cx, Yp(1.88)); q.font = `${U(.12)|0}px sans-serif`; q.fillText('BANKHUM SCHOOL PHRAE', cx, Yp(1.7));
+    for (const s of [-1, 1]) { q.fillStyle = '#1f2937'; q.fillRect(cx + s*U(1.75) - U(.18), Yp(2.45), U(.36), U(.22)); } });
+  chWall(W, H, logoT, RM.c.x, H/2, za + .03, 0, g);
+  const endT = chTex(W, H, 48, (q, Wp, Hp, Yp, U) => { q.fillStyle = AQ; q.fillRect(0, 0, Wp, Hp); q.fillStyle = '#8f9599'; q.fillRect(U(.8), Yp(2.9), U(W - 1.6), U(2.9)); q.fillStyle = '#e5e7eb'; q.fillRect(U(.6), Yp(2.2), U(.9), U(2.2));
+    for (const [u, col] of [[4.1, '#fbbf24'], [4.6, '#60a5fa'], [5.2, '#f8fafc']]) { q.fillStyle = col; q.fillRect(U(u), Yp(2.0), U(.35), U(.28)); } });
+  chWall(W, H, endT, RM.c.x, H/2, zb - .03, Math.PI, g);
+  // ห้องประชุม: โต๊ะประชุมยาวคลุมผ้าครีม (2 แถวต่อกัน ช่องกลาง หัวท้ายโค้ง) + เก้าอี้แดง
+  const cream = M('#d9b57e'), red = M('#e11d27'), tx = RM.c.x + .2, tz0 = za + 1.6, tz1 = zd - 1.3, TL = tz1 - tz0, tzc = (tz0 + tz1)/2;
+  for (const dx of [-.55, .55]) B(.75, .74, TL, cream, tx + dx, .37, tzc);
+  for (const z of [tz0, tz1]) { const e = C(1.3, 1.3, .74, cream, tx, .37, z, 24); e.scale.z = .45; }
+  const chair = (x, z, ry) => { const o = new THREE.Group(); o.position.set(x, 0, z); o.rotation.y = ry; g.add(o);
+    const p = (w, h, d, yy, zz) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), red); m.position.set(0, yy, zz); m.castShadow = true; o.add(m); }; p(.42, .05, .42, .45, 0); p(.42, .45, .05, .7, -.2); p(.42, .42, .36, .22, 0); };
+  for (let z = tz0 + .3; z <= tz1 - .3; z += .62) { chair(tx - 1.25, z, Math.PI/2); chair(tx + 1.25, z, -Math.PI/2); }
+  chair(tx, tz1 + .9, Math.PI); chair(tx - .6, tz1 + .75, Math.PI*.85); chair(tx + .6, tz1 + .75, -Math.PI*.85);
+  for (let i = 0; i < 9; i++) B(.44, .07, .44, red, x0 + .45, .45 + i*.09, zd - .5);
+  // โต๊ะวางแฟ้มริมหน้าต่าง (ผ้าครีม) + กล่องแฟ้มสี
+  const fileC = ['#f97316', '#3b82f6', '#22c55e', '#ef4444', '#a855f7', '#eab308'];
+  for (const [z, l] of [[za + 3.0, 2.6], [za + 5.3, 1.8]]) { B(.75, .76, l, cream, x0 + .55, .38, z); for (let k = 0; k < l/.24 - 1; k++) B(.3, .3, .2, fileC[k % 6], x0 + .45, .91, z - l/2 + .2 + k*.24); }
+  B(.6, .8, .9, '#ffffff', x0 + .5, .4, za + .9); B(.02, .5, .35, '#1d4ed8', x0 + .81, .45, za + .9);   // โต๊ะทองเหลือง/ตู้เล็กหัวมุม
+  // ตู้น้ำเงินขาว ฝั่งประตู + กรอบเกียรติบัตร + โต๊ะผ้าลายฟ้า
+  for (const z of [za + 3.0, zd - 2.2]) { B(.45, .9, 1.0, '#f1f5f9', x1 - .3, .45, z); B(.02, .7, .45, '#1e40af', x1 - .53, .45, z - .23); B(.02, .5, .4, '#cbd5e1', x1 - .53, .5, z + .23); }
+  for (let k = 0; k < 3; k++) B(.05, .28, .36, '#e5e7eb', x1 - .35, 1.05, zd - 2.6 + k*.38);
+  B(.8, .76, 1.2, M('#bfdbfe'), x1 - .5, .38, zd - .9);
+  // โปรเจกเตอร์ แอร์ พัดลมติดผนัง ลำโพง
+  B(.4, .14, .35, '#f8fafc', tx, H - .3, za + 3.2); B(.04, .25, .04, '#e5e7eb', tx, H - .12, za + 3.2);
+  for (const z of [za + 1.6, za + 4.4]) { B(.24, .3, .95, '#f8fafc', x0 + .15, 2.55, z); }
+  B(.24, .3, .95, '#f8fafc', x1 - .15, 2.7, zd + 1.4);
+  const fan = (x, z, s) => { B(.1, .14, .1, '#f3f4f6', x, 2.45, z); const f = C(.26, .26, .05, M('#f8fafc'), x + s*.13, 2.3, z, 16); f.rotation.z = Math.PI/2; };
+  fan(x0 + .1, za + 2.6, 1); fan(x1 - .1, za + 2.2, -1); fan(x1 - .1, zd - 1.0, -1); fan(x0 + .1, zd - .7, 1);
+  for (const dz of [-1, 1]) for (const dx of [-2.2, 0, 2.2]) B(.14, .05, 1.2, new THREE.MeshBasicMaterial({color: '#f8fafc'}), RM.c.x + dx, H - .04, (za + zd)/2 + dz*1.6);
+  // หุ่นป้ายเด็กนักเรียนสองข้างผนังโลโก้
+  for (const s of [-1, 1]) { B(.06, .08, .5, '#3f3f46', RM.c.x + s*1.4, .05, za + .5); const t = new THREE.Mesh(new THREE.PlaneGeometry(.45, 1.1), M(s < 0 ? '#60a5fa' : '#f472b6')); t.position.set(RM.c.x + s*1.4, .65, za + .52); g.add(t); }
+  // เสา/ฉากไม้กั้นระหว่างห้องประชุมกับ Studio + คานบน
+  for (const x of [x0 + .35, x1 - .35]) B(.6, H, .4, '#c8a372', x, H/2, zd);
+  B(W, .5, .4, '#5fae9e', RM.c.x, H - .25, zd);
+  // Studio: โต๊ะคอมยาวชิดผนังท้าย + จอหลายจอ + เก้าอี้เกมมิ่ง
+  const sx = RS.c.x + .6, dk = M('#e7e5e4'), blk = M('#111827');
+  B(2.6, .05, .75, dk, sx, .76, zb - .55); for (const dx of [-1.25, 1.25]) for (const dz of [-.33, .33]) B(.05, .74, .05, '#9ca3af', sx + dx, .37, zb - .55 + dz);
+  B(.75, .62, .2, '#a16207', sx + 1.7, .31, zb - .4);
+  for (const dx of [-.9, -.3, .45]) { B(.55, .36, .04, blk, sx + dx, 1.05, zb - .75); B(.08, .2, .08, blk, sx + dx, .86, zb - .75); }
+  B(.9, .5, .04, blk, sx - .2, 1.85, zb - .06);   // จอใหญ่ติดผนัง
+  B(.55, .08, .55, blk, sx - .3, .48, zb - 1.3); B(.5, .75, .1, blk, sx - .3, .9, zb - 1.05); C(.03, .03, .4, '#374151', sx - .3, .25, zb - 1.3, 6); B(.5, .03, .5, '#374151', sx - .3, .05, zb - 1.3);
+  for (const dx of [-1.5, -1.0]) { B(.5, .38, .2, blk, RS.c.x + dx, .19, zb - 1.0); }
+  B(.55, .45, .45, '#6b7280', sx + .9, 1.0, zb - .6);   // เครื่องพิมพ์ 3D บนโต๊ะ
+  // ไฟสตูดิโอ softbox 2 ชุด + พัดลมตั้งพื้น
+  for (const dx of [-2.6, -1.9]) { C(.015, .015, 1.7, '#111827', RS.c.x + dx, .85, zb - 1.6, 6); B(.6, .5, .05, '#f8fafc', RS.c.x + dx, 1.85, zb - 1.6); for (const a of [0, 2.1, 4.2]) B(.02, .02, .5, '#111827', RS.c.x + dx + Math.sin(a)*.2, .02, zb - 1.6 + Math.cos(a)*.2); }
+  C(.05, .05, 1.2, '#f1f5f9', RS.c.x - 3.3, .6, zb - 1.4, 8); const sf = C(.25, .25, .06, M('#f8fafc'), RS.c.x - 3.3, 1.25, zb - 1.4, 16); sf.rotation.x = Math.PI/2;
+  // ฝั่งหน้าต่าง: เครื่องตัดเลเซอร์บนแท่น + ชั้นเหล็กโชว์งานพิมพ์ 3D
+  B(1.2, .5, .7, '#111827', x0 + .8, .25, zd + 1.6); B(1.15, .5, .68, '#e5e7eb', x0 + .8, .75, zd + 1.6); B(1.0, .06, .6, '#374151', x0 + .8, 1.02, zd + 1.6);
+  for (const y of [.1, .55, 1.0, 1.45]) B(.5, .03, 1.1, '#1f2937', x0 + .4, y, zd + .8);
+  for (const dz of [-.53, .53]) for (const dx of [-.23, .23]) B(.03, 1.6, .03, '#111827', x0 + .4 + dx, .8, zd + .8 + dz);
+  for (let k = 0; k < 6; k++) B(.18, .18, .18, ['#f97316', '#22d3ee', '#a3e635', '#f472b6', '#facc15', '#f8fafc'][k], x0 + .4, .65 + (k % 3)*.45, zd + .5 + (k >> 1 & 1)*.5);
+  // ฝั่งหลัง: ชั้นไม้ใส่ถ้วยรางวัล ข้างเสาไม้ + โต๊ะผ้าลูกไม้วางน้ำดื่ม + กล่องเก็บของ
+  B(.4, 1.6, .9, '#7c4a2a', x1 - .3, .8, zd + .75); for (let k = 0; k < 4; k++) C(.05, .07, .22, '#d4a017', x1 - .3, 1.15 + (k % 2)*.4, zd + .45 + (k >> 1)*.5, 8);
+  B(.8, .76, 1.6, '#efe7d6', x1 - .5, .38, zd + 2.4); for (let k = 0; k < 6; k++) C(.04, .04, .3, M('#93c5fd'), x1 - .45, .91, zd + 1.8 + k*.22, 8);
+  B(.5, .3, .4, '#9a6a3f', x1 - .45, .91, zd + 3.0);
 }
 // ตกแต่งห้องเรียนชั้น 2 ตามรูปจริง: ผนังฟ้าเทอร์ควอยซ์ ล่างขาว พื้นกระเบื้องขาว หน้าต่างบานไม้ 2 ชั้น จอทีวีกลางไวท์บอร์ด แถบภาพอวกาศใต้กระดาน
 // ชั้นช่องหนังสือเขียว-แดง พัดลมติดผนัง ไฟนีออน · ป.6 มีภาพวาดภูเขาสายรุ้งผนังท้ายห้อง · ป.3 (ห้องหัวมุม) ม่านระบายแดงขาวเหนือหน้าต่าง บอร์ดสีรุ้ง
