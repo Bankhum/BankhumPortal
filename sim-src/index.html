@@ -234,6 +234,7 @@ canvas{cursor:pointer}
 #fsTip{position:fixed;left:50%;top:calc(var(--topbar) + 10px);transform:translateX(-50%);z-index:30;width:min(360px,calc(100vw - 24px));box-sizing:border-box;padding:10px 12px;border-radius:10px;background:var(--navy);color:#fff;font-size:13px;line-height:1.45;box-shadow:0 6px 20px rgba(0,0,0,.25)}
 #credit b{font-weight:700;color:var(--navy)}
 #splash .cr{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom));font-size:12px;color:#64748b}#splash .cr b{color:var(--navy)}
+#musicHint{position:fixed;left:50%;top:58%;transform:translateX(-50%);z-index:7;pointer-events:none;background:rgba(30,86,49,.92);color:#fff;font-size:15px;font-weight:600;padding:9px 16px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.2);animation:mpulse 1.6s ease-in-out infinite;white-space:nowrap}#musicHint[hidden]{display:none}
 #vMusic.wait{animation:mpulse 1.6s ease-in-out infinite}
 @keyframes mpulse{50%{box-shadow:0 0 0 4px rgba(30,86,49,.3)}}
 #tour{position:fixed;left:50%;bottom:calc(var(--barH,112px) + 4px);transform:translateX(-50%);display:flex;gap:4px;padding:4px;border-radius:999px;background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);box-shadow:0 4px 18px rgba(0,0,0,.08);max-width:calc(100vw - 32px);overflow-x:auto;scrollbar-width:none;z-index:5}
@@ -3363,6 +3364,7 @@ frame();
   }
   function build(){
     ctx = new AC();
+    ctx.onstatechange = () => { if (playing && ctx.state !== 'running' && !document.hidden) setTimeout(() => { if (playing) ctx.resume().catch(() => {}); }, 300); };   // iOS ขัดจังหวะเอง ลองเล่นต่อ
     master = ctx.createGain(); master.gain.value = 0;
     const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 3;
     master.connect(comp); comp.connect(ctx.destination);
@@ -3420,15 +3422,17 @@ frame();
       next += E8; step++;
     }
   }
+  const hint = document.createElement('div'); hint.id = 'musicHint'; hint.textContent = '🎵 แตะที่ใดก็ได้เพื่อเปิดเพลง'; document.body.appendChild(hint);
   function ui(){
+    hint.hidden = !(want && !playing);
     btn.classList.toggle('on', playing); btn.classList.toggle('wait', want && !playing);
     btn.innerHTML = (want ? '🎵' : '🔇') + '<span class="tx"> ' + (playing ? 'เพลงเปิด' : 'เพลงปิด') + '</span>'; btn.setAttribute('aria-pressed', String(playing));
     btn.title = playing ? 'ปิดเพลง' : want ? 'แตะที่ใดก็ได้เพื่อเริ่มเพลง' : 'เปิดเพลง';
   }
   let unlockEl = null;
   function unlockIOS(){   // iPhone/iPad: Web Audio เงียบเมื่อเปิดสวิตช์ปิดเสียง จึงบอกเบราว์เซอร์ว่าเป็นการเล่นเพลง + เล่นเสียงเงียบผ่าน <audio> หนึ่งครั้ง
-    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
-    if (unlockEl) return;
+    try { if (navigator.audioSession) { navigator.audioSession.type = 'playback'; return; } } catch (e) {}   // iOS 17+ ใช้วิธีนี้พอ
+    if (unlockEl || !/iP(hone|ad|od)|Macintosh.*Mobile/.test(navigator.userAgent) && !(navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform))) return;
     const n = 4410, buf = new ArrayBuffer(44 + n*2), v = new DataView(buf), w = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
     w(0, 'RIFF'); v.setUint32(4, 36 + n*2, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
     v.setUint32(24, 44100, true); v.setUint32(28, 88200, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n*2, true);
