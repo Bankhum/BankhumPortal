@@ -371,8 +371,9 @@ const WOOD = {dx: 3.3, dz: -.5};
 const mkRoom = (th, b, x0, x1, z0, z1, y) => ({th, b, y, c: new THREE.Vector3((x0+x1)/2, y, (z0+z1)/2), sx: x1-x0, sz: z1-z0});
 const ROOMS = {
   // ชั้น 2 เรียงจากฝั่งบันได (หัวอาคารด้านอาคารไม้) ตามป้ายหน้าห้องในรูปจริง: ป.5 → ป.6 → ป.4 → ป.3 (ครูบอก ป.3 ป.4 ป.6 ป.5 นับจากปลายอีกด้าน)
-  'ห้อง ป.5': mkRoom('ชั้น 2 ห้อง ป.5', 'Chalerm_Building', 25.6, 35, -6.5, 1.6, F2), 'ห้อง ป.6': mkRoom('ชั้น 2 ห้อง ป.6', 'Chalerm_Building', 25.6, 35, 1.6, 9.7, F2),
-  'ห้อง ป.4': mkRoom('ชั้น 2 ห้อง ป.4', 'Chalerm_Building', 25.6, 35, 9.7, 17.8, F2), 'ห้อง ป.3': mkRoom('ชั้น 2 ห้อง ป.3', 'Chalerm_Building', 25.6, 35, 17.8, 25.9, F2),
+  // ป.5 ขยับไปเต็มหัวอาคาร (เหนือบันไดฝั่งจุดสแกนหน้า) ทุกห้องยาวเท่ากัน 9.875 ม. (ครูบอก)
+  'ห้อง ป.5': mkRoom('ชั้น 2 ห้อง ป.5', 'Chalerm_Building', 25.6, 35, -13.6, -3.725, F2), 'ห้อง ป.6': mkRoom('ชั้น 2 ห้อง ป.6', 'Chalerm_Building', 25.6, 35, -3.725, 6.15, F2),
+  'ห้อง ป.4': mkRoom('ชั้น 2 ห้อง ป.4', 'Chalerm_Building', 25.6, 35, 6.15, 16.025, F2), 'ห้อง ป.3': mkRoom('ชั้น 2 ห้อง ป.3', 'Chalerm_Building', 25.6, 35, 16.025, 25.9, F2),
   // ชั้น 1 จากฝั่งบันได/จุดสแกนหน้า: ห้องผู้บริหาร → ห้องธุรการ → Bankhum Studio (ห้องเล็ก) → ห้องประชุม (ใหญ่สุด ถึงปลายอาคาร) · Studio ต่อกับห้องประชุม กั้นด้วยเสาไม้ (ครูบอก + รูปจริง)
   'ห้องผู้บริหาร': mkRoom('ชั้น 1 ห้องผู้บริหาร', 'Chalerm_Building', 25.6, 35, -6.5, -1.5, 0), 'ห้องธุรการ': mkRoom('ชั้น 1 ห้องธุรการ', 'Chalerm_Building', 25.6, 35, -1.5, 5.5, 0),
   'Bankhum Studio': mkRoom('ชั้น 1 Bankhum Studio', 'Chalerm_Building', 25.6, 35, 5.5, 12, 0), 'ห้องประชุม': mkRoom('ชั้น 1 ห้องประชุม', 'Chalerm_Building', 25.6, 35, 12, 25.9, 0),
@@ -1156,7 +1157,8 @@ function lineUp(a, m, p){
   let pos, S;
   if (ROOMS[fk]) {   // 2 แถวที่ระเบียงหน้าห้อง (ชั้นเดียวกับห้อง)
     const R = ROOMS[fk], half = Math.ceil(coh.length / 2), sp = Math.min(.6, (R.sz - .4)/half);
-    pos = new THREE.Vector3(R.c.x - R.sx/2 - .5 - (girl ? .75 : 0) - ci*1.6, R.y, R.c.z + (row - (half-1)/2)*sp);
+    const zc = R.b === 'Chalerm_Building' && R.y > 1.8 ? Math.max(R.c.z, -3.5) : R.c.z;   // ระเบียงหน้า ป.5 ช่วงหัวอาคารเป็นช่องบันได ยืนแถวเลยออกมา
+    pos = new THREE.Vector3(R.c.x - R.sx/2 - .5 - (girl ? .75 : 0) - ci*1.6, R.y, zc + (row - (half-1)/2)*sp);
     S = R.y > 1.8 && STAIR[R.b] ? stairFor(R.b, R.c).bot3.clone() : new THREE.Vector3(R.c.x - R.sx/2 - .9 - ci*1.6, 0, R.c.z);
   } else {
     const F = zones[from], T = keyRect(tk), dx = T.c.x - F.c.x, dz = T.c.z - F.c.z, off = 1.6 + ci*1.8, along = (row - coh.length/4)*.62, lat = girl ? .75 : 0;
@@ -2084,7 +2086,7 @@ function stepTo(a, tgt, dt){
 // ชั้น 2 อาคารเฉลิมพระเกียรติ: ระเบียงหน้าห้อง x 23.5..25.6 ประตูห้องละ 2 บาน (หัวห้อง/ท้ายห้อง)
 const CH2 = {wall: 25.6, cor: 24.75, inner: 26.05, rooms: ['ห้อง ป.5','ห้อง ป.6','ห้อง ป.4','ห้อง ป.3']};
 const ch2Room = p => CH2.rooms.find(k => { const R = ROOMS[k]; return Math.abs(p.z - R.c.z) <= R.sz/2 && p.x > CH2.wall - .05; });
-const ch2Doors = k => { const R = ROOMS[k], z0 = R.c.z - R.sz/2, z1 = R.c.z + R.sz/2; return k === 'ห้อง ป.3' ? [z0 + 1.05, z0 + 2.55] : [z0 + 1.05, z1 - 1.05]; };   // ป.3 ประตูหลังหลบช่องบันไดปลายอาคาร
+const ch2Doors = k => { const R = ROOMS[k], z0 = R.c.z - R.sz/2, z1 = R.c.z + R.sz/2; return k === 'ห้อง ป.3' ? [z0 + 1.05, z0 + 2.55] : k === 'ห้อง ป.5' ? [z1 - 3.0, z1 - 1.05] : [z0 + 1.05, z1 - 1.05]; };   // ป.3 / ป.5 ประตูหลบช่องบันไดหัว-ปลายอาคาร
 function ch2Route(p, dest){
   const near = (x, z) => Math.abs(p.x - x) < .02 && Math.abs(p.z - z) < .02, pk = p.x >= CH2.inner - .05 ? ch2Room(p) : null, dk = dest.x >= CH2.inner - .05 ? ch2Room(dest) : null;
   if (pk && pk === dk) return dest;
@@ -2983,12 +2985,12 @@ function buildChalermF2(){
   const tileT = chTex(1.2, 1.2, 64, (c, W) => { c.fillStyle = '#eef0f0'; c.fillRect(0, 0, W, W); c.fillStyle = '#e3e6e7'; c.fillRect(0, 0, W/2, W/2); c.fillRect(W/2, W/2, W/2, W/2); c.strokeStyle = '#c9cfd2'; c.lineWidth = 1.5; for (const k of [0, W/2]) { c.beginPath(); c.moveTo(k, 0); c.lineTo(k, W); c.moveTo(0, k); c.lineTo(W, k); c.stroke(); } });
   tileT.wrapS = tileT.wrapT = THREE.RepeatWrapping;
   const floor = (x0, x1, z0, z1) => { const t = tileT.clone(); t.repeat.set((x1 - x0)/1.2, (z1 - z0)/1.2); t.needsUpdate = true; const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), new THREE.MeshLambertMaterial({map: t})); m.rotation.x = -Math.PI/2; m.position.set((x0 + x1)/2, Y + .012, (z0 + z1)/2); m.receiveShadow = true; g.add(m); };
-  floor(X0, XW, SZ1, SB.zE); floor(XW, 35.5, Z0, -6.5);
+  floor(X0, XW, SZ1, SB.zE);
   // ราวกันตก: ผนังปูนขาวเตี้ย คาดไม้กระดานด้านบน (หน้าลานเสาธง)
   B(.16, 1.0, Z1 - Z0, '#ebe7df', X0 + .08, Y + .5, (Z0 + Z1)/2); B(.34, .05, Z1 - Z0, '#8a5a3a', X0 + .12, Y + 1.02, (Z0 + Z1)/2);
   B(.04, .04, SB.zE - 5.7, '#3f3f46', X0 + .12, Y + 1.3, (SB.zE + 5.7)/2);   // ราวท่อเหล็กช่วงหน้า ป.4 ป.3
   // เสาสี่เหลี่ยมขาว แนวผนังกั้นห้อง + เสาเหล็กกลมรับชายคา + ท่อน้ำฝนสีฟ้า
-  for (const z of [Z0 + .2, SZ1, 1.6, 9.7, 17.8, Z1 - .2]) B(.36, HT, .36, '#f1efe9', X0 + .2, Y + HT/2, z);
+  for (const z of [Z0 + .2, SZ1, -3.725, 6.15, 16.025, Z1 - .2]) B(.36, HT, .36, '#f1efe9', X0 + .2, Y + HT/2, z);
   for (const z of [-2.5, 5.6, 13.7, 21.8]) C(.045, .045, HT - 1.05, '#3f3f46', X0 + .1, Y + 1.05 + (HT - 1.05)/2, z, 8);
   for (const z of [SZ1, 9.7, Z1 - .2]) C(.06, .06, HT + Y, '#60a5fa', X0 - .02, (HT + Y)/2, z + .26, 8);
   // ผนังห้องด้านระเบียง (มองจากระเบียง): บนขาว ล่างเทาฟ้า บานเกล็ดไม้สูง ประตูสีฟ้า · ป.5 ประตูบานคู่สีเขียวฝั่งบันได
@@ -3015,7 +3017,7 @@ function buildChalermF2(){
     for (const dz of [-L/2, 0, L/2]) B(.34, .78, .05, wood, X0 + .4, Y + .39, cz + dz); }
   // โต๊ะวางถังน้ำดื่มสีฟ้า + เก้าอี้เหล็กชิดผนัง
   const btl = new THREE.MeshLambertMaterial({color: '#3b82f6', transparent: true, opacity: .8});
-  for (const [z, n] of [[-12.2, 1], [-6.4, 2], [7.4, 3], [15.4, 2], [19.9, 1]]) {
+  for (const [z, n] of [[-6.4, 2], [7.4, 3], [15.4, 2], [19.9, 1]]) {
     B(.5, .04, 1.1, wood, X0 + .45, Y + .72, z); for (const dz of [-.5, .5]) for (const dx of [-.2, .2]) B(.04, .7, .04, '#3f3f46', X0 + .45 + dx, Y + .35, z + dz);
     for (let i = 0; i < n; i++) { C(.14, .14, .42, btl, X0 + .45, Y + .95, z - .35 + i*.35, 12); C(.04, .04, .06, '#1d4ed8', X0 + .45, Y + 1.19, z - .35 + i*.35, 6); }
   }
@@ -3026,10 +3028,6 @@ function buildChalermF2(){
   // ผนังบล็อกช่องลมปลายระเบียงทั้งสองด้าน
   chWall(XW - X0, HT, breezeTex(XW - X0, HT), (X0 + XW)/2, Y + HT/2, Z0 + .02, 0, g);
   chWall(XW - X0, HT - 1, breezeTex(XW - X0, HT - 1), (X0 + XW)/2, Y + 1 + (HT - 1)/2, Z1 - .02, Math.PI, g);
-  // ห้องหัวอาคาร (เหนือบันได): ผนังขาว หน้าต่างบานเกล็ด
-  const endT = chTex(SZ1 - Z0, HT, 48, (c, W, H, Yp, U) => { c.fillStyle = '#f3f4f2'; c.fillRect(0, 0, W, H); c.fillStyle = '#c8d0d6'; c.fillRect(0, Yp(1.15), W, U(1.15));
-    for (const z of [.5, 2.1, 3.7]) { c.fillStyle = '#3b2a20'; c.fillRect(U(z), Yp(2.9), U(1.3), U(1.5)); c.fillStyle = '#a7c4d4'; for (let k = 0; k < 5; k++) c.fillRect(U(z) + 4, Yp(2.9) + 5 + k*U(1.5)/5, U(1.3) - 8, U(1.5)/5 - 6); } });
-  chWall(SZ1 - Z0, HT, endT, XW + .01, Y + HT/2, (Z0 + SZ1)/2, -Math.PI/2, g);
   // --- บันไดหักกลับ 2 ชุด: ขั้นปูกระเบื้องลายไม้ ผนังเขียวกลางระหว่างช่วงบน-ล่าง ราวจับไม้ ชานพักปลายบันได ---
   const stepM = M('#c98b55'), noseM = M('#f1e4d0'), grn = M('#167a5b'), barM = M('#4a3426');
   const greenT = (w, h, band) => chTex(w, h, 40, (c, W, H, Yp, U) => { c.fillStyle = '#f3f4f2'; c.fillRect(0, 0, W, H); c.fillStyle = '#167a5b'; c.fillRect(0, Yp(band), W, U(band)); });
@@ -3208,7 +3206,7 @@ const roomLabs = [];
 function buildFloors(){
   const slabM = new THREE.MeshLambertMaterial({color:'#e2e8f0', transparent:true, opacity:.5, depthWrite:false}), stairM = new THREE.MeshLambertMaterial({color:'#94a3b8'});
   const SLAB = {Chalerm_Building: [23.5, 35.5, -7.2, 26.4], Wooden_Building: [20.2 + WOOD.dx, 32.2 + WOOD.dx, -43.7 + WOOD.dz, -21.4 + WOOD.dz], Technology_Building: [7.3, 19.3, -48.1, -40.1]};
-  SLAB.Chalerm_Corridor = [23.5, 25.6, -7.2, CH_STAIRS[1].zE]; SLAB.Chalerm_Building = [25.6, 35.5, -7.2, 26.4];   // เว้นช่องบันไดปลายอาคารฝั่ง ป.3
+  SLAB.Chalerm_Corridor = [23.5, 25.6, -7.2, CH_STAIRS[1].zE]; SLAB.Chalerm_Building = [25.6, 35.5, -13.6, 26.4];   // เว้นช่องบันไดปลายอาคารฝั่ง ป.3
   for (const [b, [x0, x1, z0, z1]] of Object.entries(SLAB)) {
     const s = new THREE.Mesh(new THREE.BoxGeometry(x1-x0, .16, z1-z0), slabM); s.position.set((x0+x1)/2, F2 - .08, (z0+z1)/2); s.renderOrder = 1; scene.add(s);
     if (b.startsWith('Chalerm')) continue;   // บันไดผนังเขียว สร้างใน buildChalermF2
