@@ -623,14 +623,20 @@ for (const mode of ['car', 'moto']) {
   ts.forEach((t, k) => { t.rank = k; t.dep1 = deps[k]; });
 }
 { const k = TEACHERS.find(t => t.model === 'atto3'); if (k) { const o = TEACHERS.find(t => t !== k && t.mode === 'car' && t.dep1 === k.dep0); if (o) o.dep1 = k.dep1; k.dep1 = k.dep0; } }   // ครูดีลาภกลับตามเวลาจริง (ช่องจอดไม่ขวางทาง)
+// ที่จอดรถครู (ครูวงเส้นเหลือง): ลานหน้าเสาธงริมถนนหน้าอาคารเฉลิมพระเกียรติ จอดหันหัวเข้าลาน เว้นช่องหน้าศาลพระภูมิ
+// ช่องที่เหลือต่อแนวเดียวกันข้ามถนนเชื่อม ลงไปลานหน้าอาคารไม้ (ลานจอดเดิมหลังอาคาร ป.1 ป.2 อยู่นอกรั้วใหม่แล้ว)
+const TPARK_Z = [14.17, 11.62, 9.07, 6.52, 1.42, -1.13, -3.68, -6.23, -8.78, -11.33], TPARK_X = 14.9, TPARK_W = 2.55;
+const TPARK = [...TPARK_Z.map(z => ({spot: [TPARK_X, z], sB: sOf(11) + 17 - z, spur: [[DROP_X - 1.4, z + 1.4], [17.6, z], [TPARK_X, z]]})),
+  ...[-26, -28.55, -31.1, -33.65, -36.2].map(z => ({spot: [16.4, z], sB: sOf(14), spur: [[19.6, -24.6], [19.8, z], [16.4, z]]}))];
 TEACHERS.forEach((t, i) => {
   const arr = t.arr0, dep = t.dep1, nCar = t.rank;
-  t.spot = t.mode === 'car' ? [-46 + nCar*2.8, -39.5] : [7.4, -31.4 + nCar*1.6];   // ลานจอดรถครูหลังอาคาร ป.1 ป.2
-  t.veh = addVeh(t.mode, t.model === 'atto3' ? '#f1f5f9' : t.mode === 'car' ? pick(CAR_COLS) : '#111827', [], t.model ? fullName(t.name) : undefined); t.veh.model = t.model; t.veh.park = t.spot;
-  const moto = t.mode === 'moto', sB = moto ? sOf(16) - 1 : sOf(18);
-  const spur = moto ? [[MOTO_LANE[0] + 1, LANE - 2], [MOTO_LANE[0] + 1, t.spot[1]], t.spot] : [[-53, -28], [-50, -36], [t.spot[0], -36], t.spot];
+  const P = t.mode === 'car' ? TPARK[nCar % TPARK.length] : null;
+  t.spot = P ? P.spot : [7.4, -31.4 + nCar*1.6];
+  t.veh = addVeh(t.mode, t.model === 'atto3' ? '#f1f5f9' : t.mode === 'car' ? pick(CAR_COLS) : '#111827', [], t.model ? fullName(t.name) : undefined); t.veh.model = t.model; t.veh.park = t.spot; if (P) t.veh.parkYaw = -Math.PI/2;
+  const moto = t.mode === 'moto', sB = moto ? sOf(16) - 1 : P.sB;
+  const spur = moto ? [[MOTO_LANE[0] + 1, LANE - 2], [MOTO_LANE[0] + 1, t.spot[1]], t.spot] : P.spur;
   t.runIn = addRun(t.veh, 'park', arr, {sB, spot: t.spot, spur}); t.runOut = addRun(t.veh, 'leave', dep, {sB, spot: t.spot, spur});
-  t.veh.riders = 1; t.leave = dep; t.drop = [t.spot[0] + 1.6, t.spot[1]];
+  t.veh.riders = 1; t.leave = dep; t.drop = moto ? [t.spot[0] + 1.6, t.spot[1]] : [t.spot[0], t.spot[1] + 1.4];
 });
 // จำลองการจราจรทีละวินาที: รถตามกันเป็นแถว ไม่แซง ไม่ซ้อนกัน ส่ง/รับนักเรียนได้ในช่วงหน้าอาคาร (ประมาณ 4 คัน)
 const spurLen = r => { let L = 0; const sp = r.spur; for (let j = 1; j < sp.length; j++) L += Math.hypot(sp[j][0]-sp[j-1][0], sp[j][1]-sp[j-1][1]); return L + 3; };
@@ -1206,7 +1212,7 @@ function targetOf(a, m){
   }
   if (ph === 'duty' && a.kind === 's' && !isKG(a.cls)) { const w = m*.9 + a.i; return {p: inZone(z, a.ox, a.oz).add(new THREE.Vector3(Math.sin(w)*.8, 0, Math.cos(w)*.8)), pose:'sweep'}; }
   const where = phaseAt(m)[2];
-  if (z === 'PARK') return {p: new THREE.Vector3(a.ref.spot[0] + 1.6, 0, a.ref.spot[1]), pose:'stand'};
+  if (z === 'PARK') return {p: new THREE.Vector3(a.ref.drop[0], 0, a.ref.drop[1]), pose:'stand'};
   if (z === 'SCAN') return {p: new THREE.Vector3(SCAN_PT[0] - .9 - a.ox*1.4, 0, SCAN_PT[1] + (a.oz-.5)*3.5), pose:'stand'};
   if (z === 'PICK') return {p: new THREE.Vector3(a.ref.pickPos[0], 0, a.ref.pickPos[1] + (a.oz-.5)*2), pose:'stand'};
   if (z === 'GATE') {
@@ -1510,11 +1516,14 @@ function buildMarket(bx, gable, mat){   // ตลาดสด: ลานคอ�
   roomLabs.push({el, R: {b: 'Market'}, p: new THREE.Vector3(cx, 4.5, cz), always: true});
 }
 
+// รั้วใหม่ตามเส้นแดงที่ครูวาด: จากรั้วหน้าข้างประตูรถออก (หลังศาลาแปดเหลี่ยม) ไปตามหลังอาคาร ป.1 ป.2 อ้อมหลังเรือนไม้ ไปชนผนังอาคารห้องคอมพิวเตอร์
+const BACK_FENCE = [[FENCE.x0, -38.6], [-14, -38.6], [-11.6, -43.6], [6.8, -43.6]];
 function buildFence(){ // รั้วรอบโรงเรียน เว้นช่องประตูรถเข้า/ออกด้านถนน
   fenceBuilt = true; buildOutside(); buildRoad(); buildGarden(); buildP12Lane(); buildKgPool(); const {x0, x1, z0, z1} = FENCE, H = 1.6, segs = [];
   const gaps = [[GATE_IN_Z - 4, GATE_IN_Z + 4], [GATE_OUT_Z - 4, GATE_OUT_Z + 4]];
   let z = z0; for (const [a, b] of gaps.sort((p, q) => p[0] - q[0])) { segs.push([x0, z, x0, a]); z = b; } segs.push([x0, z, x0, z1]);
   segs.push([x0, z1, x1, z1], [x1, z1, x1, z0], [x1, z0, x0, z0]);
+  for (let i = 1; i < BACK_FENCE.length; i++) segs.push([...BACK_FENCE[i-1], ...BACK_FENCE[i]]);
   const mat = new THREE.MeshLambertMaterial({color: '#64748b'}), posts = [];
   buildFrontage(segs.filter(([ax, , bx]) => ax === x0 && bx === x0));   // ด้านหน้า (ติดถนน) เป็นรั้วไม้ระแนงสีเขียวตามภาพจริง
   for (const [ax, az, bx, bz] of segs.filter(([ax, , bx]) => !(ax === x0 && bx === x0))) {
@@ -1924,9 +1933,10 @@ function moveVehicles(dt){
       if (v.el && v.lastWant !== want) { v.lastWant = want; v.el.innerHTML = `<b>${v.color === '#16a34a' ? '⬇' : '⬆'} ${v.label}${want ? ' · ปิดอยู่' : ''}</b>`; } }
     if (!['kiosk','gate','garage'].includes(v.type) && Math.hypot(s.dx, s.dz) > .01) { const yaw = Math.atan2(s.dx, s.dz); let d = yaw - g.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); g.rotation.y += d * Math.min(1, dt*8); }
     v.mv = g.visible ? g.position.clone().sub(gp) : null; g.visible = true;
+    if (v.parkYaw != null && Math.hypot(g.position.x - v.park[0], g.position.z - v.park[1]) <= .6) g.rotation.y = v.parkYaw;   // รถครูจอดหันหัวเข้าลานเสมอ (แม้เลื่อนเวลาข้ามไป)
     if (v.riderMesh && v.park) { const parked = Math.hypot(g.position.x - v.park[0], g.position.z - v.park[1]) <= .6;
       v.riderMesh.visible = !parked;                                  // จอดแล้วคนลงจากรถ ไม่ต้องมีคนขี่ค้างไว้
-      if (parked && v.type === 'bike') { g.visible = false; if (v.el) v.el.style.display = 'none'; continue; } }   // ไม่แสดงแถวจักรยานที่จอดหน้าเสาธง (ครูให้เอาออก)
+      if (parked && v.type === 'bike') { g.visible = false; if (v.el) v.el.style.display = 'none'; continue; }}   // ไม่แสดงแถวจักรยานที่จอดหน้าเสาธง (ครูให้เอาออก)
     if (v.el) { v.el.style.display = ''; const p = g.position.clone().setY(['kiosk','gate','garage'].includes(v.type) ? 7 : 4.5).project(cam); v.el.style.left = (p.x*.5+.5)*innerWidth+'px'; v.el.style.top = (-p.y*.5+.5)*innerHeight+'px'; }
   }
 }
@@ -2678,7 +2688,7 @@ function buildChalerm(){   // ลานหน้าอาคารเฉลิ�
   B(.12, 2.4, 2.3, '#8a5a3a', 22.95, 1.2, -13.0); plane(2.3, 2.3, we, 22.88, 1.25, -13.0, -Math.PI/2);
   const logM = M('#b4534b'); for (const [ly, lz] of [[.18, -13.45], [.18, -12.55]]) { const l = add(new THREE.CylinderGeometry(.18, .18, .5, 10), logM, 22.4, ly, lz); l.rotation.z = Math.PI/2; } B(.5, .1, 1.5, '#b4534b', 22.4, .42, -13.0);
   // --- ลานรูปปั้นครึ่งวงกลม: เสาสีฟ้าเทอร์ควอยซ์ + รูปปั้นครึ่งตัว, ผนังป้าย Bankhum Science Park / คติพจน์ ---
-  const PCX = 13.2, PCZ = 11, R = 3.4, conc = M('#c7c9c6');
+  const PCX = 12.8, PCZ = 20.8, R = 3.4, conc = M('#c7c9c6');
   add(new THREE.CylinderGeometry(R, R, .45, 40, 1, false, 0, Math.PI), conc, PCX, .225, PCZ);
   const colM = M('#2cc5bd'), bustM = M('#a8a29e');
   for (let k = 0; k < 8; k++) { const a = .25 + k*(Math.PI - .5)/7, bx = PCX + Math.sin(a)*(R - .45), bz = PCZ + Math.cos(a)*(R - .45);
@@ -2691,11 +2701,18 @@ function buildChalerm(){   // ลานหน้าอาคารเฉลิ�
   // กระบะต้นไม้ปูนข้างลาน: พุ่มไม้เตี้ย + ไม้ดัด 2 ต้น
   B(1.4, .5, 2*R + 1, '#9ca3af', PCX - 1.05, .25, PCZ); B(1.2, .55, 2*R + .6, '#3f7d32', PCX - 1.05, .75, PCZ);
   for (const dz of [-2.4, 2.6]) { B(.12, 1.6, .12, '#6b4f3a', PCX - 1.1, 1.3, PCZ + dz); for (const [hy, s] of [[1.4, .55], [2.0, .45], [2.5, .32]]) add(new THREE.SphereGeometry(s, 8, 6), '#2f6b2a', PCX - 1.1, hy, PCZ + dz); }
+  // ต้นลั่นทมข้างสวนวิทยาศาสตร์ (ครูวง): ลำต้นเทาแตกกิ่งเป็นง่าม ใบเป็นกระจุกปลายกิ่ง ดอกขาวใจเหลือง
+  { const LX = PCX - 3.4, LZ = PCZ + 2.6, bark = M('#8b8178'), leaf = M('#3f7d32'), fl = M('#fff7e0'), fy = M('#facc15');
+    add(new THREE.CylinderGeometry(.16, .24, 1.6, 8), bark, LX, .8, LZ);
+    for (const [dx, dz] of [[.9, .3], [-.8, .5], [.2, -.9], [-.3, .9]]) { const tx = LX + dx, tz = LZ + dz, br = add(new THREE.CylinderGeometry(.08, .13, 1.6, 6), bark, LX + dx/2, 2.2, LZ + dz/2); br.rotation.set(dz*.6, 0, -dx*.6);
+      add(new THREE.SphereGeometry(.75, 8, 6), leaf, tx, 3.05, tz).scale.y = .55;
+      for (let k = 0; k < 5; k++) { const a = k*1.26 + dx, fx = tx + Math.cos(a)*.5, fz = tz + Math.sin(a)*.5; add(new THREE.SphereGeometry(.13, 6, 4), fl, fx, 3.35, fz); add(new THREE.SphereGeometry(.05, 4, 3), fy, fx, 3.45, fz); } }
+    add(new THREE.TorusGeometry(.6, .08, 6, 16), '#9a5b3c', LX, .08, LZ).rotation.x = Math.PI/2; }
   // ป้ายบอกทางไม้ "Bankhum Studio" / "แปลงเกษตร"
   const arrowT = t => cvTex(256, 48, (c, w, h) => { c.fillStyle = '#7c3f32'; c.beginPath(); c.moveTo(0, 0); c.lineTo(w - 24, 0); c.lineTo(w, h/2); c.lineTo(w - 24, h); c.lineTo(0, h); c.fill(); c.fillStyle = '#f8fafc'; c.font = 'bold 24px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(t, w/2 - 10, h/2); });
-  B(.1, 2.7, .1, '#7c3f32', 16.0, 1.35, 6.6); add(new THREE.ConeGeometry(.08, .2, 8), '#d4a017', 16.0, 2.8, 6.6);
-  plane(1.2, .23, arrowT('Bankhum Studio'), 16.0, 2.35, 6.6, Math.PI/2, g, {side: THREE.DoubleSide}).rotation.y = Math.PI/2.6;
-  plane(1.2, .23, arrowT('แปลงเกษตร'), 16.0, 2.0, 6.6, -Math.PI/2, g, {side: THREE.DoubleSide});
+  const SPX = PCX + 2.8, SPZ = PCZ - 4.4; B(.1, 2.7, .1, '#7c3f32', SPX, 1.35, SPZ); add(new THREE.ConeGeometry(.08, .2, 8), '#d4a017', SPX, 2.8, SPZ);
+  plane(1.2, .23, arrowT('Bankhum Studio'), SPX, 2.35, SPZ, Math.PI/2, g, {side: THREE.DoubleSide}).rotation.y = Math.PI/2.6;
+  plane(1.2, .23, arrowT('แปลงเกษตร'), SPX, 2.0, SPZ, -Math.PI/2, g, {side: THREE.DoubleSide});
   // ศาลพระภูมิทรงล้านนา สีแดงลายทอง
   const SX = 12.8, SZ = 4.4, red = M('#c81e1e'), gold = new THREE.MeshStandardMaterial({color: '#e0b43a', metalness: .55, roughness: .4});
   B(1.5, .25, 1.5, red, SX, .125, SZ); B(1.3, .35, 1.3, gold, SX, .42, SZ); B(1.05, .3, 1.05, red, SX, .75, SZ); B(1.25, .14, 1.25, gold, SX, .97, SZ);
@@ -2717,7 +2734,8 @@ function buildChalerm(){   // ลานหน้าอาคารเฉลิ�
   for (const [cx, cz, r] of [[5.85, -4.2, .25], [5.85, -3.0, .22]]) add(new THREE.TorusGeometry(r, .05, 6, 16), '#f8fafc', cx, 1.15, cz).rotation.y = Math.PI/2;
   B(.9, .7, 6, '#3f7d32', 5.3, .35, -4.6); B(1.0, .12, 6.2, '#14806b', 5.3, .06, -4.6);
   // เส้นจอดรถสีเหลืองบนลานปูน
-  for (let z = -11.2; z <= -1; z += 2.55) B(2.8, .02, .12, '#f2b81d', 15.0, .11, z);
+  for (const z of new Set(TPARK_Z.flatMap(z => [z - TPARK_W/2, z + TPARK_W/2]).map(z => z.toFixed(2)))) B(4.2, .02, .12, '#f2b81d', TPARK_X + .2, .11, +z);
+  for (const z of [-26, -28.55, -31.1, -33.65, -36.2]) for (const d of [-1, 1]) if (d < 0 || z === -26) B(4.2, .02, .12, '#f2b81d', 16.6, .11, z + d*TPARK_W/2);
   // ม้านั่งปูนโค้งและขอบอิฐรอบโคนต้นมะม่วง 2 ต้น
   const bM = M('#9ca3a0');
   for (const tx of [-7.2, -2.3]) { add(new THREE.TorusGeometry(.75, .1, 6, 18), '#9a5b3c', tx, .1, 20.7).rotation.x = Math.PI/2;
