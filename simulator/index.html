@@ -518,8 +518,9 @@ const ROAD_IN = -72, ROAD_OUT = -68, NORTH_Z = 56;
 // → จุดรับส่งหน้าอาคารเฉลิมพระเกียรติ → วนอ้อมหลังลานเสาธง/สนามฟุตบอล → ออกประตูหน้า (ป้ายโรงเรียน)
 // รถทุกคันวิ่งเรียงแถวทีละคันบนเส้นเดียวกัน ไม่แซง เว้นระยะ และขับช้าในเขตโรงเรียน
 const LANE = -21.5, DROP_X = 19.5;
-// ถนนเชื่อมแนว LANE ต่อตรงจากหัวมุม (4.5, LANE) ไปถนนข้างอาคารไม้ (x 18) ตามที่ครูวงสีน้ำเงิน: [x เริ่ม, x จบ, z] (ภาพเท่านั้น รถยังวิ่งเส้นเดิม)
-const LINK = [4.5, 18, LANE];
+// รถจากหน้าอาคารเฉลิมฯ เลี้ยวซ้ายที่ป้อมยามเข้าถนนเชื่อมแนว LANE ไปทางที่จอดรถตู้ (ตามลูกศรที่ครูวาด) ไม่วิ่งผ่านหน้าอาคารไม้/อาคารเทคโนโลยีแล้ว
+// เหลือถนนสั้นข้างลานจอดมอเตอร์ไซค์ครู x 4.5 จาก LANE ลงไป: [x, z เริ่ม, z จบ]
+const MOTO_LANE = [4.5, LANE, -34.5];
 // ต้นไม้ใบสีน้ำตาลอ่อน 2 ต้น (ในโมเดล Site) ที่เคยขวางแนวถนนเชื่อม ย้ายลงไปทางลานเสาธงตามกรอบสีแดงที่ครูวง
 const TAN_TREE_DZ = 6.5;
 const SCAN_PT = [21.6, -11];   // จุดสแกนหน้า หน้าอาคารเฉลิมพระเกียรติ (นักเรียน)
@@ -530,13 +531,14 @@ const GATE_IN_Z = 24, GATE_OUT_Z = -26.8, FENCE = {x0: -64, x1: 63, z0: -49.5, z
 // แนวอาคารริมรั้วฝั่งถนน (ห้องน้ำอนุบาล อาคารอนุบาล สระว่ายน้ำ ห้องดนตรี อาคารอเนกประสงค์ ห้องธนาคาร) ขยับไปชิดรั้ว (ตามที่ครูขอ): ระยะเลื่อน z ของแต่ละอาคาร ให้หลังอาคารห่างรั้ว ~1 ม.
 const ROW_DZ = {Kinder_Toilet: 5.5, Kindergarten: 6.5, Swimming_Pool: 4.5};   // ห้องธนาคารชิดกำแพงบ้านข้างโรงเรียนอยู่แล้ว
 // อาคารอเนกประสงค์หมุนไปอีกแนว (ด้านยาวขนานรั้ว ด้านยาวที่มีหน้าต่าง/ประตูม้วนหันออกถนน) ชิดรั้ว ระหว่างสระว่ายน้ำกับกำแพงบ้านข้างโรงเรียน (ตามที่ครูขอ)
-const HALL_POS = [12.5, 39.8], HALL_ROT = -Math.PI/2;
-// ห้องดนตรี/ศิลปะย่อขนาดลง (ตามที่ครูขอ) ย้ายไปฝั่งตรงข้ามถนน ข้างลานกลอง/ขิมกลางแจ้ง หันหน้าออกถนน เพราะแนวรั้วเต็มด้วยอาคารอเนกประสงค์แล้ว
-const MUSIC = {x: 11.5, z: 21.5, s: [.6, .8, .6]};
-// จุดรับส่ง 2 จุด: A หน้าอาคารเฉลิมพระเกียรติ, B หน้าห้องคอมพิวเตอร์
+// แนวหน้าอาคารริมรั้วตรงกันเป็นเส้นเดียวขนานถนน (หน้าอาคารอนุบาล z 34.5) ตามที่ครูขอ: ห้องดนตรีอยู่ระหว่างสระกับอาคารอเนกประสงค์ อาคารอเนกประสงค์ย่อลงให้พอดีช่อง
+const ROW_FRONT = 34.5, HALL = {x0: 8.8, x1: 24.2, z1: 47.5}, HALL_ROT = -Math.PI/2;
+// ห้องดนตรี/ศิลปะย่อขนาดลง วางริมรั้วในช่องระหว่างสระว่ายน้ำกับอาคารอเนกประสงค์ (ตามที่ครูวง) [x เริ่ม, x จบ, สเกล]
+const MUSIC = {x0: 1.1, x1: 8.3, s: [.65, .8, .9]};
+// จุดรับส่ง 2 จุด: A หน้าอาคารเฉลิมพระเกียรติ, B หน้าป้อมยาม (ถนนเชื่อมไปที่จอดรถตู้)
 // ประตูรถเข้าย้ายไปข้างอาคารอนุบาล (ตามที่ครูวงไว้) ถนนในโรงเรียนวิ่งตามเส้นที่ครูวาด
 const MAIN = [[ROAD_IN,-64],[ROAD_IN,22],[-66,GATE_IN_Z],[-60,25],[-56,26],[-52,26],[-42,27.5],[-20,27.5],[-8,27.5],[4,27.5],[DROP_X,27.5],[DROP_X,17],[DROP_X,-13],
-  [18,-16],[18,-34.5],[4.5,-34.5],[4.5,LANE],[-44,LANE],[-54,-18],[-63,-26.5],[ROAD_OUT,-28],[ROAD_OUT,-66]];
+  [18,-16],[18,LANE],[11.25,LANE],[4.5,LANE],[-44,LANE],[-54,-18],[-63,-26.5],[ROAD_OUT,-28],[ROAD_OUT,-66]];
 // ที่จอดรถโรงเรียน (ใต้หลังคาโรงจอดรถ ตามที่ครูชี้): รถ 6 ล้อ + รถตู้ 3 คัน จอดหันหัวเข้า จากถนนหน้าอาคาร ป.1 ป.2
 const CANOPY_Z = -29.4, BUS_X = {truck: -8.6, van: [-5.1, -1.8, 1.5]};
 const GARAGE = [BUS_X.truck, CANOPY_Z];
@@ -623,8 +625,8 @@ TEACHERS.forEach((t, i) => {
   const arr = t.arr0, dep = t.dep1, nCar = t.rank;
   t.spot = t.mode === 'car' ? [-46 + nCar*2.8, -39.5] : [7.4, -31.4 + nCar*1.6];   // ลานจอดรถครูหลังอาคาร ป.1 ป.2
   t.veh = addVeh(t.mode, t.model === 'atto3' ? '#f1f5f9' : t.mode === 'car' ? pick(CAR_COLS) : '#111827', [], t.model ? fullName(t.name) : undefined); t.veh.model = t.model; t.veh.park = t.spot;
-  const moto = t.mode === 'moto', sB = moto ? sOf(15) + (t.spot[1] + 34.5) : sOf(18);
-  const spur = moto ? [t.spot] : [[-53, -28], [-50, -36], [t.spot[0], -36], t.spot];
+  const moto = t.mode === 'moto', sB = moto ? sOf(16) - 1 : sOf(18);
+  const spur = moto ? [[MOTO_LANE[0] + 1, LANE - 2], [MOTO_LANE[0] + 1, t.spot[1]], t.spot] : [[-53, -28], [-50, -36], [t.spot[0], -36], t.spot];
   t.runIn = addRun(t.veh, 'park', arr, {sB, spot: t.spot, spur}); t.runOut = addRun(t.veh, 'leave', dep, {sB, spot: t.spot, spur});
   t.veh.riders = 1; t.leave = dep; t.drop = [t.spot[0] + 1.6, t.spot[1]];
 });
@@ -804,8 +806,11 @@ function onModel(g) {
   const root = g.scene; scene.add(root);
   for (const [n, dz] of Object.entries(ROW_DZ)) { const o = root.getObjectByName(n); if (o) o.position.z += dz; }
   const wood = root.getObjectByName('Wooden_Building'); if (wood) { wood.position.x += WOOD.dx; wood.position.z += WOOD.dz; }
-  const hall = root.getObjectByName('Multipurpose_Hall'); if (hall) { hall.userData.t0 = [hall.position.clone(), hall.quaternion.clone()]; hall.position.x = HALL_POS[0]; hall.position.z = HALL_POS[1]; hall.rotateY(HALL_ROT); }
-  const music = root.getObjectByName('Music_Room'); if (music) { music.position.x = MUSIC.x; music.position.z = MUSIC.z; music.rotateY(Math.PI); music.scale.set(...MUSIC.s); }
+  const hall = root.getObjectByName('Multipurpose_Hall'); if (hall) { hall.userData.t0 = [hall.position.clone(), hall.quaternion.clone()]; hall.rotateY(HALL_ROT);
+    const b0 = new THREE.Box3().setFromObject(hall).getSize(new THREE.Vector3()), lx = Math.abs(new THREE.Vector3(1, 0, 0).applyQuaternion(hall.quaternion).x) > .5;   // แกน x ของโมเดลชี้ตามแกน x โลกไหม
+    const kx = (HALL.x1 - HALL.x0)/b0.x, kz = (HALL.z1 - ROW_FRONT)/b0.z; hall.scale.set(lx ? kx : kz, 1, lx ? kz : kx);
+    hall.position.x = (HALL.x0 + HALL.x1)/2; hall.position.z = (ROW_FRONT + HALL.z1)/2; }
+  const music = root.getObjectByName('Music_Room'); if (music) { music.scale.set(...MUSIC.s); music.position.x = (MUSIC.x0 + MUSIC.x1)/2; music.updateMatrixWorld(true); const mb = new THREE.Box3().setFromObject(music); music.position.z += ROW_FRONT - mb.min.z; }
   root.updateMatrixWorld(true);
   root.updateMatrixWorld(true);
   root.traverse(o => { if (o.isMesh) {
@@ -945,7 +950,7 @@ function placeOfAgent(a, m){
   if (m < r.scan + .4) return a.kind === 't' ? ['Chalerm_Building','เดินไปสแกนหน้าที่ห้องธุรการ'] : ['SCAN','เดินไปสแกนหน้าที่อาคารเฉลิมพระเกียรติ'];
   if (a.kind === 't' && m >= 930) return m >= r.leave - 5 ? ['PARK','เดินไปที่รถ'] : ['Chalerm_Building','ห้องธุรการ'];
   if (a.kind === 's' && m >= 930 && r.pickAt != null && m >= r.pickAt) return ['PICK','ขึ้นรถกลับบ้าน'];
-  if (a.kind === 's' && m >= 930) return ['GATE', r.mode === 'bike' ? 'ไปเอาจักรยาน' : `รอ${MODES[r.mode][0]} ${r.pmZone === 'C' ? 'ที่จอดรถโรงเรียน' : r.pmZone === 'B' ? 'หน้าห้องคอมพิวเตอร์' : 'หน้าอาคารเฉลิมฯ'}`];
+  if (a.kind === 's' && m >= 930) return ['GATE', r.mode === 'bike' ? 'ไปเอาจักรยาน' : `รอ${MODES[r.mode][0]} ${r.pmZone === 'C' ? 'ที่จอดรถโรงเรียน' : r.pmZone === 'B' ? 'หน้าป้อมยาม' : 'หน้าอาคารเฉลิมฯ'}`];
   const kg = kgAt(m);
   if (kg && (a.kind === 's' ? isKG(a.cls) : r.name.startsWith('ครูอนุบาล'))) { const p = phaseAt(m)[2], l = a.kind === 's' && typeof p === 'number' ? lesson(a.cls, p) : null; return l && l.tea !== 'ครูอนุบาล' ? [kg[2], `${l.sub} · ${l.tea}`] : [kg[2], kg[1]]; }
   const [, name, where] = phaseAt(m);
@@ -1204,7 +1209,7 @@ function targetOf(a, m){
   if (z === 'PICK') return {p: new THREE.Vector3(a.ref.pickPos[0], 0, a.ref.pickPos[1] + (a.oz-.5)*2), pose:'stand'};
   if (z === 'GATE') {
     if (a.ref.rack) return {p: new THREE.Vector3(a.ref.rack[0], 0, a.ref.rack[1] + .8), pose:'stand'};
-    if (a.ref.pmZone === 'B') return {p: new THREE.Vector3(6 + a.ox*11, 0, -36.2 - a.oz*.6), pose:'stand'};
+    if (a.ref.pmZone === 'B') return {p: new THREE.Vector3(6 + a.ox*10, 0, LANE - 3.4 - a.oz*.6), pose:'stand'};
     if (a.ref.pmZone === 'C') return {p: new THREE.Vector3(a.ref.pickPos[0] - .6 + a.ox*1.2, 0, LANE - 1.5 - a.oz*1.2), pose:'stand'};
     return {p: new THREE.Vector3(DROP_X + 1.5 + a.ox*1.4, 0, -10 + a.oz*29), pose:'stand'};
   }
@@ -1229,7 +1234,7 @@ function targetOf(a, m){
       if (a.kind === 's' && asm.includes(a.cls)) {
         const ci = asm.indexOf(a.cls), coh = a.cohort ??= STUDENTS.filter(s => s.cls === a.cls && s.scan != null), girl = isGirl(a.ref);
         const row = coh.filter(s => isGirl(s) === girl).indexOf(a.ref);
-        return {p: new THREE.Vector3(H.c.x + (ci - (asm.length-1)/2)*2.3 + (girl ? .45 : -.45), 0, fz + 2.6 + row*.7), pose:'stand', yaw: Math.PI};
+        return {p: new THREE.Vector3(H.c.x + (ci - (asm.length-1)/2)*2.3 + (girl ? .45 : -.45), 0, fz + 2.6 + row*Math.min(.7, (H.sz - 3.4)/18)), pose:'stand', yaw: Math.PI};
       }
       if (a.kind === 't') {
         if (a.ref === dutyTeacher()) return {p: new THREE.Vector3(H.c.x, 0, fz), pose:'stand', teach: true};
@@ -1332,8 +1337,8 @@ let fenceBuilt = false;
 function buildRoad(){
   const W = 5.2, Y = .07, asM = new THREE.MeshLambertMaterial({color:'#5b6472'}), lnM = new THREE.MeshBasicMaterial({color:'#f8fafc'});
   const P = MAIN.slice(2, 20).map(([x, z]) => new THREE.Vector3(x, Y, z)); P.unshift(new THREE.Vector3(FENCE.x0 - 1, Y, GATE_IN_Z)); P.push(new THREE.Vector3(FENCE.x0 - 1, Y, GATE_OUT_Z));
-  { const [ax, bx, z] = LINK; const L = bx - ax, seg = new THREE.Mesh(new THREE.BoxGeometry(L, .04, W), asM); seg.position.set((ax + bx)/2, Y, z); seg.receiveShadow = true; scene.add(seg);   // ถนนเชื่อม (ตามที่ครูวงสีน้ำเงิน)
-    for (let x = ax + 3.5; x < bx - 3; x += 3) { const dash = new THREE.Mesh(new THREE.BoxGeometry(1.4, .045, .16), lnM); dash.position.set(x, Y + .005, z); scene.add(dash); } }
+  { const [x, za, zb] = MOTO_LANE, L = Math.abs(zb - za), seg = new THREE.Mesh(new THREE.BoxGeometry(W, .04, L), asM); seg.position.set(x, Y, (za + zb)/2); seg.receiveShadow = true; scene.add(seg);   // ถนนสั้นไปลานจอดมอเตอร์ไซค์ครู
+    for (let z = Math.min(za, zb) + 1; z < Math.max(za, zb) - 3; z += 3) { const dash = new THREE.Mesh(new THREE.BoxGeometry(.16, .045, 1.4), lnM); dash.position.set(x, Y + .005, z + .7); scene.add(dash); } }
   for (let i = 1; i < P.length; i++) {
     const a = P[i-1], b = P[i], L = a.distanceTo(b), mid = a.clone().add(b).multiplyScalar(.5), yaw = Math.atan2(b.x - a.x, b.z - a.z);
     const seg = new THREE.Mesh(new THREE.BoxGeometry(W, .04, L), asM); seg.position.copy(mid); seg.rotation.y = yaw; seg.receiveShadow = true; scene.add(seg);
@@ -1344,7 +1349,7 @@ function buildRoad(){
   const kerbs = [];
   for (let i = 1; i < P.length; i++) {
     const a = P[i-1], b = P[i], L = a.distanceTo(b), dx = (b.x - a.x)/L, dz = (b.z - a.z)/L, lx = dz, lz = -dx, off = W/2 + .2;
-    for (let d = .9; d < L - .9; d += .7) { const x = a.x + dx*d + lx*off, z = a.z + dz*d + lz*off; if (x < FENCE.x0 + .6) continue; if (x > LINK[0] + 1.5 && x < LINK[1] - 1.5 && Math.abs(z - LINK[2]) < W/2 + .4) continue; kerbs.push([x, z, Math.atan2(dx, dz)]); }
+    for (let d = .9; d < L - .9; d += .7) { const x = a.x + dx*d + lx*off, z = a.z + dz*d + lz*off; if (x < FENCE.x0 + .6) continue; kerbs.push([x, z, Math.atan2(dx, dz)]); }
   }
   const km = new THREE.InstancedMesh(new THREE.BoxGeometry(.28, .22, .66).translate(0, .11, 0), new THREE.MeshLambertMaterial({color: '#ffffff'}), kerbs.length);
   const cR = new THREE.Color('#dc2626'), cW = new THREE.Color('#f8fafc');
