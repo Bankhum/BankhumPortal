@@ -640,18 +640,20 @@ for (const mode of ['car', 'moto']) {
 { const k = TEACHERS.find(t => t.model === 'atto3'); if (k) { const o = TEACHERS.find(t => t !== k && t.mode === 'car' && t.dep1 === k.dep0); if (o) o.dep1 = k.dep1; k.dep1 = k.dep0; } }   // ครูดีลาภกลับตามเวลาจริง (ช่องจอดไม่ขวางทาง)
 // ที่จอดรถครู (ครูวงเส้นเหลือง): ลานหน้าเสาธงริมถนนหน้าอาคารเฉลิมพระเกียรติ จอดหันหัวเข้าลาน เว้นช่องหน้าศาลพระภูมิ
 // ช่องที่เหลือต่อแนวเดียวกันข้ามถนนเชื่อม ลงไปลานหน้าอาคารไม้ (ลานจอดเดิมหลังอาคาร ป.1 ป.2 อยู่นอกรั้วใหม่แล้ว)
-const TPARK_Z = [14.17, 11.62, 9.07, 6.52, 1.42, -1.13, -3.68, -6.23, -8.78, -11.33], TPARK_X = 14.9, TPARK_W = 2.55;
-const TPARK = [...TPARK_Z.map(z => ({spot: [TPARK_X, z], sB: sOf(11) + 17 - z, spur: [[DROP_X - 1.4, z + 1.4], [17.6, z], [TPARK_X, z]]})),
-  ...[-26, -28.55, -31.1, -33.65, -36.2].map(z => ({spot: [16.4, z], sB: sOf(14), spur: [[19.6, -24.6], [19.8, z], [16.4, z]]}))];
+// ช่องจอดริมลานเป็นแบบเฉียง 60° (ครูขอ) หันหัวไปตามทิศรถวิ่ง เลี้ยวเข้าจอดได้เลยไม่ต้องหักพวงมาลัยมาก · TPARK_Z คือจุดปากช่องริมถนน
+const TPARK_Z = [14.17, 11.62, 9.07, 3.97, 1.42, -1.13, -3.68, -6.23, -8.78, -11.33], TPARK_E = 16.8, TPARK_W = 2.55, TPARK_D = [-Math.sin(Math.PI/3), -Math.cos(Math.PI/3)];
+const TPARK = [...TPARK_Z.map(z => { const spot = [TPARK_E + TPARK_D[0]*2.6, z + TPARK_D[1]*2.6];
+    return {spot, yaw: Math.atan2(...TPARK_D), sB: sOf(11) + 17 - z, spur: [[DROP_X - 1.2, z + 1.6], [TPARK_E, z], spot]}; }),
+  ...[-26, -28.55, -31.1, -33.65, -36.2].map(z => ({spot: [16.4, z], yaw: -Math.PI/2, sB: sOf(14), spur: [[19.6, -24.6], [19.8, z], [16.4, z]]}))];
 TEACHERS.forEach((t, i) => {
   const arr = t.arr0, dep = t.dep1, nCar = t.rank;
   const P = t.mode === 'car' ? TPARK[nCar % TPARK.length] : null;
   t.spot = P ? P.spot : [7.4, -31.4 + nCar*1.6];
-  t.veh = addVeh(t.mode, t.model === 'atto3' ? '#f1f5f9' : t.mode === 'car' ? pick(CAR_COLS) : '#111827', [], t.model ? fullName(t.name) : undefined); t.veh.model = t.model; t.veh.park = t.spot; if (P) t.veh.parkYaw = -Math.PI/2;
+  t.veh = addVeh(t.mode, t.model === 'atto3' ? '#f1f5f9' : t.mode === 'car' ? pick(CAR_COLS) : '#111827', [], t.model ? fullName(t.name) : undefined); t.veh.model = t.model; t.veh.park = t.spot; if (P) t.veh.parkYaw = P.yaw;
   const moto = t.mode === 'moto', sB = moto ? sOf(16) - 1 : P.sB;
   const spur = moto ? [[MOTO_LANE[0] + 1, LANE - 2], [MOTO_LANE[0] + 1, t.spot[1]], t.spot] : P.spur;
   t.runIn = addRun(t.veh, 'park', arr, {sB, spot: t.spot, spur}); t.runOut = addRun(t.veh, 'leave', dep, {sB, spot: t.spot, spur});
-  t.veh.riders = 1; t.leave = dep; t.drop = moto ? [t.spot[0] + 1.6, t.spot[1]] : [t.spot[0], t.spot[1] + 1.4];
+  t.veh.riders = 1; t.leave = dep; t.drop = moto ? [t.spot[0] + 1.6, t.spot[1]] : [t.spot[0] + Math.cos(P.yaw)*1.4, t.spot[1] - Math.sin(P.yaw)*1.4];   // ครูลงข้างรถ
 });
 // จำลองการจราจรทีละวินาที: รถตามกันเป็นแถว ไม่แซง ไม่ซ้อนกัน ส่ง/รับนักเรียนได้ในช่วงหน้าอาคาร (ประมาณ 4 คัน)
 const spurLen = r => { let L = 0; const sp = r.spur; for (let j = 1; j < sp.length; j++) L += Math.hypot(sp[j][0]-sp[j-1][0], sp[j][1]-sp[j-1][1]); return L + 3; };
@@ -3035,7 +3037,7 @@ function buildChalerm(){   // ลานหน้าอาคารเฉลิ�
   for (const [cx, cz, r] of [[5.85, -4.2, .25], [5.85, -3.0, .22]]) add(new THREE.TorusGeometry(r, .05, 6, 16), '#f8fafc', cx, 1.15, cz).rotation.y = Math.PI/2;
   B(.9, .7, 6, '#3f7d32', 5.3, .35, -4.6); B(1.0, .12, 6.2, '#14806b', 5.3, .06, -4.6);
   // เส้นจอดรถสีเหลืองบนลานปูน
-  for (const z of new Set(TPARK_Z.flatMap(z => [z - TPARK_W/2, z + TPARK_W/2]).map(z => z.toFixed(2)))) B(4.2, .02, .12, '#f2b81d', TPARK_X + .2, .11, +z);
+  for (const z of new Set(TPARK_Z.flatMap(z => [z - TPARK_W/2, z + TPARK_W/2]).map(z => z.toFixed(2)))) B(5.2, .02, .12, '#f2b81d', TPARK_E + TPARK_D[0]*2.6, .11, +z + TPARK_D[1]*2.6).rotation.y = Math.atan2(-TPARK_D[1], TPARK_D[0]);   // เส้นเฉียงตามมุมช่องจอด
   for (const z of [-26, -28.55, -31.1, -33.65, -36.2]) for (const d of [-1, 1]) if (d < 0 || z === -26) B(4.2, .02, .12, '#f2b81d', 16.6, .11, z + d*TPARK_W/2);
   // ม้านั่งปูนโค้งและขอบอิฐรอบโคนต้นมะม่วง 2 ต้น
   const bM = M('#9ca3a0');
