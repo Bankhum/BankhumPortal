@@ -532,6 +532,8 @@ const LANE = -21.5, DROP_X = 19.5;
 const MOTO_LANE = [4.5, LANE, -34.5];
 // ต้นไม้ใบสีน้ำตาลอ่อน 2 ต้น (ในโมเดล Site) ที่เคยขวางแนวถนนเชื่อม ย้ายลงไปทางลานเสาธงตามกรอบสีแดงที่ครูวง
 const TAN_TREE_DZ = 6.5;
+// ต้นมะม่วง 2 ต้นย้ายไปริมถนนหน้าลานเสาธง ([x, z] เดิม → ใหม่) สนามเปตองย้ายไปแทนที่วงดนตรีไทยกลางแจ้ง (ขิม กลอง เก้าอี้) ซึ่งย้ายไปที่สนามเปตองเดิม (ตามที่ครูวง)
+const MANGO = [[-7.2, 20.7, -2, 23.2], [-2.3, 20.7, 4.6, 23.2]], THAI_BAND_DX = -12.5;
 const SCAN_PT = [21.6, -11];   // จุดสแกนหน้า หน้าอาคารเฉลิมพระเกียรติ (นักเรียน)
 const TSCAN_PT = [26.7, 2];   // จุดสแกนหน้าครู อยู่ในห้องธุรการ ชั้น 1 อาคารเฉลิมพระเกียรติ (ครูแจ้ง)
 const V_SCHOOL = 130, V_ROAD = 450, V_BIKE = 180, GAP = 1.8;   // ม./นาที (≈ 8 กม./ชม. ในโรงเรียน)
@@ -860,7 +862,7 @@ function onModel(g) {
   }
   for (const [n, o] of Object.entries(houseShell)) if (zones[n]) zones[n].obj = o;   // บ้านพักครู/ห้องน้ำ ป.1-2 อาจสร้างก่อนโซน ผูกผนังไว้มองทะลุ
   if (zones.Swimming_Pool) zones.Swimming_Pool.y = POOL.H - .3;   // สระยกพื้น: คนว่ายที่ระดับผิวน้ำ ไม่จมใต้พื้น
-  root.children.forEach(o => { if (/^(Student|Teacher)_/.test(o.name)) o.visible = false; });
+  root.children.forEach(o => { if (/^(Student|Teacher)_/.test(o.name)) o.visible = false; if (/^(Khim|Stool|Drum)\d*$/.test(o.name)) o.position.x += THAI_BAND_DX; });
   const dome = root.getObjectByName('Playground_Dome');
   if (dome) { dome.rotation.y = Math.PI/2; dome.position.x = PLAY_C[0]; dome.position.z = PLAY_C[1]; buildPlayset(); }
   const tent = root.getObjectByName('Museum_Walk'); if (tent) tent.removeFromParent();
@@ -1056,7 +1058,7 @@ const teacherFront = (r, pose) => pose === 'sit' ? (([x, z]) => new THREE.Vector
 // ตำแหน่ง + ท่าทาง ณ เวลา m
 // เวลาว่าง (ก่อนเข้าแถว / พักเที่ยง): นักเรียนส่วนใหญ่เล่นหน้าห้องเรียนของตัวเอง (ตามที่ครูบอก) กลางสนามมีแค่กลุ่มเตะฟุตบอล
 // บางกลุ่มตีวอลเลย์บอลที่ลานเสาธง เล่นเปตองที่ลานเปตอง ป.1–2 บางคนเล่นโดมสนามเด็กเล่น บางคนนั่งเล่นอาคารเอนกประสงค์
-const PETANQUE = {x: -13, z: 19.5};   // ลานเปตอง 2 ลู่ ลู่ยาวตามแนว x (ดู buildDecor)
+const PETANQUE = {x: 1.2, z: 18.6};   // ลานเปตอง 2 ลู่ ลู่ยาวตามแนว x (ดู buildDecor)
 const SALA_X = [-38.6, -34.7, -30.8, -26.9, -23, -19.1, -15.2, -11.3], SALA_Z = -15.3;   // ศาลาทรงไทย 8 หลังริมสนามหน้าอาคาร ป.1 ป.2 (ม้านั่ง 2 ฝั่ง)
 const PLAY_TH = {front: 'เล่นหน้าห้องเรียน', below: 'เล่นหน้าอาคารเฉลิมพระเกียรติ', football: 'เตะฟุตบอลที่สนาม', volley: 'ตีวอลเลย์บอลที่ลานเสาธง',
   petanque: 'เล่นเปตอง', sala: 'นั่งเล่นที่ศาลาริมสนาม', dome: 'เล่นโดมสนามเด็กเล่น', hall: 'นั่งเล่นอาคารเอนกประสงค์'};
@@ -1210,7 +1212,7 @@ function navGraph(){
   for (let k = 0; k < n; k++) for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (D[i][k] + D[k][j] < D[i][j]) { D[i][j] = D[i][k] + D[k][j]; nx[i][j] = nx[i][k]; }
   // อาคาร: ห้ามเดินทะลุ (เดินเข้าได้เฉพาะอาคารที่เป็นจุดหมาย/จุดเริ่ม)
   const blk = Object.entries(zones).filter(([k]) => !['Flagpole', 'Field', 'SmartFarm'].includes(k)).map(([, z]) => ({x0: z.c.x - z.sx/2, x1: z.c.x + z.sx/2, z0: z.c.z - z.sz/2, z1: z.c.z + z.sz/2}));
-  blk.push({x0: -9.8, x1: .2, z0: 18.1, z1: 21.6});   // ม้านั่งโค้งรอบต้นมะม่วง 2 ต้น ใต้ลานเสาธง
+  for (const [, , tx, tz] of MANGO) blk.push({x0: tx - 2.3, x1: tx + 2.3, z0: tz - .9, z1: tz + 1.1});   // ม้านั่งรอบต้นมะม่วง 2 ต้น ริมถนน
   return NAV = {N, E, D, nx, off, rects: [...NO_CROSS, ...blk]};
 }
 const inRect = (p, r, m = 0) => p.x > r.x0 - m && p.x < r.x1 + m && p.z > r.z0 - m && p.z < r.z1 + m;
@@ -1675,11 +1677,15 @@ function fixP12Site(){   // ศาลาเดิมในโมเดล (ก�
   scene.traverse(o => { if (o.name === 'poly_7' || o.name === 'Futsal_Ball') o.visible = false; });   // เส้นขาวเส้นเดียวเดิมกลางลานเสาธง และลูกฟุตซอล (ลานเป็นสนามวอลเลย์แล้ว)
   scene.traverse(o => { if (/^box330(_2|_3)?$/.test(o.name)) { o.visible = false; n++; } });   // กล่องสระเดิมในโมเดล แทนด้วยสระยกพื้นตามรูป
   scene.traverse(o => { if (o.name === 'poly_14' && o.material && !o.userData.mango) { o.material = o.material.clone(); o.material.color.set('#2f6b2a'); o.userData.mango = 1; n++; } });   // ต้นมะม่วง 2 ต้นข้างสนามเปตอง (ใบเขียวเข้ม)
+  scene.traverse(o => { if ((o.name === 'poly_14' || o.name === 'poly_9') && o.geometry) { n++; if (o.geometry.userData.mangoMoved) return;   // ย้ายต้นมะม่วง (ใบ poly_14 + ลำต้นใน poly_9)
+      const a = o.geometry.attributes.position;
+      for (let i = 0; i < a.count; i++) { const x = a.getX(i), z = a.getZ(i), t = MANGO.find(([ox, oz]) => Math.hypot(x - ox, z - oz) < 2.6); if (t && (o.name === 'poly_14' || a.getY(i) < 2.5)) { a.setX(i, x + t[2] - t[0]); a.setZ(i, z + t[3] - t[1]); } }
+      a.needsUpdate = true; o.geometry.computeBoundingBox(); o.geometry.computeBoundingSphere(); o.geometry.userData.mangoMoved = 1; } });
   scene.traverse(o => { if ((o.name === 'poly_13' || o.name === 'poly_9') && o.geometry) { n++; if (o.geometry.userData.tanMoved) return;   // ย้ายต้นไม้สีน้ำตาลอ่อน (ใบ poly_13 + ลำต้นใน poly_9) ลงไป TAN_TREE_DZ
       const a = o.geometry.attributes.position, all = o.name === 'poly_13';
       for (let i = 0; i < a.count; i++) { const x = a.getX(i), z = a.getZ(i); if (all || (x > 6.8 && x < 12.6 && z > -22 && z < -13 && a.getY(i) < 3)) a.setZ(i, z + TAN_TREE_DZ); }
       a.needsUpdate = true; o.geometry.computeBoundingBox(); o.geometry.computeBoundingSphere(); o.geometry.userData.tanMoved = 1; } });
-  return p12Fixed = n >= 9;
+  return p12Fixed = n >= 11;
 }
 // สระว่ายน้ำ (ขยายตามที่ครูบอก 12×5 → 15×7 ม. ปลายฝั่งถังกรองอยู่ที่เดิม) และที่อาบน้ำกลางแจ้งระหว่างสระกับอาคารอนุบาล
 const POOL = {x: -13.1, z: 37.3 + ROW_DZ.Swimming_Pool, L: 19, W: 7, H: 1.3}, SHOWER = {x: -27.5, z: 39.6 + ROW_DZ.Swimming_Pool};   // ปลายฝั่งถังกรองอยู่ที่เดิม (x -3.6) ยาวขึ้นไปทางอาคารอนุบาล
@@ -1713,7 +1719,7 @@ function buildKgPool(){
   for (const px of [KG_X.x0, KG_X.x0 + 1]) B(.08, 1.6, .08, '#1e3a8a', px, .8, 29.4 + ROW_DZ.Kindergarten);
   const sg = new THREE.Mesh(new THREE.PlaneGeometry(1.6, .64), new THREE.MeshLambertMaterial({map: sT, transparent: true, side: THREE.DoubleSide})); sg.position.set(KG_X.x0 + .5, 1.5, 29.35 + ROW_DZ.Kindergarten); sg.rotation.y = Math.PI; g.add(sg);
   // สนามเปตอง 2 ลู่ (ทราย ขอบไม้) ข้างต้นมะม่วง ริมถนนหน้าลานเสาธง (ตามที่ครูบอก)
-  const pc = new THREE.Group(); pc.position.set(-13, 0, 19.5); g.add(pc);
+  const pc = new THREE.Group(); pc.position.set(PETANQUE.x, 0, PETANQUE.z); g.add(pc);
   B(7.6, .08, 6.4, '#d6c3a0', 0, .04, 0, pc);
   for (const dz of [-3.2, 0, 3.2]) B(7.8, .2, .14, '#7c5a3a', 0, .1, dz, pc);
   for (const dx of [-3.85, 3.85]) B(.14, .2, 6.5, '#7c5a3a', dx, .1, 0, pc);
@@ -1746,7 +1752,7 @@ function buildKgPool(){
     const an = add(new THREE.CylinderGeometry(.012, .012, 1.8, 6), M('#ef4444'), VBALL.x + sx*VBALL.W/2, 1.9, VBALL.z); an.castShadow = false; }   // เสาอากาศบนเน็ต
   // ลูกมะม่วงบนต้นมะม่วง 2 ต้น
   const mgG = new THREE.SphereGeometry(.13, 6, 5), mgM = M('#a3c94a');
-  for (const tx of [-7.2, -2.3]) for (let k = 0; k < 10; k++) { const a = k*2.4, r = 1.3 + (k % 3)*.25; const mg = add(mgG, mgM, tx + Math.cos(a)*r, 2.3 + (k % 4)*.35, 20.7 + Math.sin(a)*r); mg.scale.y = 1.4; }
+  for (const [, , tx, tz] of MANGO) for (let k = 0; k < 10; k++) { const a = k*2.4, r = 1.3 + (k % 3)*.25; const mg = add(mgG, mgM, tx + Math.cos(a)*r, 2.3 + (k % 4)*.35, tz + Math.sin(a)*r); mg.scale.y = 1.4; }
   // ต้นไม้ต้นเล็กกลางสนามริมถนน
   B(.18, 2, .18, '#6b4f3a', -49, 1, 21.5); const cr = add(new THREE.IcosahedronGeometry(1.4, 0), M('#4d8b31'), -49, 2.9, 21.5); cr.scale.y = .8;
   // สระว่ายน้ำยกพื้น: ผนังปูนทาสีฟ้าลายเด็กว่ายน้ำ "BANKHUM SWIMMING POOL", บันไดเหล็ก, หลังคาโค้งเมทัลชีท, ถังกรองน้ำ, รั้วตาข่าย, ป้ายสีน้ำเงิน
@@ -3017,8 +3023,8 @@ function buildChalerm(){   // ลานหน้าอาคารเฉลิ�
   for (const z of [-26, -28.55, -31.1, -33.65, -36.2]) for (const d of [-1, 1]) if (d < 0 || z === -26) B(4.2, .02, .12, '#f2b81d', 16.6, .11, z + d*TPARK_W/2);
   // ม้านั่งปูนโค้งและขอบอิฐรอบโคนต้นมะม่วง 2 ต้น
   const bM = M('#9ca3a0');
-  for (const tx of [-7.2, -2.3]) { add(new THREE.TorusGeometry(.75, .1, 6, 18), '#9a5b3c', tx, .1, 20.7).rotation.x = Math.PI/2;
-    for (let k = 0; k < 5; k++) { const a = Math.PI + .35 + k*(Math.PI - .7)/4, bx = tx + Math.cos(a)*2.4, bz = 20.7 + Math.sin(a)*2.4;
+  for (const [, , tx, tz] of MANGO) { add(new THREE.TorusGeometry(.75, .1, 6, 18), '#9a5b3c', tx, .1, tz).rotation.x = Math.PI/2;
+    for (let k = 0; k < 6; k++) { const a = (k < 3 ? Math.PI : 0) + (k % 3 - 1)*.45, bx = tx + Math.cos(a)*2.0, bz = tz + Math.sin(a)*2.0;   // ม้านั่งโค้ง 2 ข้างลำต้น (ไม่ล้ำสนามเปตองและถนน)
       const s = B(1.05, .07, .32, bM, bx, .42, bz); s.rotation.y = -a - Math.PI/2; for (const d of [-.35, .35]) { const l = B(.1, .38, .22, bM, bx - Math.sin(a)*d, .19, bz + Math.cos(a)*d); l.rotation.y = -a - Math.PI/2; } } }
   // --- อาคารอเนกประสงค์ (หอประชุม): ผนังล่างสีเขียวน้ำทะเล ประตูม้วน หน้าต่างไม้น้ำตาล ช่องลมตะแกรงกรอบแดง ---
   const hc = zones.Multipurpose_Hall?.obj; if (!hc) return;
