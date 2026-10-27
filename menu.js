@@ -64,6 +64,7 @@ window.BANKHUM_MENU = [
     th: 'บริหารทั่วไป', en: 'General Administration', code: 'BANKHUM GENERAL', short: 'บริหารทั่วไป', shortEn: 'General',
     items: [
       { th: 'ระบบสารสนเทศโรงเรียน', en: 'School information system', icon: 'chart-no-axes-combined', url: 'https://bankhum.com/login.php', statId: 'information', statName: 'ระบบสารสนเทศโรงเรียน', keywords: 'สารสนเทศ information' },
+      { th: 'ระบบสะสมความดีนักเรียน', en: 'Student good deeds system', icon: 'medal', url: 'https://good.bankhum.ac.th/', statId: 'goodstudent', statName: 'ระบบสะสมความดีนักเรียน', keywords: 'ความดี คะแนนความดี สะสมความดี พฤติกรรม good student' },
       { th: 'แจ้งซ่อมและบำรุงรักษา', en: 'Repair & maintenance requests', icon: 'wrench', keywords: 'ซ่อม repair' },
       { th: 'จองห้องประชุม / สถานที่', en: 'Room & venue booking', icon: 'calendar-clock', keywords: 'จองห้อง booking' },
       { th: 'ขอใช้รถโรงเรียน', en: 'School vehicle requests', icon: 'bus', keywords: 'รถ vehicle' },
@@ -106,7 +107,7 @@ window.BANKHUM_MENU = [
       { th: 'ผลการเรียนและตารางเรียน', en: 'Grades & timetable', icon: 'award', url: 'https://bankhum.krusarawut.com/login.php', statId: 'assessment-system', statName: 'ระบบวัดผลและประเมินผลโรงเรียน', keywords: 'เกรด คะแนน ผลการเรียน grade' },
       { th: 'ประวัติการมาเรียน', en: 'Attendance history', icon: 'calendar-check' },
       { th: 'ออมทรัพย์นักเรียน', en: 'Student savings', icon: 'piggy-bank', url: 'https://script.google.com/macros/s/AKfycbzGwx_eA0a3ZBd0cTcPUXVU11mYOgXmjRJI-UHZVFyeKdKRwF7GQfPVCwiE2jh5mO1YGw/exec', statId: 'savings', statName: 'ระบบออมทรัพย์โรงเรียน', keywords: 'ออม เงินออม savings' },
-      { th: 'สะสมความดี', en: 'Good deeds points', icon: 'medal', url: 'https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbzgHjgJodLd6Cd-3xsqg2_vKnZYNS-p7EVS-MYQWcsKqPolVuSfl862zKsJqllfLf1QFg/exec', statId: 'goodstudent', statName: 'ระบบสะสมความดีนักเรียน', keywords: 'ความดี คะแนนความดี good student' },
+      { th: 'สะสมความดี', en: 'Good deeds points', icon: 'medal', url: 'https://good.bankhum.ac.th/', statId: 'goodstudent', statName: 'ระบบสะสมความดีนักเรียน', keywords: 'ความดี คะแนนความดี สะสมความดี พฤติกรรม good student' },
       { th: 'อีเมล์ นักเรียน / ครู', en: 'Student / teacher email', icon: 'mail', url: 'https://email.bankhum.ac.th', statId: 'school-email', statName: 'อีเมล์ นักเรียน/ครู', keywords: 'อีเมล email mail' },
       { th: 'E-Portfolio (แฟ้มสะสมผลงาน)', en: 'E-Portfolio', icon: 'briefcase', keywords: 'portfolio แฟ้มสะสมผลงาน' }
     ]
