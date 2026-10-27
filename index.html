@@ -879,7 +879,8 @@ function onModel(g) {
   const music = root.getObjectByName('Music_Room'); if (music) { music.scale.set(...MUSIC.s); music.position.x = (MUSIC.x0 + MUSIC.x1)/2; music.updateMatrixWorld(true); const mb = new THREE.Box3().setFromObject(music); music.position.z += ROW_FRONT - mb.min.z; }
   root.updateMatrixWorld(true);
   root.updateMatrixWorld(true);
-  root.traverse(o => { if (o.isMesh) {
+  root.traverse(o => { if (/-colonly$/.test(o.name)) o.visible = false;   // กล่องชนจากโมเดล ซ้อนทับผนังอาคารพอดี ถ้าแสดงจะกระพริบ (z-fighting) · ยังใช้วัดขนาด/คลิกได้
+    if (o.isMesh) {
     o.castShadow = o.receiveShadow = true;
     const m = o.material; if (m && m.color) { const hsl={}; m.color.getHSL(hsl); m.color.setHSL(hsl.h, hsl.s*0.85, Math.min(.9, hsl.l*1.02+.04)); m.roughness = .85; }
   }});
