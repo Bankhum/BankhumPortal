@@ -913,7 +913,7 @@ function onModel(g) {
   const tent = root.getObjectByName('Museum_Walk'); if (tent) tent.removeFromParent();
   const solar = root.getObjectByName('Solar_Pergola'); if (solar) solar.removeFromParent();   // ซุ้มหลังคาขาวแผงโซลาร์ที่หัวอาคาร ป.1 ป.2 ไม่มีจริง (ครูให้เอาออก)   // เอาเต็นท์หลังคาโค้งสีน้ำเงินออก (ตามที่ครูขอ)
   buildField(); buildChalerm();
-  buildFarm(); buildRestroom(root); buildMushroom(root); buildFloors(); buildBridge(); buildChalermF2(); buildClassFx(); buildStoreFx(); initAgents(root); applyXrayAll();
+  buildFarm(); buildRestroom(root); buildMushroom(root); buildFloors(); buildBridge(); buildChalermF2(); buildClassFx(); buildStoreFx(); buildMusicFx(); initAgents(root); applyXrayAll();
   $('info').onclick = () => document.body.classList.toggle('sheet');
   $('find').onclick = () => openFind($('findp').hidden); $('fx').onclick = () => openFind(false); $('fq').oninput = renderFind;
   addEventListener('keydown', e => { if (e.key === 'Escape' && !$('findp').hidden) openFind(false); });
@@ -1739,8 +1739,8 @@ function fixP12Site(){   // ศาลาเดิมในโมเดล (ก�
       a.needsUpdate = true; o.geometry.computeBoundingBox(); o.geometry.computeBoundingSphere(); o.geometry.userData.tanMoved = 1; } });
   return p12Fixed = n >= 12;
 }
-// สระว่ายน้ำ (ขยายตามที่ครูบอก 12×5 → 15×7 ม. ปลายฝั่งถังกรองอยู่ที่เดิม) และที่อาบน้ำกลางแจ้งระหว่างสระกับอาคารอนุบาล
-const POOL = {x: -13.1, z: 37.3 + ROW_DZ.Swimming_Pool, L: 19, W: 7, H: 1.3}, SHOWER = {x: -27.5, z: 39.6 + ROW_DZ.Swimming_Pool};   // ปลายฝั่งถังกรองอยู่ที่เดิม (x -3.6) ยาวขึ้นไปทางอาคารอนุบาล
+// สระว่ายน้ำ (ขยายเกือบเต็มรั้วตาข่ายตามที่ครูขอ 22.6×8.6 ม. เหลือทางเดินรอบสระ) และที่อาบน้ำกลางแจ้งระหว่างสระกับอาคารอนุบาล
+const POOL = {x: -14.1, z: 37.4 + ROW_DZ.Swimming_Pool, L: 22.6, W: 8.6, H: 1.3}, SHOWER = {x: -28.6, z: 39.6 + ROW_DZ.Swimming_Pool};   // สระ x -25.4 ถึง -2.8 · ถังกรองย้ายไปมุมหลังฝั่งห้องดนตรี · ที่อาบน้ำชิดรั้วฝั่งอาคารอนุบาล
 // ถนนหน้าอาคารอนุบาล และสระว่ายน้ำ (ตามรูปจริง school-photos/06-อาคารอนุบาล, 10-สระว่ายน้ำ)
 function buildKgPool(){
   const g = new THREE.Group(); g.name = 'KgPool'; scene.add(g);
@@ -1812,7 +1812,7 @@ function buildKgPool(){
   B(.18, 2, .18, '#6b4f3a', -49, 1, 21.5); const cr = add(new THREE.IcosahedronGeometry(1.4, 0), M('#4d8b31'), -49, 2.9, 21.5); cr.scale.y = .8;
   // สระว่ายน้ำยกพื้น: ผนังปูนทาสีฟ้าลายเด็กว่ายน้ำ "BANKHUM SWIMMING POOL", บันไดเหล็ก, หลังคาโค้งเมทัลชีท, ถังกรองน้ำ, รั้วตาข่าย, ป้ายสีน้ำเงิน
   const px0 = POOL.x, pz0 = POOL.z, PL = POOL.L, PW = POOL.W, PH = POOL.H;
-  B(.4 - POOL_FX0, .1, PW + 4.4, '#cfc8bd', (.4 + POOL_FX0)/2, .05, pz0);   // ลานปูน (ถึงที่อาบน้ำฝั่งอาคารอนุบาล)
+  B(.4 - POOL_FX0, .1, 11.9, '#cfc8bd', (.4 + POOL_FX0)/2, .05, 37.25 + ROW_DZ.Swimming_Pool);   // ลานปูนเต็มในรั้วตาข่าย (ถึงที่อาบน้ำฝั่งอาคารอนุบาล)
   const wallT = cvTex(1024, 110, (c, w, h) => { c.fillStyle = '#2563eb'; c.fillRect(0, 0, w, h); c.fillStyle = '#60a5fa'; for (let x = 0; x < w; x += 40) { c.beginPath(); c.arc(x, h - 10, 22, Math.PI, 0); c.fill(); }
     for (let i = 0; i < 9; i++) { const x = 60 + i*110; c.fillStyle = '#fde2c4'; c.beginPath(); c.arc(x, 48, 14, 0, 7); c.fill(); c.fillStyle = '#111827'; c.fillRect(x - 14, 34, 28, 7); c.fillStyle = '#fde2c4'; c.fillRect(x + 12, 30, 6, 22); }
     c.font = 'bold italic 34px sans-serif'; c.lineWidth = 6; c.strokeStyle = '#1e3a8a'; c.textAlign = 'center'; c.strokeText('BANKHUM SWIMMING POOL', w/2, 80); c.fillStyle = '#fde047'; c.fillText('BANKHUM SWIMMING POOL', w/2, 80); });
@@ -1823,12 +1823,12 @@ function buildKgPool(){
   const water = new THREE.Mesh(new THREE.PlaneGeometry(PL - .3, PW - .3), new THREE.MeshLambertMaterial({color: '#38bdf8', transparent: true, opacity: .85})); water.rotation.x = -Math.PI/2; water.position.set(px0, PH - .2, pz0); g.add(water);
   for (let k = 0; k < 4; k++) B(.6, .1, 1.4, '#d1d5db', px0 - PL/2 - .4 - k*.32, PH - .3 - k*.32, pz0 - 1.2);   // บันไดขึ้นสระ
   for (const dz of [-1.9, -.5]) B(.05, .9, .05, '#9ca3af', px0 - PL/2 - .9, PH, pz0 - 1.2 + dz*.5);
-  for (const sx of [-1, 1]) for (let k = 0; k < 5; k++) B(.12, 3.6, .12, '#9ca3af', px0 - PL/2 + .3 + k*(PL - .6)/4, 1.8, pz0 + sx*(PW/2 + .6));
+  for (const sx of [-1, 1]) for (let k = 0; k < 6; k++) B(.12, 3.6, .12, '#9ca3af', px0 - PL/2 + .3 + k*(PL - .6)/5, 1.8, pz0 + sx*(PW/2 + .6));
   const RR = (PW/2 + .6)/Math.sin(.62);   // หลังคาโค้งกว้างคลุมเสาทั้งสองแนว
   const roof = new THREE.Mesh(new THREE.CylinderGeometry(RR, RR, PL + 1, 32, 1, true, Math.PI/2 - .62, 1.24), new THREE.MeshLambertMaterial({color: '#d4d4d8', side: THREE.DoubleSide})); roof.rotation.z = Math.PI/2; roof.position.set(px0, 0, pz0); roof.position.y = 3.6 - RR*Math.cos(.62) + .05; roof.castShadow = true; g.add(roof);
   POOL.roof = roof; if (xrayAll || selected === 'Swimming_Pool') setXray('Swimming_Pool', true);
-  for (let k = 1; k < 4; k++) { const ln = add(new THREE.BoxGeometry(PL - .6, .03, .1), M('#f8fafc'), px0, PH - .19, pz0 - PW/2 + k*PW/4); ln.castShadow = false; }   // ทุ่นแบ่งลู่
-  for (const dx of [0, 1.1]) { const t = add(new THREE.CylinderGeometry(.45, .45, 1.6, 12), M('#111827'), px0 + PL/2 + 1.2 + dx, .8, pz0 + 1.6); }   // ถังกรองน้ำ
+  for (let k = 1; k < 5; k++) { const ln = add(new THREE.BoxGeometry(PL - .6, .03, .1), M('#f8fafc'), px0, PH - .19, pz0 - PW/2 + k*PW/5); ln.castShadow = false; }   // ทุ่นแบ่งลู่ 5 ลู่
+  for (const dx of [0, 1.05]) add(new THREE.CylinderGeometry(.42, .42, 1.6, 12), M('#111827'), px0 + PL/2 + 1.25 + dx, .8, pz0 + 2.6);   // ถังกรองน้ำ มุมหลังข้างสระ (ประตูรั้วด้านหน้ายังเดินเข้าได้)
   // รั้วตาข่ายรอบสระ เว้นช่องประตูด้านถนน
   const meshT = cvTex(32, 32, (c) => { c.strokeStyle = '#cbd5e1'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, 0); c.lineTo(32, 32); c.moveTo(32, 0); c.lineTo(0, 32); c.stroke(); });
   meshT.wrapS = meshT.wrapT = THREE.RepeatWrapping;
@@ -2668,6 +2668,61 @@ function buildStoreFx(){
     if (R.b === 'P1P2_Classroom') for (const px of [x1, ROOMS['ห้อง ป.2'].c.x + ROOMS['ห้อง ป.2'].sx/2]) bx(.15, 2.6, R.sz, M('#f1f5f9'), px, 1.3, R.c.z);   // ผนังกั้นห้อง
     g.visible = false; scene.add(g); storeFx.push({b: R.b, g});
   }
+}
+// ห้องดนตรี: เครื่องดนตรีตามที่ครูขอ กลองชุด กีตาร์ เบส (มีแอมป์) และเครื่องดุริยางค์ (กลองสแนร์ กลองใหญ่ ฉาบ ทรัมเป็ต ทรอมโบน เบลไลรา) วางชิดผนัง กลางห้องเว้นให้นักเรียนนั่ง
+function buildMusicFx(){
+  const R = zones.Music_Room; if (!R) return;
+  const g = new THREE.Group(), y = R.y + .06, x0 = R.c.x - R.sx/2 + .45, x1 = R.c.x + R.sx/2 - .45, z1 = R.c.z + R.sz/2 - .45;
+  const M = c => new THREE.MeshLambertMaterial({color: c}), metal = (c, r = .35) => new THREE.MeshStandardMaterial({color: c, metalness: .85, roughness: r});
+  const chrome = metal('#e5e7eb', .25), brass = metal('#d4a017', .3), black = M('#111827'), head = M('#f8fafc'), wood = M('#8b5a2b');
+  const add = (geo, m, x, yy, z, par = g) => { const o = new THREE.Mesh(geo, m); o.position.set(x, yy, z); o.castShadow = true; par.add(o); return o; };
+  const box = (w, h, d, m, x, yy, z, par) => add(new THREE.BoxGeometry(w, h, d), m, x, yy, z, par);
+  const cyl = (r, h, m, x, yy, z, par, r2 = r) => add(new THREE.CylinderGeometry(r, r2, h, 18), m, x, yy, z, par);
+  const drum = (r, h, shell, x, yy, z, par) => { const d = new THREE.Group(); d.position.set(x, yy, z); par.add(d); cyl(r, h, shell, 0, 0, 0, d); cyl(r + .01, .012, head, 0, h/2, 0, d); cyl(r + .012, .02, chrome, 0, h/2 - .01, 0, d); cyl(r + .012, .02, chrome, 0, -h/2 + .01, 0, d); return d; };
+  const cymbal = (r, x, yy, z, par, tilt = .12) => { const c = add(new THREE.CylinderGeometry(.015, r, .025, 20), brass, x, yy, z, par); c.rotation.x = tilt; return c; };
+  const stand = (x, z, h, par) => { cyl(.012, h, chrome, x, h/2, z, par); for (let k = 0; k < 3; k++) { const l = box(.02, .02, .3, chrome, x + Math.sin(k*2.1)*.12, .05, z + Math.cos(k*2.1)*.12, par); l.rotation.y = k*2.1; } };
+  // กลองชุด บนพรมแดง หันหน้าเข้ากลางห้อง
+  const kit = new THREE.Group(); kit.position.set(x0 + 1.25, y, z1 - 1.2); kit.rotation.y = Math.PI*.15; g.add(kit);
+  box(2.2, .015, 1.9, M('#991b1b'), 0, .008, 0, kit);
+  const shell = M('#b91c1c'); const kick = drum(.28, .4, shell, 0, .3, 0, kit); kick.rotation.x = Math.PI/2;   // กลองเบส (กระเดื่อง)
+  drum(.17, .14, shell, -.42, .62, -.32, kit);   // สแนร์
+  for (const sx of [-1, 1]) { const t = drum(.13, .16, shell, sx*.17, .78, .05, kit); t.rotation.x = -.35; }   // ทอม 2 ใบบนกลองเบส
+  drum(.2, .32, shell, .5, .42, -.25, kit); for (let k = 0; k < 3; k++) box(.02, .3, .02, chrome, .5 + Math.sin(k*2.1)*.2, .14, -.25 + Math.cos(k*2.1)*.2, kit);   // ฟลอร์ทอม
+  stand(-.72, -.1, .9, kit); cymbal(.17, -.72, .9, -.1, kit, 0); cymbal(.17, -.72, .93, -.1, kit, 0);   // ไฮแฮต
+  stand(-.5, .35, 1.25, kit); cymbal(.24, -.5, 1.25, .35, kit); stand(.7, .25, 1.15, kit); cymbal(.26, .7, 1.15, .25, kit, -.12);   // แครช ไรด์
+  cyl(.18, .06, black, 0, .5, -.62, kit); cyl(.03, .45, chrome, 0, .25, -.62, kit);   // เก้าอี้กลอง
+  // กีตาร์ไฟฟ้า + เบส บนขาตั้ง พร้อมแอมป์ (ชิดผนังหลัง)
+  const grill = new THREE.MeshLambertMaterial({map: (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'); x.fillStyle = '#1f2937'; x.fillRect(0, 0, 64, 64); x.fillStyle = '#374151'; for (let i = 2; i < 64; i += 5) for (let j = 2; j < 64; j += 5) x.fillRect(i, j, 2, 2); x.fillStyle = '#d4a017'; x.fillRect(0, 0, 64, 6); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })()});
+  const guitar = (x, z, body, bass) => { const gt = new THREE.Group(); gt.position.set(x, y, z); g.add(gt);
+    const b1 = cyl(.17, .05, M(body), 0, .32, 0, gt); b1.rotation.x = Math.PI/2 - .2; const b2 = cyl(.13, .05, M(body), 0, .52, .04, gt); b2.rotation.x = Math.PI/2 - .2;   // ตัวกีตาร์ (2 วง)
+    cyl(.07, .052, M('#f8fafc'), 0, .36, -.01, gt).rotation.x = Math.PI/2 - .2;   // ปิ๊กการ์ด
+    const nl = bass ? .75 : .55, nk = box(.05, nl, .025, wood, 0, .55 + nl/2, .06 + nl/2*.2, gt); nk.rotation.x = -.2;
+    const hd = box(.08, .16, .03, black, 0, .62 + nl, .08 + nl*.2, gt); hd.rotation.x = -.2;
+    for (let k = 0; k < (bass ? 4 : 6); k++) { const st = box(.003, nl + .25, .003, chrome, -.02 + k*(bass ? .013 : .008), .47 + nl/2, .035 + nl/2*.2, gt); st.rotation.x = -.2; st.castShadow = false; }   // สาย
+    for (const sx of [-1, 1]) { const l = box(.025, .45, .025, black, sx*.14, .22, .12, gt); l.rotation.z = sx*.25; }   // ขาตั้ง A
+    const amp = new THREE.Group(); amp.position.set(x + .55, y, z); g.add(amp); box(bass ? .55 : .48, bass ? .6 : .45, .28, [black, black, black, black, grill, black], 0, bass ? .3 : .225, 0, amp);
+    for (let k = 0; k < 3; k++) cyl(.012, .015, chrome, -.12 + k*.07, (bass ? .6 : .45) + .008, .06, amp); };
+  guitar(R.c.x - .55, z1 - .35, '#dc2626', false); guitar(R.c.x + .65, z1 - .35, '#1d4ed8', true);
+  // เครื่องดุริยางค์ (วงโยธวาทิต) ชิดผนังฝั่งตะวันออก
+  const ex = x1 - .45; let zz = z1 - .5;
+  const snareShell = metal('#f1f5f9', .4), bdShell = M('#1e3a8a');
+  for (let k = 0; k < 3; k++, zz -= .62) { stand(ex, zz, .7, g); drum(.18, .17, snareShell, ex, y + .78, zz, g); }   // กลองสแนร์มาร์ชชิ่ง 3 ใบ
+  for (let k = 0; k < 2; k++, zz -= .55) { const bd = drum(.33, .3, bdShell, ex, y + .4, zz, g); bd.rotation.z = Math.PI/2; box(.05, .08, .5, black, ex, y + .04, zz, g); }   // กลองใหญ่ 2 ใบ (ตั้งตะแคง)
+  zz -= .15; box(.55, .04, 1.3, wood, ex, y + .72, zz - .55, g); for (const dx of [-.22, .22]) for (const dz of [-.1, -1]) box(.04, .72, .04, wood, ex + dx, y + .36, zz + dz, g);   // โต๊ะวางเครื่องเป่า
+  for (const dz of [0, -.2]) cymbal(.2, ex - .08, y + .77 + (dz ? .03 : 0), zz - .25 + dz, g, 0);   // ฉาบมาร์ชชิ่ง 1 คู่ (วางซ้อน)
+  for (let k = 0; k < 3; k++) { const tz = zz - .55 - k*.22, tp = new THREE.Group(); tp.position.set(ex, y + .78, tz); tp.rotation.y = Math.PI/2; g.add(tp);   // ทรัมเป็ต 3 ตัว
+    const tube = cyl(.014, .36, brass, 0, 0, 0, tp); tube.rotation.z = Math.PI/2; const bell = add(new THREE.CylinderGeometry(.065, .016, .14, 16, 1, true), brass, .24, 0, 0, tp); bell.rotation.z = -Math.PI/2; bell.material.side = THREE.DoubleSide;
+    for (let v = 0; v < 3; v++) cyl(.012, .07, brass, -.04 + v*.035, .04, 0, tp); cyl(.014, .3, brass, -.02, -.035, 0, tp).rotation.z = Math.PI/2; }
+  const tb = new THREE.Group(); tb.position.set(ex - .9, y + .02, z1 - .4); g.add(tb);   // ทรอมโบนวางบนขาตั้ง
+  stand(0, 0, .5, tb); const sl = cyl(.012, .9, brass, 0, .75, 0, tb); const bl = add(new THREE.CylinderGeometry(.09, .02, .2, 16, 1, true), brass, 0, 1.25, 0, tb); bl.material.side = THREE.DoubleSide; cyl(.012, .9, brass, .05, .75, 0, tb);
+  const ly = new THREE.Group(); ly.position.set(ex - .9, y, zz - 1.55); g.add(ly); stand(0, 0, .95, ly);   // เบลไลรา (ระนาดเหล็กตั้ง)
+  for (const sx of [-1, 1]) { const a = box(.03, .55, .03, brass, sx*.17, 1.18, 0, ly); a.rotation.z = sx*-.25; }
+  for (let k = 0; k < 8; k++) box(.24 - k*.018, .025, .03, chrome, 0, .98 + k*.06, 0, ly);
+  // ขาตั้งโน้ต 3 ตัวหน้าห้อง และป้ายผนัง
+  for (let k = 0; k < 3; k++) { const mx = R.c.x - 1.2 + k*1.2, mz = z1 - 2.6; cyl(.012, 1, black, mx, y + .5, mz); const pl = box(.45, .3, .015, black, mx, y + 1.08, mz - .03); pl.rotation.x = -.35; }
+  const sT = (() => { const c = document.createElement('canvas'); c.width = 512; c.height = 96; const x = c.getContext('2d'); x.fillStyle = '#1e3a8a'; x.fillRect(0, 0, 512, 96); x.fillStyle = '#fde047'; x.textAlign = 'center'; x.font = 'bold 44px sans-serif'; x.fillText('♪ ห้องดนตรี ♫', 256, 64); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+  const sg = new THREE.Mesh(new THREE.PlaneGeometry(2.2, .41), new THREE.MeshLambertMaterial({map: sT})); sg.position.set(R.c.x, y + 2.1, z1 + .3); sg.rotation.y = Math.PI; g.add(sg);
+  g.visible = false; scene.add(g); storeFx.push({b: 'Music_Room', g});
 }
 // สะพานเชื่อมชั้น 2 อาคารเทคโนโลยี ↔ อาคารไม้ (ครูบอก): ทางเดินปูนมีหลังคา ราวกันตก
 function buildBridge(){
