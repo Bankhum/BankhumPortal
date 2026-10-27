@@ -64,6 +64,7 @@ window.BANKHUM_MENU = [
     th: 'บริหารทั่วไป', en: 'General Administration', code: 'BANKHUM GENERAL', short: 'บริหารทั่วไป', shortEn: 'General',
     items: [
       { th: 'ระบบสารสนเทศโรงเรียน', en: 'School information system', icon: 'chart-no-axes-combined', url: 'https://bankhum.com/login.php', statId: 'information', statName: 'ระบบสารสนเทศโรงเรียน', keywords: 'สารสนเทศ information' },
+      { th: 'BANKHUM SIM ศูนย์ข้อมูลครูและผู้บริหาร', en: 'BANKHUM SIM data centre (staff only)', icon: 'lock', url: 'https://sim.bankhum.ac.th/', statId: 'sim', statName: 'BANKHUM SIM ศูนย์ข้อมูลครูและผู้บริหาร', keywords: 'sim ศูนย์ข้อมูล ข้อมูลนักเรียน การมาเรียน ผู้บริหาร ครู dashboard' },
       { th: 'ระบบสะสมความดีนักเรียน', en: 'Student good deeds system', icon: 'medal', url: 'https://good.bankhum.ac.th/', statId: 'goodstudent', statName: 'ระบบสะสมความดีนักเรียน', keywords: 'ความดี คะแนนความดี สะสมความดี พฤติกรรม good student' },
       { th: 'แจ้งซ่อมและบำรุงรักษา', en: 'Repair & maintenance requests', icon: 'wrench', keywords: 'ซ่อม repair' },
       { th: 'จองห้องประชุม / สถานที่', en: 'Room & venue booking', icon: 'calendar-clock', keywords: 'จองห้อง booking' },
@@ -124,6 +125,7 @@ window.BANKHUM_MENU = [
     th: 'ผู้บริหาร', en: 'Executive', code: 'Executive Dashboard', short: 'ผู้บริหาร', shortEn: 'Executive',
     items: [
       { th: 'สถิติการใช้งานระบบ', en: 'System usage statistics', icon: 'chart-no-axes-combined', url: '#dashboard', internal: true, keywords: 'สถิติ stats dashboard' },
+      { th: 'BANKHUM SIM ศูนย์ข้อมูลครูและผู้บริหาร', en: 'BANKHUM SIM data centre (staff only)', icon: 'lock', url: 'https://sim.bankhum.ac.th/', statId: 'sim', statName: 'BANKHUM SIM ศูนย์ข้อมูลครูและผู้บริหาร', keywords: 'sim ศูนย์ข้อมูล ข้อมูลนักเรียน การมาเรียน ผู้บริหาร ครู dashboard' },
       { th: 'บริหารจัดการ PA (BANKHUM PA FLOW)', en: 'PA management (BANKHUM PA FLOW)', icon: 'handshake', url: 'https://pa.bankhum.ac.th/', statId: 'pa', statName: 'BANKHUM PA FLOW ระบบบริหารจัดการ PA', keywords: 'pa วpa ข้อตกลงในการพัฒนางาน ประเมิน ส่งเอกสาร ติดตามสถานะ performance agreement' },
       { th: 'ภาพรวมนักเรียนและการมาเรียน', en: 'Students & attendance overview', icon: 'users-round' },
       { th: 'ภาพรวมงบประมาณ', en: 'Budget overview', icon: 'chart-pie' },
