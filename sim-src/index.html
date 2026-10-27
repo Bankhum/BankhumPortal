@@ -532,6 +532,8 @@ const DataAdapter = {
       if (r.status === 503) { this.status = 'unconfigured'; this.message = 'ยังไม่ได้เปิดใช้การเชื่อม SIS'; return null; }
       if (!r.ok || !d.ok) { this.status = 'error'; this.message = 'SIS ไม่พร้อมใช้งาน (' + (d.error || r.status) + ')'; return null; }
       if (!d.rooms?.length) { this.status = 'error'; this.message = 'SIS ยังไม่มีข้อมูลห้องเรียนภาคนี้'; return null; }
+      // ยังไม่มีใครสแกน (เช่น เครื่องยังไม่เปิดใช้ หรือยังเช้า) → ใช้ข้อมูลจำลองไปก่อน สลับเป็นของจริงเองเมื่อมีสแกนเข้ามา
+      if (!d.scans?.some(x => x.t) && !d.teachers?.scanned) { this.status = 'off'; this.message = 'SIS ยังไม่มีผลสแกนวันนี้ ใช้ข้อมูลจำลอง'; return null; }
       this.status = 'ok'; this.updated = d.fetched_at ? new Date(d.fetched_at) : new Date(); this.message = 'ได้รับข้อมูลจาก BANKHUM SIS'; return d;
     } catch (e) { this.status = 'error'; this.message = 'ติดต่อ SIS ไม่ได้'; return null; }
   },
@@ -745,12 +747,15 @@ for (const s of STUDENTS) {
   s.scan = s.real ?? Math.round(s.arr + walk(s.drop));   // ผลสแกนจริงจาก SIS ใช้เวลาจริงเสมอ
 }
 TEACHERS.forEach(t => { t.arr = t.runIn.arrive; t.scan = Math.round(t.arr + walk(t.drop, TSCAN_PT)); t.leave = t.runOut.depart - .3; });
+// ครูสแกนเครื่องลงเวลาจริงวันนี้ (จาก SIS มีแค่เวลา ไม่มีชื่อ) → ใช้แทนตัวเลข "ครูมาแล้ว" และรายการสแกน · ตัวครูในฉาก 3D ยังเดินตามค่าจำลอง
+const TREAL = FEED?.teachers?.scanned ? FEED.teachers.times.map(x => { const [h, mm] = x.split(':').map(Number); return h*60 + mm; }) : null;
+const T_TOTAL = TREAL && FEED.teachers.total || 21;
 // ประเภทแหล่งข้อมูล: SIMULATED = จำลอง · SCHEDULED = ตามตาราง · VERIFIED = ยืนยันจากระบบจริง · UNKNOWN = ไม่มีข้อมูลยืนยัน
 const SRC = {sim: ['SIMULATED', 'ข้อมูลจำลอง'], sch: ['SCHEDULED', 'ข้อมูลตามตาราง'], ver: ['VERIFIED', 'ข้อมูลที่ได้รับการยืนยันจากระบบโรงเรียน'], unk: ['UNKNOWN', 'ไม่มีข้อมูลยืนยัน']};
 const srcB = k => `<span class="src ${k}" title="${SRC[k][1]}">${SRC[k][0]}</span>`;
 // เวลาสแกนของครูเป็นค่าจำลองทั้งหมด จึงไม่แสดงชื่อจริงคู่กับเวลา (ไม่สร้างสถานะของบุคคลจริงขึ้นเอง)
 const SCANS = [...STUDENTS.filter(s=>s.scan!=null).map(s=>({t:s.scan, who:`${s.cls} เลขที่ ${s.no}`, cls:s.cls, src: s.real != null ? 'ver' : 'sim'})),
-               ...TEACHERS.map(s=>({t:s.scan, who:'ครู (ไม่แสดงชื่อ)', cls:'ครู', src:'sim'}))].sort((a,b)=>a.t-b.t);
+               ...(TREAL ? TREAL.map(t=>({t, who:'ครู (ไม่แสดงชื่อ)', cls:'ครู', src:'ver'})) : TEACHERS.map(s=>({t:s.scan, who:'ครู (ไม่แสดงชื่อ)', cls:'ครู', src:'sim'})))].sort((a,b)=>a.t-b.t);
 
 /* ---------- รอบนอกโรงเรียน: ถนนหน้าโรงเรียน + ซอยข้าง มีรถชาวบ้านผ่านพอประมาณ และตลาดชุมชนฝั่งตรงข้าม ---------- */
 const FAR = 150, SOI_E = 57.4, SOI_W = 54;   // ซอยข้างโรงเรียน: เลนขาออก (ไปทางตะวันออก) / เลนขาเข้า
@@ -2760,7 +2765,7 @@ function update(force){
   $('clock').textContent = $('tTime').textContent = fmt(m); $('tDay').textContent = 'วัน' + DAYS[day]; const st = phaseAt(m)[0], nx = ROUTINE.find(r => r[0] > m); $('phase').textContent = typeof where === 'number' ? `${phase} · เหลือ ${Math.ceil(nx[0]-m)} นาที` : phase;
   const pres = present(m), late = pres.filter(s => s.scan > LATE).length;
   $('kIn').textContent = pres.length; $('kOut').textContent = STUDENTS.length - pres.length; $('kLate').textContent = late;
-  $('kT').textContent = `${TEACHERS.filter(t=>t.scan<=m).length}/21`;
+  $('kT').textContent = `${TREAL ? TREAL.filter(t=>t<=m).length : TEACHERS.filter(t=>t.scan<=m).length}/${T_TOTAL}`;
   $('cls').innerHTML = CLASSES.map(([c,n]) => {
     const p = pres.filter(s=>s.cls===c), l = p.filter(s=>s.scan>LATE).length;
     return `<div class="row"><span>${c}</span><div class="track"><i style="width:${(p.length-l)/n*100}%;background:var(--ok)"></i><i style="width:${l/n*100}%;background:var(--late)"></i></div><span>${p.length}/${n}</span></div>`;
@@ -3551,7 +3556,7 @@ function placeGroupChips(){
 $('hdrLogo').src = $('topLogo').src = $('splashLogo').src;
 { const lo = +slider.min, hi = +slider.max, pc = t => (t - lo)/(hi - lo)*100, LB = {360:'06:00', 480:'เข้าแถว', 510:'คาบ1', 570:'2', 630:'3', 680:'พัก', 750:'4', 810:'5', 870:'6', 930:'เลิก'};
   $('ticks').innerHTML = ROUTINE.filter(r => r[0] > lo && r[0] < hi).map(r => `<i style="left:${pc(r[0])}%"></i>` + (LB[r[0]] ? `<b class="${['พัก', 'เลิก'].includes(LB[r[0]]) ? '' : 'o'}" style="left:${pc(r[0])}%">${LB[r[0]]}</b>` : '')).join(''); }
-$('srcl').innerHTML = `ตัวเลขการมาเรียน: ${srcB(FEED ? 'ver' : 'sim')} · ครู: ${srcB('sim')}`;
+$('srcl').innerHTML = `ตัวเลขการมาเรียน: ${srcB(FEED ? 'ver' : 'sim')} · ครู: ${srcB(TREAL ? 'ver' : 'sim')}`;
 $('legend').innerHTML = Object.values(BSTAT).map(([t, c]) => `<span style="--s:${c}">${t}</span>`).join('');
 { const md = $('tMode'); md.classList.toggle('sis', !!FEED); md.querySelector('span').textContent = FEED ? 'SIS + ข้อมูลจำลอง' : 'ข้อมูลจำลอง';
   md.title = (FEED ? `เวลาสแกนหน้าจาก BANKHUM SIS (${FEED.date}) · อัปเดต ${FEED.fetched} · ส่วนอื่นเป็นข้อมูลตามตาราง/จำลอง` : 'ทุกอย่างบนแผนที่เป็นข้อมูลจำลองหรือตามตารางเรียน ไม่ใช่ตำแหน่งจริงของบุคคล') + (DataAdapter.message ? '\nสถานะ SIS: ' + DataAdapter.message : ''); }
@@ -3648,7 +3653,7 @@ async function renderStaff(refresh){
     e.preventDefault(); const q = $('stuQ').value.trim(), out = $('stuR'); if (q.length < 2) { out.innerHTML = '<div class="lock">พิมพ์อย่างน้อย 2 ตัวอักษร</div>'; return; }
     out.innerHTML = '<div class="lock">กำลังค้นหา…</div>'; const r = await getJ('/sim-api/students?q=' + encodeURIComponent(q));
     if (r.code === 401) { AUTH = {role:'PUBLIC', login_available:true}; return renderStaff(); }
-    out.innerHTML = !r.ok ? `<div class="lock">${r.status === 'unconfigured' ? 'ยังไม่ได้นำเข้าทะเบียนรายชื่อบนเซิร์ฟเวอร์' : esc(r.error || 'ค้นหาไม่สำเร็จ')}</div>`
+    out.innerHTML = !r.ok ? `<div class="lock">${r.status === 'unconfigured' ? 'ยังไม่ได้เชื่อมทะเบียนรายชื่อจาก SIS' : esc(r.error || 'ค้นหาไม่สำเร็จ')}</div>`
       : !r.rows.length ? '<div class="lock">ไม่พบรายชื่อ</div>'
       : `<div class="scroll"><table><tr><th>ชั้น</th><th>เลขที่</th><th>รหัส</th><th>ชื่อ</th></tr>${r.rows.map(x => `<tr><td>${esc(x.cls)}</td><td>${esc(x.no)}</td><td>${esc(x.student_id)}</td><td>${esc(x.name)}</td></tr>`).join('')}</table></div><small style="color:var(--mute)">ทะเบียนบอกว่านักเรียนอยู่ชั้นใด ไม่ได้บอกว่าตอนนี้อยู่ที่ไหน</small>`;
   };

@@ -17,7 +17,7 @@ export async function onRequestGet({ env, request, waitUntil }) {
   catch (e) { return out({ ok: false, error: 'SIS unreachable' }, 502); }
   if (!res.ok) return out({ ok: false, error: `SIS ${res.status}` }, 502);
   const d = await res.json();
-  const fresh = out({ ok: true, date: d.date, late_after: d.late_after, rooms: d.rooms, scans: d.scans, sis_generated_at: d.generated_at, fetched_at: new Date().toISOString() });
+  const fresh = out({ ok: true, date: d.date, late_after: d.late_after, rooms: d.rooms, scans: d.scans, teachers: d.teachers || null, sis_generated_at: d.generated_at, fetched_at: new Date().toISOString() });
   waitUntil(cache.put(key, fresh.clone()));
   return fresh;
 }
