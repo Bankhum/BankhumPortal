@@ -518,7 +518,7 @@ window.addEventListener('appinstalled', () => showToast('ติดตั้ง B
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('./sw.js?v=41', { updateViaCache: 'none' });
+      const reg = await navigator.serviceWorker.register('./sw.js?v=42', { updateViaCache: 'none' });
       await reg.update();
     } catch (_) {}
   });
