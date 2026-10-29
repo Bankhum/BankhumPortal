@@ -71,7 +71,7 @@ window.BANKHUM_MENU = [
       { th: 'จองห้องประชุม / สถานที่', en: 'Room & venue booking', icon: 'calendar-clock', keywords: 'จองห้อง booking' },
       { th: 'ขอใช้รถโรงเรียน', en: 'School vehicle requests', icon: 'bus', keywords: 'รถ vehicle' },
       { th: 'งานเวรประจำวัน', en: 'Daily duty roster', icon: 'clipboard-check', keywords: 'เวร duty' },
-      { th: 'อาคารสถานที่และความปลอดภัย', en: 'Facilities & safety', icon: 'shield-check', url: 'https://safety.bankhum.ac.th/', statId: 'safety', statName: 'ระบบความปลอดภัยโรงเรียน', keywords: 'ความปลอดภัย safety อาคารสถานที่ แจ้งเหตุ ภัย ป้องกัน' },
+      { th: 'ศูนย์พิทักษ์สิทธิ เสรีภาพ และความปลอดภัย', en: 'Rights, Liberty & Safety Protection Centre', icon: 'shield-check', url: 'https://safety.bankhum.ac.th/', statId: 'safety', statName: 'ศูนย์พิทักษ์สิทธิ เสรีภาพ และความปลอดภัย', keywords: 'ศูนย์พิทักษ์สิทธิ สิทธิ เสรีภาพ ความปลอดภัย safety อาคารสถานที่ แจ้งเหตุ ร้องเรียน คุ้มครอง' },
       { th: 'ประชาสัมพันธ์และชุมชนสัมพันธ์', en: 'Public & community relations', icon: 'megaphone' }
     ]
   },
