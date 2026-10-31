@@ -42,6 +42,7 @@ window.BANKHUM_MENU = [
       { th: 'งบประมาณ', en: 'Budget', icon: 'wallet', keywords: 'budget' },
       { th: 'การเงินและพัสดุ', en: 'Finance & supplies', icon: 'banknote', url: 'https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbwUz9mm1SC5LS2wpQPMDblnGBcJ2s4Y4-A073e42ZGrT_bIGuBLIc1nBylaj56LS_HiRw/exec', statId: 'finance', statName: 'ระบบบริหารการเงินและพัสดุโรงเรียน', keywords: 'การเงิน พัสดุ finance' },
       { th: 'ระบบบริหารการเงินและพัสดุ (ปีงบ 2569)', en: 'Finance & inventory system (FY2569)', icon: 'warehouse', url: 'https://school-finance-inventory.kamonwan.workers.dev/', statId: 'finance-inventory', statName: 'ระบบบริหารการเงินและพัสดุ (ปีงบ 2569)', keywords: 'การเงิน พัสดุ คลัง ครุภัณฑ์ งบประมาณ finance inventory 2569' },
+      { th: 'ร่วมบริจาคสนับสนุนโรงเรียน', en: 'Donate to the school', icon: 'hand-heart', url: 'https://school-finance-inventory.kamonwan.workers.dev/donate?campaign=f68fb276-7d8e-4fde-a23b-001ecdd6dc26', statId: 'donate', statName: 'ร่วมบริจาคสนับสนุนโรงเรียน', keywords: 'บริจาค ระดมทุน สนับสนุน ทำบุญ donate donation campaign' },
       // ซ่อนไว้ก่อน: เปิดใช้โดยใส่กลับ url: 'https://class-card-tracker.lovable.app/', statId: 'supply'
       { th: 'สั่งซื้ออุปกรณ์การเรียน (เรียนฟรี)', en: 'School supplies (free education)', icon: 'pencil-ruler', keywords: 'อุปกรณ์การเรียน เรียนฟรี school supply สั่งซื้อ เครื่องเขียน' },
       { th: 'จัดซื้อจัดจ้าง (e-GP)', en: 'Procurement (e-GP)', icon: 'package-check', keywords: 'จัดซื้อ จัดจ้าง egp procurement' }
