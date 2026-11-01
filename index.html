@@ -295,6 +295,10 @@ body.night #hint,body.night #note{color:#cbd5e1}
  #musicHint{font-size:13px;padding:7px 13px}
 }
 #rightX,#more{display:none}
+/* ---- เปิดเว็บมาให้เห็นโมเดล 3D ก่อน: ซ่อนแผงสถิติ (ซ้าย) และแผงสแกนล่าสุด/กิจกรรม (ขวา) กดปุ่ม "☰ ข้อมูล" เพื่อเปิด/ปิด ทุกขนาดจอ ---- */
+body:not(.sheet) #left,body:not(.sheet) #right{display:none!important}
+#bar #info.mob{display:inline-block!important}
+#bar #info.on{background:var(--blue)}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
 </head>
@@ -384,7 +388,7 @@ body.night #hint,body.night #note{color:#cbd5e1}
   <div class="r1"><button id="play" aria-label="เล่น/หยุด">⏸</button>
   <div class="tl"><input id="time" type="range" min="355" max="990" step="1" value="420" aria-label="เวลาจำลอง"><div class="ticks" id="ticks" aria-hidden="true"></div></div>
   <button id="find" aria-label="ค้นหานักเรียนหรือครู">🔍<span class="tx"> ค้นหา</span></button>
-  <button id="info" class="mob" aria-label="รายละเอียด">☰ ข้อมูล</button><button id="more" aria-label="ตัวเลือกเพิ่มเติม (วัน ความเร็ว จุดแนะนำ)" aria-expanded="false">⋯</button></div>
+  <button id="info" class="mob" aria-label="เปิด/ปิดแผงข้อมูล (สถิติการมาเรียน สแกนล่าสุด กิจกรรม)" aria-pressed="false" title="เปิด/ปิดแผงข้อมูล">☰ ข้อมูล</button><button id="more" aria-label="ตัวเลือกเพิ่มเติม (วัน ความเร็ว จุดแนะนำ)" aria-expanded="false">⋯</button></div>
   <div class="rr"><div class="r2"><div class="sp" id="days"></div><span class="vsep"></span>
   <div class="sp" id="jumps"></div></div>
   <div class="r3"><div class="sp" id="speed"></div>
@@ -935,6 +939,8 @@ function onModel(g) {
   const solar = root.getObjectByName('Solar_Pergola'); if (solar) solar.removeFromParent();   // ซุ้มหลังคาขาวแผงโซลาร์ที่หัวอาคาร ป.1 ป.2 ไม่มีจริง (ครูให้เอาออก)   // เอาเต็นท์หลังคาโค้งสีน้ำเงินออก (ตามที่ครูขอ)
   buildField(); buildChalerm();
   buildFarm(); buildRestroom(root); buildMushroom(root); buildFloors(); buildBridge(); buildChalermF2(); buildClassFx(); buildStoreFx(); buildMusicFx(); initAgents(root); applyXrayAll();
+  const infoBtn = () => { const on = document.body.classList.contains('sheet'); $('info').classList.toggle('on', on); $('info').setAttribute('aria-pressed', on); $('info').textContent = on ? '✕ ซ่อนข้อมูล' : '☰ ข้อมูล'; };
+  new MutationObserver(infoBtn).observe(document.body, {attributes: true, attributeFilter: ['class']}); infoBtn();
   $('info').onclick = () => document.body.classList.toggle('sheet');
   $('find').onclick = () => openFind($('findp').hidden); $('fx').onclick = () => openFind(false); $('fq').oninput = renderFind;
   addEventListener('keydown', e => { if (e.key === 'Escape' && !$('findp').hidden) openFind(false); });
@@ -3902,7 +3908,7 @@ function nextToast(){
 const nowRows = {};
 function nowEl(c){ return nowRows[c] ??= (() => { const d = document.createElement('div'); d.style.setProperty('--c', CLS_COL[c]); $('now').appendChild(d); return d; })(); }
 function classFeed(dt){
-  const tc = $('left'); if (tc) document.documentElement.style.setProperty('--topH', (tc.getBoundingClientRect().bottom + 6) + 'px');
+  const tc = $('left'); if (tc) { const r = tc.getBoundingClientRect(); document.documentElement.style.setProperty('--topH', ((r.height ? r.bottom : $('top').getBoundingClientRect().bottom) + 6) + 'px'); }
   feedAcc += dt; if (feedAcc < .25) return; feedAcc = 0;
   const m = simMin, jump = Math.abs(m - feedLast) > 3 || !playing; feedLast = m;
   announce(m);
