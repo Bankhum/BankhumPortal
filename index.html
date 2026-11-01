@@ -569,7 +569,7 @@ const ROAD_IN = -72, ROAD_OUT = -68, NORTH_Z = 56;
 const LANE = -21.5, DROP_X = 19.5;
 // รถจากหน้าอาคารเฉลิมฯ เลี้ยวซ้ายที่ป้อมยามเข้าถนนเชื่อมแนว LANE ไปทางที่จอดรถตู้ (ตามลูกศรที่ครูวาด) ไม่วิ่งผ่านหน้าอาคารไม้/อาคารเทคโนโลยีแล้ว
 // เหลือถนนสั้นข้างลานจอดมอเตอร์ไซค์ครู x 4.5 จาก LANE ลงไป: [x, z เริ่ม, z จบ]
-const MOTO_LANE = [4.5, LANE, -34.5];
+const MOTO_LANE = [4.5, LANE, -32.8];   // สุดก่อนซุ้มรั้วไม้หลากสี (รูปชุด 2)
 // ต้นไม้ใบสีน้ำตาลอ่อน 2 ต้น (ในโมเดล Site) ที่เคยขวางแนวถนนเชื่อม ย้ายลงไปทางลานเสาธงตามกรอบสีแดงที่ครูวง
 const TAN_TREE_DZ = 6.5;
 // ต้นมะม่วง 2 ต้นย้ายไปริมถนนหน้าลานเสาธง ([x, z] เดิม → ใหม่) สนามเปตองย้ายไปแทนที่วงดนตรีไทยกลางแจ้ง (ขิม กลอง เก้าอี้) ซึ่งย้ายไปที่สนามเปตองเดิม (ตามที่ครูวง)
@@ -1878,8 +1878,8 @@ function buildShower(g, B, add, M, cvTex){
 let parkFixed = false;
 function buildParkingSite(){
   const mesh = {}; scene.traverse(o => { if (/^box(118|118_1|084|084_1|084_2|084_3|116_1)$/.test(o.name) && o.isMesh) mesh[o.name] = o; });
-  if (Object.keys(mesh).length < 7) return false;
-  for (const k of ['box118', 'box118_1', 'box084_1', 'box084_2', 'box084_3', 'box116_1']) mesh[k].visible = false;
+  if (Object.keys(mesh).length < 6) return false;   // box116_1 = หอถังน้ำเดิม (ลบไปแล้วใน buildTechWood)
+  for (const k of ['box118', 'box118_1', 'box084_1', 'box084_2', 'box084_3', 'box116_1']) if (mesh[k]) mesh[k].visible = false;
   mesh.box084.material = mesh.box084.material.clone(); mesh.box084.material.color.set('#b8b2a7');
   const g = new THREE.Group(); g.name = 'ParkingSite'; scene.add(g);
   const M = c => new THREE.MeshLambertMaterial({color: c}), add = (geo, mat, x, y, z, par = g) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; par.add(o); return o; };
@@ -1895,7 +1895,9 @@ function buildParkingSite(){
   for (const x of [SX0 + .25, -6.85, -3.45, -.15, SX1 - .1]) B(.14, .18, SZ1 - SZ0, beamM, x, H + .2, (SZ0 + SZ1)/2);
   const tinT = cv(64, 64, (c, w, h) => { c.fillStyle = '#9a9188'; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 8) { c.fillStyle = '#7d746b'; c.fillRect(0, y, w, 2); c.fillStyle = '#b3aba2'; c.fillRect(0, y + 4, w, 2); } c.fillStyle = 'rgba(140,82,45,.4)'; for (let k = 0; k < 7; k++) c.fillRect((k*29) % w, (k*19) % h, 14, 8); }, 3, 6);
   const tinM = new THREE.MeshLambertMaterial({map: tinT, side: THREE.DoubleSide}), half = (SZ1 - SZ0)/2 + .5, rise = .55;
-  for (const f of [-1, 1]) { const r = add(new THREE.PlaneGeometry(SX1 - SX0 + .8, Math.hypot(half, rise)), tinM, (SX0 + SX1)/2, H + .3 + rise/2, (SZ0 + SZ1)/2 + f*half/2); r.rotation.x = -Math.PI/2 + f*Math.atan2(rise, half); }
+  { const d = SZ1 - SZ0 + 1.2, up = .7, r = add(new THREE.PlaneGeometry(SX1 - SX0 + .8, Math.hypot(d, up)), tinM, (SX0 + SX1)/2, H + .3 + up/2, (SZ0 + SZ1)/2); r.rotation.x = -Math.PI/2 - Math.atan2(up, d); }   // หลังคาเพิงสังกะสีลาดเดียว สูงฝั่งถนน (รูปจริง)
+  for (const x of [SX0 + .25, -6.85, -3.45, -.15, SX1 - .1]) B(.24, .7, .24, postM, x, H + .35, SZ1 - .1);   // เสาไม้ด้านหน้ายาวขึ้นรับชายคาสูง
+  B(SX1 - SX0, .2, .18, beamM, (SX0 + SX1)/2, H + .62, SZ1 - .1);
   // ของในโรงจอด: ยางรถเก่า โต๊ะ ชั้นวางของชิดผนังเรือนไม้
   B(1.6, .9, .6, '#a16207', -10.2, .45, SZ0 + .5); B(.8, 1.4, .45, '#64748b', 2.4, .7, SZ0 + .45);
   // ต้นชมพูพันธุ์ทิพย์ต้นใหญ่ มุมหน้าโรงจอดรถฝั่งซุ้มขอบคุณที่มาเยือน ริมถนน (ครูวง): ลำต้นเทาน้ำตาลแตกกิ่งกว้าง ทรงพุ่มกลมแผ่ ดอกชมพูแซมใบเขียว
@@ -1911,15 +1913,7 @@ function buildParkingSite(){
     for (let j = 0; j < 8; j++) { const a = j*.8; add(new THREE.SphereGeometry(.8, 7, 5), j % 2 ? lf : lf2, TX + Math.cos(a)*2.2, 4.9, TZ + Math.sin(a)*2.2).scale.y = .6; }   // ใบเขียวใต้ทรงพุ่ม
     const petals = new THREE.InstancedMesh(new THREE.CircleGeometry(.12, 6), new THREE.MeshBasicMaterial({color: '#f9a8d4', side: THREE.DoubleSide}), 70), mm = new THREE.Matrix4();   // ดอกร่วงบนพื้น
     for (let k = 0; k < 70; k++) { const a = k*2.399, d = 1 + (k*37 % 40)/10; mm.makeRotationX(-Math.PI/2).setPosition(TX + Math.cos(a)*d, .09, TZ + Math.sin(a)*d); petals.setMatrixAt(k, mm); } g.add(petals); }
-  // หอถังน้ำ: เสาปูนสูง ถังทรงกลมสีเหลือง มีปาล์มรอบโคน
-  const TX = 10.3, TZ = -37.9;
-  add(new THREE.CylinderGeometry(.45, .7, 12, 14), M('#e5e7eb'), TX, 6.2, TZ);
-  add(new THREE.CylinderGeometry(1.2, .6, .6, 16), M('#d1d5db'), TX, 12.4, TZ);
-  add(new THREE.SphereGeometry(1.9, 20, 14), M('#facc15'), TX, 14.4, TZ); B(.08, 1.2, .08, '#6b7280', TX, 16.8, TZ);
-  for (const [dx, dz, h] of [[-2.2, 1.6, 5.5], [2, 1.9, 4.6], [-1.7, -2, 6.2], [2.3, -1.5, 3.8]]) {
-    const px = TX + dx, pz = TZ + dz; add(new THREE.CylinderGeometry(.16, .24, h, 8), M('#8a7f70'), px, h/2, pz);
-    for (let k = 0; k < 9; k++) { const lf = add(new THREE.BoxGeometry(.3, .05, 1.9), M(k % 2 ? '#3f8a2a' : '#4d9a2f'), px + Math.sin(k*.7)*.85, h + .1, pz + Math.cos(k*.7)*.85); lf.rotation.set(-.45*Math.cos(k*.7), k*.7, .45*Math.sin(k*.7)); }
-  }
+  // หอถังน้ำ + ต้นตาล ย้ายไปสร้างในสวนหย่อมข้างซุ้มรั้วไม้หลากสี (buildTechWood → StoreYard)
   return parkFixed = true;
 }
 // บ้านพักครู (เรือนไม้แดงสองชั้นหลังโรงจอดรถ ตามที่ครูบอก): ชั้นล่างห้องนอน 1 ห้อง + ห้องน้ำ 1 ห้อง + โถงนั่งเล่น/ครัว + บันได
@@ -2828,15 +2822,12 @@ function buildTechWood(root){
   // จานดาวเทียม 2 ใบที่มุมซ้าย
   for (const [x, z] of [[T.x0 + .3, T.zf + .25], [T.x0 + 1.25, T.zf + .3]]) { const d = mk(new THREE.SphereGeometry(.48, 14, 8, 0, Math.PI*2, 0, .9), new THREE.MeshLambertMaterial({color: '#ece7de', side: THREE.DoubleSide}), x, F2 + .45, z, tg); d.rotation.x = Math.PI/2 + .3; B(.04, .5, .04, '#6b7280', x, F2 + .25, z - .1, tg); }
   // หลังคาจั่วหันหน้า: ผนังจั่วขาวแบ่งแผ่น ป้ายน้ำเงินอักษรทอง ปั้นลมน้ำตาลแดง
-  gable(tg, 'z', T.x0 - 1.0, T.x1 + 1.0, T.zb - .6, T.zf + .5, T.ye - .25, T.yr, '#a5503d', fasciaB);
+  gable(tg, 'z', T.x0 - 1.0, T.x1 + 1.0, T.zb - .6, T.zf + .5, T.ye - .25, T.yr, '#80868a', fasciaB);   // หลังคากระเบื้องสีเทา (รูปชุด 2)
   const gT = cvTex(768, 192, (c, w, h) => { c.fillStyle = '#eceeed'; c.fillRect(0, 0, w, h); c.strokeStyle = '#c9cdcc'; c.lineWidth = 2; for (let x = 0; x < w; x += 96) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); } c.beginPath(); c.moveTo(0, h*.55); c.lineTo(w, h*.55); c.stroke(); });
   for (const [z, ry] of [[T.zf + .01, 0], [T.zb - .01, Math.PI]]) tri(TW, T.yr - T.ye - .15, new THREE.MeshLambertMaterial({map: gT}), TX, T.ye, z, ry, tg);
   B(TW, .3, bd + .2, white, TX, T.ye - .15, bz, tg);   // ฝ้าเพดานระเบียง/คานหน้า
   const sT = cvTex(384, 96, (c, w, h) => { c.fillStyle = '#2b3a9a'; c.fillRect(0, 0, w, h); c.strokeStyle = '#d6b85a'; c.lineWidth = 4; c.strokeRect(6, 6, w - 12, h - 12); c.fillStyle = '#f5d76e'; c.font = 'bold 44px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('อาคารเทคโนโลยี', w/2, h/2 + 2); });
   plane(1.8, .45, sT, TX, T.ye + 1.25, T.zf + .03, 0, tg);
-  // ผ้าใบกันแดดและเพิงฝั่งตะวันตก
-  { const tarp = mk(new THREE.PlaneGeometry(3.4, 4.6), new THREE.MeshLambertMaterial({color: '#d9c08a', side: THREE.DoubleSide}), T.x0 - 1.65, 2.75, -41.6, tg); tarp.rotation.order = 'ZXY'; tarp.rotation.set(-Math.PI/2, 0, .25);
-    for (const z of [-43.8, -39.4]) B(.08, 2.3, .08, '#6b4f3a', T.x0 - 3.3, 1.15, z, tg); }
 
   /* ================= อาคารไม้ (อาคาร ๒) ================= */
   const W = WB, wg = own('Wooden_Building'), LB = W.zm - W.zs, zc = (W.zs + W.zm)/2, xbc = (W.xw + W.xb)/2;
@@ -2915,8 +2906,8 @@ function buildTechWood(root){
   const southLow = lowTex(W.xb - W.xw, (c, X, Y) => breeze(c, X, Y, 1, W.xb - W.xw - 1, 2.3, 3.2));
   plane(W.xb - W.xw, F2, southLow, xbc, F2/2, W.zs - .02, Math.PI, wg); plane(W.xb - W.xw, W.ye - F2, upTex(W.xb - W.xw), xbc, (F2 + W.ye)/2, W.zs - .02, Math.PI, wg);
   // หลังคา: ช่วงระเบียงหลังคาเขียวสันตามยาว ช่วงปิดทึบหลังคาจั่วขวาง หน้าจั่วไม้ระแนง
-  gable(wg, 'z', W.xf - 1.0, W.xb + 1.0, W.zs - .7, W.zm + .2, W.ye - .2, W.ye + 3.1, '#4f8c6c', fasciaB);
-  gable(wg, 'x', W.zm - .5, W.zn + .7, W.xf - 1.1, W.xb + 1.0, W.ye - .3, W.ye + 2.6, '#8e3b2a', fasciaB);
+  gable(wg, 'z', W.xf - 1.0, W.xb + 1.0, W.zs - .7, W.zm + .2, W.ye - .2, W.ye + 3.1, '#7fb3a0', fasciaB);   // เมทัลชีตสีเขียวอมฟ้า
+  gable(wg, 'x', W.zm - .5, W.zn + .7, W.xf - 1.1, W.xb + 1.0, W.ye - .3, W.ye + 2.6, '#7fb3a0', fasciaB);
   const lat = cvTex(256, 96, (c, w, h) => { c.fillStyle = '#7a2a1a'; c.fillRect(0, 0, w, h); c.strokeStyle = '#c9785a'; c.lineWidth = 3; for (let x = -h; x < w; x += 16) { c.beginPath(); c.moveTo(x, h); c.lineTo(x + h, 0); c.stroke(); c.beginPath(); c.moveTo(x, 0); c.lineTo(x + h, h); c.stroke(); } });
   tri(LM + 1.1, 2.75, new THREE.MeshLambertMaterial({map: lat}), W.xf - .05, W.ye - .25, (W.zm + W.zn)/2 + .1, -Math.PI/2, wg);
   for (const [z, ry] of [[W.zs - .02, Math.PI], [W.zm + .02, 0]]) tri(W.xb - W.xf, 3.0, redWood, (W.xf + W.xb)/2, W.ye - .1, z, ry, wg);
@@ -2942,15 +2933,67 @@ function buildTechWood(root){
     const lx = W.xf - .75, lz = W.zm - 2.6; plane(4.2, .52, lt, lx - .03, 1.75, lz, -Math.PI/2, wg, {transparent: true, alphaTest: .4, side: THREE.DoubleSide});
     B(.04, .04, 4.0, '#111827', lx, 1.48, lz, wg); B(.04, .04, 4.0, '#111827', lx, 2.02, lz, wg); for (const dz of [-1.6, 0, 1.6]) B(.04, 1.6, .04, '#111827', lx, 1.2, lz + dz, wg); }
 
-  /* ================= ต้นไม้หน้าอาคารเทคฯ + กระบะกระเบื้องเขียว ================= */
-  { const tx = 5.0, tz = -36.2, tz2 = tz + .2, pg = scene;   // ต้นไม้ลำต้นเรียว ใบโปร่ง (ไม่ผูกกับอาคาร ไม่โปร่งตามโหมดมองทะลุ)
-    const pt = new THREE.Group(); pt.name = 'TechFrontTree'; pg.add(pt);
-    B(2.2, .5, 2.2, '#3fae86', tx, .25, tz2, pt); B(2.0, .04, 2.0, '#4b3a2a', tx, .51, tz2, pt);
-    const bark = M('#6b5a48'), leaf = M('#4f7d3a');
-    mk(new THREE.CylinderGeometry(.09, .14, 4.2, 7), bark, tx, 2.6, tz, pt);
-    for (const [dx, dz, y, r] of [[.6, .2, 4.0, .9], [-.5, .3, 4.6, .8], [.2, -.5, 5.4, .85], [-.3, -.2, 6.3, .7], [.5, .4, 6.8, .55], [-.7, -.4, 3.6, .6]]) {
-      const br = mk(new THREE.CylinderGeometry(.03, .05, Math.hypot(dx, dz)*1.6 + .4, 5), bark, tx + dx/2, y - .2, tz + dz/2, pt); br.rotation.set(dz*.9, 0, -dx*.9);
-      const l = mk(new THREE.IcosahedronGeometry(r, 0), leaf, tx + dx, y + .15, tz + dz, pt); l.scale.y = .55; }
+  /* ================= ลานข้างอาคารเทคฯ (รูปชุด 2): เพิงไม้แดงเก็บของ ผ้าใบบังแดด ซุ้มรั้วไม้หลากสี สวนหย่อมหอถังน้ำ ต้นตาล ================= */
+  root.getObjectByName('WaterTower')?.removeFromParent();   // หอถังน้ำเดิมในโมเดล → สร้างใหม่ในสวนหย่อม
+  { const sy = new THREE.Group(); sy.name = 'StoreYard'; scene.add(sy);
+    const cyl = (rt, rb, h, mat, x, y, z) => mk(new THREE.CylinderGeometry(rt, rb, h, 10), mat, x, y, z, sy);
+    const rod = (x0, y0, z0, x1, y1, z1, r, mat) => { const a = new THREE.Vector3(x0, y0, z0), b = new THREE.Vector3(x1, y1, z1), o = cyl(r, r, a.distanceTo(b), mat, (x0 + x1)/2, (y0 + y1)/2, (z0 + z1)/2); o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.sub(a).normalize()); return o; };
+    // --- เพิงไม้แดง (ติดอาคารเทคฯ ฝั่งตะวันตก): ผนังไม้ตีแนวตั้งสีแดงอิฐ ช่องตาข่าย ประตูไม้ หลังคาเพิงสังกะสีลาดลงทางเดิน ---
+    const S = {x0: .1, x1: T.x0 - .1, z0: -44.6, z1: -39.0, hb: 3.7, hf: 2.8}, sx = (S.x0 + S.x1)/2, sz = (S.z0 + S.z1)/2, SL = S.x1 - S.x0, shedM = M('#8e3720');
+    B(SL, .12, S.z1 - S.z0, '#a8a29e', sx, .06, sz, sy);
+    B(SL, S.hb, .12, shedM, sx, S.hb/2, S.z0 + .06, sy); B(.12, (S.hb + S.hf)/2, S.z1 - S.z0, shedM, S.x0 + .06, (S.hb + S.hf)/4, sz, sy); B(SL, S.hf, .08, M('#3b1d14'), sx, S.hf/2, S.z1 - .1, sy);
+    const shedF = cvTex(Math.round(SL*48), Math.round(S.hf*48), (c, w, h) => { const X = m => m*48, Y = m => h - m*48;
+      c.fillStyle = '#9a3b22'; c.fillRect(0, 0, w, h); c.strokeStyle = 'rgba(50,12,5,.5)'; c.lineWidth = 1; for (let x = 0; x < w; x += 7) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); }
+      for (const [a, b] of [[1.0, 2.9], [3.3, 4.9]]) { c.fillStyle = '#3b2a22'; c.fillRect(X(a), Y(2.4), X(b - a), X(1.5)); c.strokeStyle = '#9ca3af'; for (let k = -40; k < X(b - a); k += 8) { c.beginPath(); c.moveTo(X(a) + k, Y(2.4)); c.lineTo(X(a) + k + 40, Y(.9)); c.moveTo(X(a) + k + 40, Y(2.4)); c.lineTo(X(a) + k, Y(.9)); c.stroke(); } }   // ช่องตาข่าย
+      c.fillStyle = '#b4622f'; c.fillRect(X(5.4), Y(2.2), X(.9), X(2.2)); c.fillStyle = '#7a3a18'; c.fillRect(X(5.4) + 3, Y(1.2), 4, 6); });
+    plane(SL, S.hf, shedF, sx, S.hf/2, S.z1 - .04, 0, sy);
+    { const d = S.z1 - S.z0 + .9, rise = S.hb - S.hf + .2, r = B(SL + .5, .06, Math.hypot(d, rise), '#6e6862', sx, (S.hb + S.hf)/2 + .05, sz + .45, sy); r.rotation.x = Math.atan2(rise, d);
+      B(SL + .5, .22, .05, '#4a2a1a', sx, S.hf - .12, S.z1 + .88, sy); }
+    // ของกองหน้าเพิง: กระดานไวท์บอร์ดเก่าพิง โครงเต็นท์เหล็ก โต๊ะเหล็กสนิม ท่อ PVC ฟ้า ถังน้ำสแตนเลส
+    for (const [x, w, h, a] of [[1.6, 1.9, 1.35, -.32], [2.2, 1.6, 1.2, -.4], [4.3, 1.2, 1.0, -.5]]) { const wb = B(w, h, .05, '#eef0f0', x, h/2*Math.cos(a) + .02, S.z1 + .7 - h/2*Math.sin(-a), sy); wb.rotation.x = a; }
+    const steel = M('#d4d8dc'), rust = M('#8f4a25'), pvc = M('#5aa9e6');
+    for (const [x0, y0, z0, x1, y1, z1] of [[2.6, 0, -38.3, 3.4, 2.0, -38.7], [3.0, 0, -38.0, 3.9, 1.7, -38.6], [2.8, 1.6, -38.6, 4.4, 1.2, -38.2], [3.6, 0, -38.2, 3.1, 1.5, -38.8]]) rod(x0, y0, z0, x1, y1, z1, .03, steel);
+    B(.75, .05, .6, rust, 3.7, .95, -37.9, sy); for (const [dx, dz] of [[-.33, -.26], [.33, -.26], [-.33, .26], [.33, .26]]) B(.04, .95, .04, rust, 3.7 + dx, .48, -37.9 + dz, sy); B(.7, .04, .55, rust, 3.7, .35, -37.9, sy);
+    for (let k = 0; k < 4; k++) rod(4.6 + k*.12, .08 + k*.06, -38.5, 6.3, .1, -37.9 + k*.1, .05, pvc);
+    cyl(.7, .7, 1.7, M('#cfd4d8'), -.7, .85, -44.4).castShadow = true;
+    // --- ผ้าใบบังแดดคลุมทางเดินหน้าเพิง ---
+    { const tp = mk(new THREE.PlaneGeometry(6.2, 2.3), new THREE.MeshLambertMaterial({color: '#d8c08c', side: THREE.DoubleSide}), 4.0, 2.55, -37.7, sy); tp.rotation.x = -Math.PI/2 + .22;
+      for (const x of [1.0, 7.0]) B(.07, 2.3, .07, '#6b7280', x, 1.15, -36.6, sy); }
+    // --- ซุ้มเก็บของบนแท่นปูนทาสีฟ้าเขียว: เสาเหล็ก หลังคาเมทัลชีต รั้วไม้ระแนงหลากสี ประตูเหล็กดัดสนิม ---
+    const H = {x0: 3.2, x1: 8.2, z0: -36.3, z1: -33.1}, hx = (H.x0 + H.x1)/2, hz = (H.z0 + H.z1)/2;
+    B(H.x1 - H.x0, .45, H.z1 - H.z0, '#3fb0a0', hx, .225, hz, sy); B(H.x1 - H.x0 - .1, .03, H.z1 - H.z0 - .1, '#b3aea6', hx, .46, hz, sy);
+    for (const [x, z] of [[H.x0 + .1, H.z0 + .1], [H.x1 - .1, H.z0 + .1], [H.x0 + .1, H.z1 - .1], [H.x1 - .1, H.z1 - .1]]) B(.08, 2.6, .08, '#5b4636', x, .45 + 1.3, z, sy);
+    const hr = B(H.x1 - H.x0 + .8, .06, H.z1 - H.z0 + .9, '#7c8285', hx, 3.12, hz, sy); hr.rotation.x = .07;
+    const slatC = ['#f1f1ee', '#2e9e5b', '#c9473a', '#e9a23b', '#f1f1ee', '#2e9e5b', '#f1f1ee', '#c9473a'].map(M);
+    for (let x = H.x0 + 1.5, k = 0; x < H.x1 - .2; x += .22, k++) B(.15, 1.9, .04, slatC[k % slatC.length], x, .45 + .95 + (k % 3)*.05, H.z0 + .06, sy);
+    B(H.x1 - H.x0 - 1.4, .06, .06, M('#5b4636'), hx + .7, 2.05, H.z0 + .1, sy);
+    for (let x = H.x0 + .15; x < H.x0 + 1.4; x += .12) B(.03, 1.9, .03, rust, x, 1.4, H.z0 + .08, sy); for (const y of [.55, 1.4, 2.3]) B(1.25, .04, .04, rust, H.x0 + .78, y, H.z0 + .08, sy);   // ประตูเหล็กดัด
+    const bn = cvTex(256, 64, (c, w, h) => { c.fillStyle = '#d8d0bf'; c.fillRect(0, 0, w, h); c.fillStyle = '#2f6b3a'; c.beginPath(); c.arc(30, h/2, 20, 0, 7); c.fill(); c.fillStyle = '#6b6152'; for (const [y, l] of [[18, 170], [32, 190], [46, 120]]) c.fillRect(62, y, l, 6); });
+    plane(2.4, .6, bn, hx + .6, 2.55, H.z0 - .02, Math.PI, sy, {side: THREE.DoubleSide});
+    for (let k = 0; k < 3; k++) { const cx = H.x0 + 1.9 + k*1.1; for (const y of [.5, 1.3]) B(.9, .04, .9, rust, cx, y, hz + .4, sy); for (const [dx, dz] of [[-.43, -.03], [.43, -.03], [-.43, .83], [.43, .83]]) B(.03, .8, .03, rust, cx + dx, .9, hz + dz, sy); }   // กรงเหล็กสนิม
+    // --- สวนหย่อมรอบหอถังน้ำ: ขอบปูน ดิน กระถาง ไม้พุ่ม ตาลพัดใบเงิน ถังน้ำสนิม ท่อ PVC ---
+    const G = {x0: 8.4, x1: 13.9, z0: -36.3, z1: -31.3}, gx = (G.x0 + G.x1)/2, gz = (G.z0 + G.z1)/2;
+    B(G.x1 - G.x0, .28, G.z1 - G.z0, '#5aa89a', gx, .14, gz, sy); B(G.x1 - G.x0 - .2, .03, G.z1 - G.z0 - .2, '#8a6a4a', gx, .29, gz, sy);
+    const WTX = 10.3, WTZ = -33.7, towerM = M('#8c4a2c');
+    cyl(.42, .5, 11.6, towerM, WTX, .3 + 5.8, WTZ); cyl(1.05, .45, .8, M('#a8642f'), WTX, 12.2, WTZ);
+    const ball = mk(new THREE.IcosahedronGeometry(2.0, 1), new THREE.MeshLambertMaterial({color: '#d2a23a', flatShading: true}), WTX, 13.9, WTZ, sy); ball.scale.y = .92;   // ถังทรงลูกบอลเหลี่ยมสีเหลืองมัสตาร์ด
+    B(.05, 1.3, .05, '#4b5563', WTX, 16.3, WTZ, sy);
+    { const PX = 12.4, PZ = -32.5, fan = new THREE.MeshLambertMaterial({color: '#7f9493', side: THREE.DoubleSide}), fan2 = new THREE.MeshLambertMaterial({color: '#62787a', side: THREE.DoubleSide});   // ต้นตาลพัด ใบสีเงินอมฟ้า
+      cyl(.24, .32, 7.6, M('#4b4541'), PX, .3 + 3.8, PZ);
+      for (let k = 0; k < 26; k++) { const a = k*2.4, up = k < 8 ? 1.4 : k < 17 ? .5 : -.35, len = .9 + (k % 3)*.15, dir = new THREE.Vector3(Math.cos(a), up, Math.sin(a)).normalize();
+        const tip = new THREE.Vector3(PX, 7.9, PZ).addScaledVector(dir, len); rod(PX, 7.9, PZ, tip.x, tip.y, tip.z, .03, M('#6b7d6e'));
+        const f = mk(new THREE.CircleGeometry(.95, 10, -1.2, 2.4), k % 2 ? fan : fan2, tip.x + dir.x*.1, tip.y + dir.y*.1, tip.z + dir.z*.1, sy);   // ใบพัดครึ่งวงกลม แผ่ออกจากยอด
+        f.lookAt(tip.clone().add(new THREE.Vector3(0, 1, 0))); f.rotateZ(Math.atan2(dir.z, dir.x) - Math.PI/2); f.rotateX(-.5 - up*.3); f.castShadow = true; } }
+    cyl(.65, .65, 1.35, M('#7a3d22'), 13.0, .3 + .68, -35.4); B(.07, 1.7, .07, pvc, 11.6, 1.1, -35.6, sy); B(.07, 1.7, .07, pvc, 12.3, 1.1, -35.6, sy); B(.8, .07, .07, pvc, 11.95, 1.95, -35.6, sy);
+    const leafM = [M('#2f6b2a'), M('#3f7d32'), M('#4f8a3a')], potM = M('#9a5b3c'), pinkM = M('#e0559a');
+    for (const [x, z, r, y] of [[9.0, -32.0, .9, 1.0], [11.2, -31.9, .8, .9], [13.3, -33.8, .75, .9], [9.2, -35.4, .7, .8], [11.4, -34.9, 1.0, 1.4], [8.9, -33.9, .6, .7], [12.8, -31.9, .7, .8]]) mk(new THREE.IcosahedronGeometry(r, 0), leafM[(x*3|0) % 3], x, .3 + y, z, sy).scale.y = .85;
+    for (const [x, z] of [[13.5, -35.9], [12.6, -36.0], [8.8, -36.0], [13.6, -31.7]]) { cyl(.25, .18, .45, potM, x, .52, z); mk(new THREE.IcosahedronGeometry(.32, 0), leafM[1], x, 1.0, z, sy); }
+    for (const [x, z] of [[9.3, -31.6], [9.7, -31.8], [9.0, -32.4]]) mk(new THREE.SphereGeometry(.18, 6, 5), pinkM, x, 1.65, z, sy);   // เฟื่องฟ้า
+    // ต้นไม้ลำต้นเรียวหน้าซุ้ม (ใบโปร่ง)
+    { const tx = 8.9, tz = -35.7, bark = M('#cfc6b8'), leaf = M('#4f7d3a');
+      cyl(.09, .14, 5.0, bark, tx, .3 + 2.5, tz);
+      for (const [dx, dz, y, r] of [[.6, .2, 4.3, .9], [-.5, .3, 4.9, .8], [.2, -.5, 5.7, .85], [-.3, -.2, 6.5, .7], [.5, .4, 7.0, .55], [-.7, -.4, 3.9, .6]]) {
+        rod(tx, y - 1.0, tz, tx + dx, y, tz + dz, .035, bark); mk(new THREE.IcosahedronGeometry(r, 0), leaf, tx + dx, y + .15, tz + dz, sy).scale.y = .55; } }
   }
 
   /* ================= ทางเดินมีหลังคาไปโรงอาหาร (ระหว่างอาคารไม้กับอาคารเฉลิมฯ) ================= */
