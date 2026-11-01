@@ -74,6 +74,7 @@ html,body{margin:0;height:100%;overflow:hidden;font-family:Sarabun,sans-serif;co
 #toasts div{background:rgba(255,255,255,.96);border:1px solid var(--line);border-left:5px solid var(--c);border-radius:10px;padding:6px 10px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.12);transition:opacity .5s,transform .5s}
 #toasts div b{margin-right:4px}#toasts div.out{opacity:0;transform:translateY(-6px)}
 .rlab{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;background:rgba(255,255,255,.9);color:#334155;border:1px solid #cbd5e1;border-radius:6px;padding:1px 6px;font-size:10.5px;pointer-events:none}
+.grp.ann{font-size:12.5px;padding:3px 10px;z-index:2}
 .grp{position:absolute;transform:translate(-50%,-100%);white-space:nowrap;background:var(--c);color:#fff;border-radius:999px;padding:2px 8px;font-size:11.5px;font-weight:600;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.25);transition:opacity .4s}
 #hint{position:fixed;left:50%;top:14px;transform:translateX(-50%);font-size:11px;color:var(--mute);background:var(--panel);border-radius:999px;padding:3px 10px;border:1px solid var(--line)}
 canvas{cursor:pointer}
@@ -499,7 +500,7 @@ function placeOf(s){
 const ROUTINE = [
   [355,'ก่อนเปิดประตู',null],[360,'มาโรงเรียน สแกนหน้า เก็บกระเป๋า','gate'],[460,'ทำเวรทำความสะอาดตามกลุ่มสี','duty'],
   [480,'เข้าแถว เคารพธงชาติ สวดมนต์ ครูเวรอบรม','Flagpole'],[500,'โฮมรูม ออมทรัพย์','homeroom'],[510,'คาบ 1',0],[570,'คาบ 2',1],[630,'คาบ 3',2],[680,'พักกลางวัน (ทยอยตามชั้น)','lunch'],
-  [750,'คาบ 4',3],[810,'คาบ 5',4],[870,'คาบ 6',5],[930,'เลิกเรียน กลับบ้าน','gate'],[960,'ครูทยอยกลับบ้าน','gate'],[990,'',null]];
+  [750,'คาบ 4',3],[810,'คาบ 5',4],[870,'คาบ 6',5],[920,'ทำเวรทำความสะอาดห้องเรียน','clean'],[930,'เลิกเรียน ขึ้นรถ 6 ล้อ / นั่งรอผู้ปกครองที่อาคารอเนกประสงค์','gate'],[960,'ครูทยอยกลับบ้าน','gate'],[990,'',null]];
 // กลุ่มสีทำเวรตอนเช้า (สมมติ 4 สี คละชั้น ป.1–6) และพื้นที่รับผิดชอบ
 const COLOR_GROUPS = [['แดง','#ef4444','Canteen','กวาดโรงอาหาร'],['เหลือง','#eab308','Flagpole','กวาดลานเสาธง'],
   ['เขียว','#22c55e','Field','เก็บขยะรอบสนาม'],['ฟ้า','#3b82f6','Multipurpose_Hall','ทำความสะอาดอาคารเอนกประสงค์']];
@@ -565,7 +566,7 @@ const NAMED = ['ราตรี','กมลวรรณ','สุทิสา','�
 const TNAMES = [...NAMED.map(n=>'ครู'+n), 'ครูอนุบาล 2','ครูอนุบาล 3', ...[18,19,20,21].map(i=>'ครู คนที่ '+i)];
 const TEACHERS = TNAMES.map((name,i)=>({no:i+1, name, scan: 405 + Math.round(rnd()*55)}));
 /* ---------- การเดินทาง (สัดส่วนประมาณ ปรับได้) ---------- */
-const MODES = {truck:['รถ 6 ล้อของโรงเรียน','🚚'], van:['รถตู้รับจ้าง','🚐'], car:['ผู้ปกครองขับรถยนต์มาส่ง','🚗'], moto:['ผู้ปกครองขี่มอเตอร์ไซค์มาส่ง','🛵'], bike:['ปั่นจักรยานมาเอง','🚲']};
+const MODES = {truck:['รถ 6 ล้อของโรงเรียน','🚚'], van:['รถตู้ประจำหมู่บ้าน','🚐'], car:['ผู้ปกครองขับรถยนต์มาส่ง','🚗'], moto:['ผู้ปกครองขี่มอเตอร์ไซค์มาส่ง','🛵'], bike:['ปั่นจักรยานมาเอง','🚲']};
 const ROAD_IN = -72, ROAD_OUT = -68, NORTH_Z = 56;
 // เส้นทางเดินรถทางเดียว (ตามที่ครูวาดให้): เข้าประตูข้างศาล/โซลาร์เซลล์ → ถนนระหว่างอาคาร ป.1 ป.2 กับแถวต้นไม้
 // → จุดรับส่งหน้าอาคารเฉลิมพระเกียรติ → วนอ้อมหลังลานเสาธง/สนามฟุตบอล → ออกประตูหน้า (ป้ายโรงเรียน)
@@ -632,7 +633,8 @@ const truckOut = [addRun(truck, 'leave', 380, busPark(BUS_X.truck))];   // อ�
 truckPM[0] = addRun(truck, 'leave', 934, busPark(BUS_X.truck)); truckPM[1] = addRun(truck, 'drop', 962, {dwell: 2, zone: 'A'});
 // รถตู้โรงเรียน: เช้าส่งนักเรียนหน้าอาคารแล้วเข้าจอดใต้หลังคา เย็นนักเรียนขึ้นรถที่ที่จอดแล้วออกไป
 const vanAM = vans.map((v, i) => addRun(v, 'drop', 382 + i*24, {dwell: 1.2, zone: 'A', parkAfter: true, ...busPark(BUS_X.van[i])}));
-const vanPM = vans.map((v, i) => addRun(v, 'leave', 937 + i*3, busPark(BUS_X.van[i])));
+// เย็น (ครูเล่า): นักเรียนรถตู้นั่งรอในอาคารอเนกประสงค์ ครูเวรประกาศเรียกทีละคันเมื่อรถตู้หมู่บ้านพร้อมออก
+const vanPM = vans.map((v, i) => addRun(v, 'leave', 940 + i*6, busPark(BUS_X.van[i])));
 addVeh('garage', '#94a3b8', [[[0, -4, CANOPY_Z], [2000, -4, CANOPY_Z]]], 'ที่จอดรถโรงเรียน');
 addVeh('kiosk', '#14b8a6', [[[0, ...SCAN_PT], [2000, ...SCAN_PT]]], 'จุดสแกนหน้า');
 addVeh('kiosk', '#7c3aed', [[[0, ...TSCAN_PT], [2000, ...TSCAN_PT]]], 'สแกนหน้าครู (ห้องธุรการ)');
@@ -658,8 +660,8 @@ for (const s of STUDENTS) {
     s.bout = addRun(s.veh, 'leave', dep, {sB: S_LANE0 + Math.max(0, 4.5 - rack[0]), spot: rack, spur: [[Math.min(rack[0], 4.5), LANE], [rack[0], -16], rack]});
     s.veh.rider = CLS_COL_EARLY[s.cls]; s.veh.park = rack; s.rack = rack; s.arr = arr; s.leave = dep; s.drop = [rack[0], rack[1] + .8];
   } else {
-    // ผู้ปกครองมาส่ง 06:00–08:00 (ส่วนใหญ่ 07:00–07:50) และมารับหลัง 15:30
-    const arr = s.real != null ? Math.max(352, s.real - 2.5) : 358 + Math.pow(rnd(), .55)*118, pm = 929 + Math.pow(rnd(), 1.3)*28, dwell = s.mode === 'car' ? .9 : .6;
+    // ผู้ปกครองมาส่ง 06:00–08:00 (ส่วนใหญ่ 07:00–07:50) และมารับหลัง 15:30 (ทยอยถึง 16:00 ระหว่างนั้นนักเรียนนั่งรอในอาคารอเนกประสงค์)
+    const arr = s.real != null ? Math.max(352, s.real - 2.5) : 358 + Math.pow(rnd(), .55)*118, pm = 931 + Math.pow(rnd(), 1.2)*29, dwell = s.mode === 'car' ? .9 : .6;
     s.veh = addVeh(s.mode, s.mode === 'car' ? pick(CAR_COLS) : pick(['#111827','#b91c1c','#1d4ed8','#6b7280']), []);
     const zone = rnd() < .4 ? 'B' : 'A';
     s.am = addRun(s.veh, 'drop', arr, {dwell, zone}); s.pm = addRun(s.veh, 'drop', pm, {dwell, zone});
@@ -684,6 +686,8 @@ const TPARK = [...TPARK_Z.map(z => { const spot = [TPARK_E + TPARK_D[0]*2.6, z +
     return {spot, yaw: Math.atan2(...TPARK_D), sB: sOf(11) + 17 - z, spur: [[DROP_X - 1.2, z + 1.6], [TPARK_E, z], spot]}; }),
   // ลานหน้าอาคารเทคฯ จอดได้แค่ 2 คัน หันหน้ารถเข้าอาคารเทคโนโลยี (ครูบอก): ฝั่งอาคารไม้ = Suzuki Swift สีดำคันเล็ก, อีกคัน = กระบะ 4 ประตู Isuzu สีบรอนซ์
   ...[[18.0, 'swift', '#15171a'], [15.2, 'dmax', '#7b6550']].map(([x, model, color]) => ({spot: [x, TECHPARK_Z], yaw: Math.PI, sB: sOf(14), model, color, spur: [[19.6, -24.6], [x, -27.2], [x, TECHPARK_Z]]}))];
+// ครูเวรประจำวันอยู่ประกาศเรียกและดูแลนักเรียนที่อาคารอเนกประสงค์จนคนสุดท้ายกลับ (ครูเล่า) จึงกลับหลัง 16:10
+{ const d = dutyOn(day); d.dep0 = Math.max(d.dep0, 970 + (day*1.7) % 3); }
 // ช่องจอดรถยนต์ครูมี TPARK.length ช่อง (7 ลานหน้าเสาธง + 2 หน้าอาคารเทคฯ): ครูที่ขับรถเกินจำนวนช่อง (คนที่มาช้าสุด) ให้ขี่มอเตอร์ไซค์แทน
 { const cars = TEACHERS.filter(t => t.mode === 'car' && t.model !== 'atto3').sort((a, b) => b.arr0 - a.arr0), extra = TEACHERS.filter(t => t.mode === 'car').length - TPARK.length;
   for (const t of cars.slice(0, Math.max(0, extra))) t.mode = 'moto'; }
@@ -696,6 +700,7 @@ for (const mode of ['car', 'moto']) {
 { const k = TEACHERS.find(t => t.model === 'atto3'), nF = TPARK_Z.length;
   if (k && k.rank >= nF) { const o = TEACHERS.find(t => t.mode === 'car' && t.rank === nF - 1); if (o) { o.slot = k.rank; k.slot = nF - 1; } } }
 { const k = TEACHERS.find(t => t.model === 'atto3'); if (k) { const o = TEACHERS.find(t => t !== k && t.mode === 'car' && t.dep1 === k.dep0); if (o) o.dep1 = k.dep1; k.dep1 = k.dep0; } }   // ครูดีลาภกลับตามเวลาจริง (ช่องจอดไม่ขวางทาง)
+{ const k = dutyOn(day); if (k.dep1 !== k.dep0) { const o = TEACHERS.find(t => t !== k && t.mode === k.mode && t.dep1 === k.dep0); if (o) o.dep1 = k.dep1; k.dep1 = k.dep0; } }   // ครูเวรกลับเป็นคนท้าย ๆ ตามเวลาของตัวเอง
 TEACHERS.forEach((t, i) => {
   const arr = t.arr0, dep = t.dep1, nCar = t.rank;
   const P = t.mode === 'car' ? TPARK[t.slot ?? nCar % TPARK.length] : null;
@@ -758,6 +763,12 @@ for (const s of STUDENTS) {
   if (s.bin) { s.arr = s.bin.arrive; s.leave = s.bout.depart - .3; }
   s.scan = s.real ?? Math.round(s.arr + walk(s.drop));   // ผลสแกนจริงจาก SIS ใช้เวลาจริงเสมอ
 }
+// เย็น 15:30 (ครูเล่า): นักเรียนรถ 6 ล้อเที่ยวแรกเดินไปขึ้นรถที่โรงจอดเลย คนปั่นจักรยานไปเอาจักรยาน
+// ที่เหลือ (รถ 6 ล้อเที่ยวสอง รถตู้หมู่บ้าน ผู้ปกครอง) นั่งรอในอาคารอเนกประสงค์ แยกแถวตามรถ ครูเวรประกาศเรียกเมื่อรถมาถึง
+const HALL_Q = (() => { const vk = s => s.mode === 'van' ? vans.indexOf(s.veh) : s.mode === 'truck' ? 3 : 4;
+  const q = STUDENTS.filter(s => s.scan != null && s.pickAt != null && s.pm !== truckPM[0]).sort((a, b) => vk(a) - vk(b) || a.pickAt - b.pickAt);
+  q.forEach((s, k) => { s.hallSeat = k; s.callAt = s.pickAt - 4; }); return q; })();
+const callWhat = s => s.mode === 'van' ? s.veh.label.replace('รถตู้', 'รถตู้หมู่บ้าน') + ' พร้อมออกแล้ว' : s.mode === 'truck' ? 'รถ 6 ล้อโรงเรียน (เที่ยวสอง) มาแล้ว' : 'ผู้ปกครองมารับแล้ว';
 TEACHERS.forEach(t => { t.arr = t.runIn.arrive; t.scan = Math.round(t.arr + walk(t.drop, TSCAN_PT)); t.leave = t.runOut.depart - .3; });
 // ประเภทแหล่งข้อมูล: SIMULATED = จำลอง · SCHEDULED = ตามตาราง · VERIFIED = ยืนยันจากระบบจริง · UNKNOWN = ไม่มีข้อมูลยืนยัน
 const SRC = {sim: ['SIMULATED', 'ข้อมูลจำลอง'], sch: ['SCHEDULED', 'ข้อมูลตามตาราง'], ver: ['VERIFIED', 'ข้อมูลที่ได้รับการยืนยันจากระบบโรงเรียน'], unk: ['UNKNOWN', 'ไม่มีข้อมูลยืนยัน']};
@@ -1035,8 +1046,10 @@ function placeOfAgent(a, m){
   const r = a.ref; if (r.scan == null || m < (r.arr ?? r.scan)) return [null,'ยังไม่มา'];
   if (r.leave != null && m >= r.leave) return [null,'กลับบ้านแล้ว'];
   if (m < r.scan + .4) return a.kind === 't' ? ['Chalerm_Building','เดินไปสแกนหน้าที่ห้องธุรการ'] : ['SCAN','เดินไปสแกนหน้าที่อาคารเฉลิมพระเกียรติ'];
-  if (a.kind === 't' && m >= 930) return m >= r.leave - 5 ? ['PARK','เดินไปที่รถ'] : ['Chalerm_Building','ห้องธุรการ'];
+  if (a.kind === 't' && m >= 930) return m >= r.leave - 5 ? ['PARK','เดินไปที่รถ'] : r === dutyTeacher() ? ['Multipurpose_Hall','ครูเวร ประกาศเรียกนักเรียนกลับบ้าน ดูแลความเรียบร้อย'] : ['Chalerm_Building','ห้องธุรการ'];
   if (a.kind === 's' && m >= 930 && r.pickAt != null && m >= r.pickAt) return ['PICK','ขึ้นรถกลับบ้าน'];
+  if (a.kind === 's' && m >= 930 && r.hallSeat != null) return m < r.callAt ? ['Multipurpose_Hall','นั่งรอรถตู้หมู่บ้าน/ผู้ปกครองมารับ · ครูเวรคอยประกาศเรียก'] : ['GATE', `ครูเวรประกาศเรียกแล้ว เดินไปขึ้น${MODES[r.mode][0].replace(/มาส่ง$/, '')}`];
+  if (a.kind === 's' && m >= 930 && r.pm && r.pm === truckPM[0]) return m < 931 ? ['GATE','เดินไปขึ้นรถ 6 ล้อโรงเรียนที่โรงจอดรถ'] : ['GATE','ขึ้นรถ 6 ล้อโรงเรียน รอออกเที่ยวแรก'];
   if (a.kind === 's' && m >= 930) return ['GATE', r.mode === 'bike' ? 'ไปเอาจักรยาน' : `รอ${MODES[r.mode][0]} ${r.pmZone === 'C' ? 'ที่จอดรถโรงเรียน' : r.pmZone === 'B' ? 'หน้าป้อมยาม' : 'หน้าอาคารเฉลิมฯ'}`];
   const kg = kgAt(m);
   if (kg && (a.kind === 's' ? isKG(a.cls) : r.name.startsWith('ครูอนุบาล'))) { const p = phaseAt(m)[2], l = a.kind === 's' && typeof p === 'number' ? lesson(a.cls, p) : null; return l && l.tea !== 'ครูอนุบาล' ? [kg[2], `${l.sub} · ${l.tea}`] : [kg[2], kg[1]]; }
@@ -1053,6 +1066,10 @@ function placeOfAgent(a, m){
     if (a.kind === 't') { if (r.name.startsWith('ครูอนุบาล')) return ['Kindergarten','ดูแลเด็กอนุบาล']; const g = COLOR_GROUPS[r.no % 4]; return [g[2], `ดูแลเวรกลุ่มสี${g[0]}`]; }
     if (isKG(a.cls)) return ['Kindergarten','ครูอนุบาลดูแลในห้อง'];
     const g = COLOR_GROUPS[r.grp ??= (r.no + CLASSES.findIndex(([c]) => c === a.cls)) % 4]; return [g[2], `กลุ่มสี${g[0]} ${g[3]}`];
+  }
+  if (where === 'clean') {   // 15:20 ทำเวรในห้องเรียนของตัวเอง (ครูเล่า) ครูประจำชั้นดูแล
+    if (a.kind === 't') { const c = r.name.startsWith('ครูอนุบาล') ? 'อ.' + r.name.slice(-1) : HR_TEACHER[r.name]; return c ? [HOMEROOM[c], `ดูแลนักเรียน ${c} ทำเวรห้องเรียน`] : ['Chalerm_Building','ห้องธุรการ']; }
+    return [HOMEROOM[a.cls], 'ทำเวร กวาดถูห้องเรียน จัดโต๊ะเก้าอี้ เก็บขยะ'];
   }
   if (where === 'homeroom') {
     if (a.kind === 't') { const c = r.name.startsWith('ครูอนุบาล') ? 'อ.' + r.name.slice(-1) : HR_TEACHER[r.name]; return c ? [HOMEROOM[c], `โฮมรูม ${c}`] : ['Chalerm_Building','ห้องธุรการ']; }
@@ -1373,6 +1390,7 @@ function targetOf(a, m){
   const [z] = placeOfAgent(a, m);
   if (!z) return null;
   { const ex = exitWalk(a, m); if (ex) return ex; }
+  if (m >= 930 && z === 'Multipurpose_Hall' && zones.Multipurpose_Hall) return hallWait(a);
   if (a.kind === 's') { const ph = phaseAt(m)[2]; if (typeof ph === 'number') { const lu = lineUp(a, m, ph); if (lu) return {p: lu.pos, pose: lu.walk ? 'walk' : 'stand'}; } }
   const kg = kgAt(m);
   if (kg && z === kg[2] && (a.kind === 's' ? isKG(a.cls) : a.ref.name.startsWith('ครูอนุบาล'))) return kgTarget(a, m, kg);
@@ -1389,7 +1407,7 @@ function targetOf(a, m){
     if (ci < 2) return {p: new THREE.Vector3(-47 + (k % 30)*.65 + ci*0, 0, -22.7 - ci*.9), pose:'brush'};
     return {p: new THREE.Vector3(40.5 - (ci-2)*.9, 0, -48 + (k % 14)*.75), pose:'brush'};
   }
-  if (ph === 'gate' || ph === 'homeroom') {
+  if (ph === 'gate' || ph === 'homeroom' || ph === 'clean') {
     if (z === 'PLAY') return kgTarget(a, m, [0, '', 'PLAY', 'run']);
     if (z === 'FREE') return freePlay(a, m);
     const hrC = a.kind === 's' ? a.cls : (a.ref.name.startsWith('ครูอนุบาล') ? 'อ.' + a.ref.name.slice(-1) : HR_TEACHER[a.ref.name]);
@@ -1397,7 +1415,9 @@ function targetOf(a, m){
       const key = HOMEROOM_ROOM[hrC] || z, share = CLASSES.filter(([c]) => (HOMEROOM_ROOM[c] || HOMEROOM[c]) === key).map(([c]) => c), r = subRect(key, share.indexOf(hrC), share.length);
       if (a.kind === 't') return {p: teacherFront(r, 'sit'), pose:'stand', teach: true, yaw: teachYaw(r)};
       const cm = a.cohort ??= STUDENTS.filter(s => s.cls === a.cls && s.scan != null);
-      return {p: slotOf(r, 'sit', cm.indexOf(a.ref), cm.length, a.ox, a.oz), pose: ph === 'homeroom' ? 'sit' : 'stand', yaw: faceOf(r)};
+      const sp = slotOf(r, 'sit', cm.indexOf(a.ref), cm.length, a.ox, a.oz);
+      if (ph === 'clean') { const w = m*.7 + a.i*1.7; sp.x += Math.sin(w)*.35; sp.z += Math.cos(w*.8)*.35; return {p: sp, pose: (a.i % 3) ? 'sweep' : 'stand', yaw: faceOf(r)}; }   // กวาดพื้นรอบโต๊ะตัวเอง
+      return {p: sp, pose: ph === 'homeroom' ? 'sit' : 'stand', yaw: faceOf(r)};
     }
   }
   if (ph === 'duty' && a.kind === 's' && !isKG(a.cls)) { const w = m*.9 + a.i; return {p: inZone(z, a.ox, a.oz).add(new THREE.Vector3(Math.sin(w)*.8, 0, Math.cos(w)*.8)), pose:'sweep'}; }
@@ -1452,6 +1472,13 @@ function targetOf(a, m){
   if (a.kind === 't' && z === 'Chalerm_Building' && m < a.ref.scan + .4) return {p: new THREE.Vector3(TSCAN_PT[0] + .8 + a.ox*1.2, 0, TSCAN_PT[1] + (a.oz-.5)*2), pose:'stand'};   // ต่อคิวสแกนหน้าในห้องธุรการ
   if (a.kind === 't' && z === 'Chalerm_Building') { const R = ROOMS[a.ref.name === 'ครูกนกวรรณ' ? 'ห้องผู้บริหาร' : 'ห้องธุรการ']; return {p: new THREE.Vector3(R.c.x + (a.ox-.5)*R.sx*.8, 0, R.c.z + (a.oz-.5)*R.sz*.8), pose:'stand'}; }
   return {p: inZone(z, a.ox, a.oz), pose:'stand'};
+}
+// นั่งรอบนพื้นอาคารอเนกประสงค์ แถวละหลายคน แยกกลุ่มตามรถ (รถตู้ 1–3 → รถ 6 ล้อเที่ยวสอง → ผู้ปกครอง) หันหน้าไปทางครูเวรด้านหน้า
+function hallWait(a){
+  const H = zones.Multipurpose_Hall, fz = H.c.z - H.sz/2 + .8;
+  if (a.kind === 't') return {p: new THREE.Vector3(H.c.x, 0, fz), pose: 'stand', teach: true};
+  const cols = Math.max(6, Math.floor((H.sx - 2)/.75)), k = a.ref.hallSeat ?? 0, row = Math.floor(k/cols), col = k % cols;
+  return {p: new THREE.Vector3(H.c.x + (col - (cols-1)/2)*.75, 0, fz + 2.2 + row*Math.min(.85, (H.sz - 3.6)/Math.ceil(HALL_Q.length/cols))), pose: 'bench', yaw: Math.PI};
 }
 const spawnOf = a => new THREE.Vector3(a.ref.drop[0], 0, a.ref.drop[1]);
 
@@ -3078,19 +3105,20 @@ function applyXrayAll(){ for (const n in zones) setXray(n, xrayAll || n === sele
 
 /* ---------- UI ---------- */
 const $ = id => document.getElementById(id);
-const slider = $('time'); let playing = true, simMin = +slider.value, lastKey = '', speed = 3;
+const slider = $('time'); { const q = +new URLSearchParams(location.search).get('t'); if (q >= 355 && q <= 990) slider.value = q; }
+let playing = true, simMin = +slider.value, lastKey = '', speed = 3;
 const setPlaying = p => { playing = p; $('play').textContent = $('tPlay').textContent = p ? '⏸' : '▶'; };
 $('play').onclick = $('tPlay').onclick = () => setPlaying(!playing);
 $('tReset').onclick = () => { simMin = +slider.min; slider.value = simMin; setPlaying(false); update(true); };   // กลับเวลาเริ่มต้นของวันจำลอง
 slider.oninput = () => { simMin = +slider.value; update(); };
-for (const [lab,m] of [['รถมาส่ง',440],['ทำเวร',462],['เข้าแถว',480],['คาบ 1',515],['คาบ 2',575],['คาบ 3',635],['พักเที่ยง',700],['คาบ 4',755],['คาบ 5',815],['คาบ 6',875],['รถมารับ',932]]) {
+for (const [lab,m] of [['รถมาส่ง',440],['ทำเวร',462],['เข้าแถว',480],['คาบ 1',515],['คาบ 2',575],['คาบ 3',635],['พักเที่ยง',700],['คาบ 4',755],['คาบ 5',815],['คาบ 6',875],['ทำเวรห้อง',921],['รถมารับ',932]]) {
   const b = document.createElement('button'); b.textContent = lab; b.onclick = () => { simMin = m; slider.value = m; if (lab.startsWith('รถ')) { setSpeed(.1); setPlaying(true); } else { setPlaying(false); } update(); };
   $('jumps').appendChild(b);
 }
 
 for (const [i,d] of DAYS.entries()) {
   const b = document.createElement('button'); b.textContent = d.replace('พฤหัสบดี','พฤหัส'); b.className = i===day?'on':'';
-  b.onclick = () => { if (i === day) return; const k = TEACHERS.find(t => t.model === 'atto3'), re = k && (dutyOn(i) === k) !== (dutyOn(day) === k); day = i; if (re) try { location.search = `?d=${i+1}`; } catch (e) {}   // เวลามา-กลับของรถครูเวรต่างกันตามวัน ต้องคำนวณการจราจรใหม่
+  b.onclick = () => { if (i === day) return; const k = TEACHERS.find(t => t.model === 'atto3'), re = dutyOn(i) !== dutyOn(day) || (k && (dutyOn(i) === k) !== (dutyOn(day) === k)); day = i; if (re) try { location.search = `?d=${i+1}&t=${Math.round(simMin)}`; } catch (e) {}   // เวลามา-กลับของรถครูเวรต่างกันตามวัน (ครูเวรกลับหลังนักเรียนคนสุดท้าย) ต้องคำนวณการจราจรใหม่
     [...$('days').children].forEach((x,j)=>x.className = j===i?'on':''); update(true); };
   $('days').appendChild(b);
 }
@@ -3111,7 +3139,7 @@ function renderActivity(m){
   let rows;
   if (typeof where === 'number') rows = CLASSES.map(([c]) => { const l = lesson(c, where), rm = l.room && ROOMS[l.room];
     return `<li><b class="c">${c}</b><div><b>${l.sub}</b><small>📍 ${ZONES[l.where][0]}${rm ? ' · ' + rm.th : ''} · 🕘 ${span}</small><small>👩‍🏫 ${tea(l)} · 👥 ${nStu(c)}</small></div>${srcB('sch')}</li>`; });
-  else { const kg = kgAt(m), pl = typeof where === 'string' && ZONES[where] ? ZONES[where][0] : 'ทั่วโรงเรียน';
+  else { const kg = kgAt(m), pl = where === 'clean' ? 'ห้องเรียนของแต่ละชั้น' : where === 'gate' && m >= 930 ? 'อาคารอเนกประสงค์ (นั่งรอ) · โรงจอดรถ (รถ 6 ล้อ) · หน้าอาคารเฉลิมฯ' : typeof where === 'string' && ZONES[where] ? ZONES[where][0] : 'ทั่วโรงเรียน';
     rows = [`<li><b class="c">ป.1–6</b><div><b>${phase}</b><small>📍 ${pl} · 🕘 ${span}</small><small>กิจวัตรตามที่ครูแจ้ง (ยังไม่ได้ตรวจกับตารางจริงของโรงเรียน)</small></div>${srcB('sim')}</li>`];
     if (kg) rows.push(`<li><b class="c">อ.2–3</b><div><b>${kg[1]}</b><small>📍 ${ZONES[kg[2]]?.[0] || 'อาคารอนุบาล'}</small><small>กิจวัตรอนุบาลตามที่ครูแจ้ง</small></div>${srcB('sch')}</li>`); }
   $('tt').innerHTML = `<div class="h" style="margin-bottom:4px">กิจกรรมตอนนี้ · วัน${DAYS[day]} ${fmt(m)}</div><ul class="act">${rows.join('')}</ul>
@@ -3883,6 +3911,7 @@ function classFeed(dt){
   const tc = $('left'); if (tc) { const r = tc.getBoundingClientRect(); document.documentElement.style.setProperty('--topH', ((r.height ? r.bottom : $('top').getBoundingClientRect().bottom) + 6) + 'px'); }
   feedAcc += dt; if (feedAcc < .25) return; feedAcc = 0;
   const m = simMin, jump = Math.abs(m - feedLast) > 3 || !playing; feedLast = m;
+  announce(m);
   const by = {};
   for (const a of AGENTS) if (a.kind === 's' && a.shown) (by[a.cls] ??= []).push(a);
   for (const [c] of CLASSES) {
@@ -3906,9 +3935,29 @@ function classFeed(dt){
     } else el.dataset.on = 0;
   }
 }
+// ครูเวรประกาศเรียกนักเรียนกลับบ้าน (ป้ายลอยเหนือครูเวรในอาคารอเนกประสงค์) · ไม่แสดงชื่อนักเรียน ใช้ชั้น + เลขที่
+const annEl = (() => { const e = document.createElement('div'); e.className = 'grp ann'; e.style.setProperty('--c', '#b45309'); e.style.opacity = 0; $('labels').appendChild(e); return e; })();
+let dutyAgent = null;
+function announce(m){
+  dutyAgent ??= AGENTS.find(b => b.kind === 't' && b.ref === dutyTeacher());
+  const on = m >= 930 && dutyAgent?.shown && placeOfAgent(dutyAgent, m)[0] === 'Multipurpose_Hall';
+  annEl.dataset.on = on ? 1 : 0; if (!on) return;
+  const now = HALL_Q.filter(s => s.callAt <= m && s.callAt > m - 2.5), wait = HALL_Q.filter(s => s.callAt > m).length;
+  let txt;
+  if (now.length) {
+    const last = now.reduce((x, y) => y.callAt > x.callAt ? y : x);
+    if (last.mode === 'van' || last.mode === 'truck') { const g = now.filter(s => s.veh === last.veh), cs = [...new Set(g.map(s => s.cls))].sort();
+      txt = `📢 ${callWhat(last)} · เชิญนักเรียน ${cs.join(' ')} (${g.length} คน)`; }
+    else { const g = now.filter(s => s.mode !== 'van' && s.mode !== 'truck').sort((x, y) => y.callAt - x.callAt).slice(0, 3);
+      txt = `📢 ${g.map(s => `${s.cls} เลขที่ ${s.no}`).join(', ')} · ผู้ปกครองมารับแล้วจ้า`; }
+  } else txt = wait ? `📢 ครูเวรดูแล · นั่งรอฟังประกาศเรียก ${wait} คน` : '📢 นักเรียนกลับบ้านครบแล้ว';
+  if (annEl.textContent !== txt) annEl.textContent = txt;
+}
 const clock = new THREE.Clock(); const v = new THREE.Vector3();
 // ป้ายบนแผนที่: แค่ชื่อชั้น ถ้าอยู่ใกล้กันบนจอให้รวมเป็นป้ายเดียว (รายละเอียดดูที่แผง "ตอนนี้")
 function placeGroupChips(){
+  if (annEl.dataset.on === '1' && dutyAgent) { v.copy(dutyAgent.pos).setY(dutyAgent.pos.y + 3.3).project(cam); annEl.style.left = (v.x*.5+.5)*innerWidth + 'px'; annEl.style.top = (-v.y*.5+.5)*innerHeight + 'px'; annEl.style.opacity = v.z < 1 ? 1 : 0; }
+  else annEl.style.opacity = 0;
   const on = [];
   for (const [c, el] of Object.entries(grpEl)) {
     if (el.dataset.on !== '1') { el.style.opacity = 0; continue; }
