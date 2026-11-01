@@ -670,28 +670,32 @@ const DUTY_LIST = TEACHERS.filter(t => !t.name.startsWith('ครูอนุบ
 const dutyOn = d => DUTY_LIST[d % DUTY_LIST.length];
 { const t = TEACHERS.find(t => t.name === 'ครูดีลาภ');
   if (t) { t.mode = 'car'; t.model = 'atto3'; t.arr0 = dutyOn(day) === t ? 402 + rnd()*14 : 460 + rnd()*30; t.dep0 = 956 + rnd()*7; } }
-// ช่องจอดรถยนต์ครูมี 12 ช่อง: ครูที่ขับรถเกินจำนวนช่อง (คนที่มาช้าสุด) ให้ขี่มอเตอร์ไซค์แทน
-{ const cars = TEACHERS.filter(t => t.mode === 'car' && t.model !== 'atto3').sort((a, b) => b.arr0 - a.arr0), extra = TEACHERS.filter(t => t.mode === 'car').length - 12;
+// ที่จอดรถครู (ครูวงเส้นเหลือง): ลานหน้าเสาธงริมถนนหน้าอาคารเฉลิมพระเกียรติ จอดหันหัวเข้าลาน เว้นช่องหน้าศาลพระภูมิ
+// ช่องที่เหลือต่อแนวเดียวกันข้ามถนนเชื่อม ลงไปลานหน้าอาคารไม้ (ลานจอดเดิมหลังอาคาร ป.1 ป.2 อยู่นอกรั้วใหม่แล้ว)
+// ช่องจอดริมลานเป็นแบบเฉียง 60° (ครูขอ) หันหัวไปตามทิศรถวิ่ง เลี้ยวเข้าจอดได้เลยไม่ต้องหักพวงมาลัยมาก · TPARK_Z คือจุดปากช่องริมถนน
+const TECHPARK_Z = -34.0;   // จุดกลางรถ 2 คันหน้าอาคารเทคฯ
+// ช่อง z 3.97, 1.42, -1.13 ข้างศาลพระภูมิ/อนุสาวรีย์เป็นทางเดิน ห้ามรถทุกคันจอด (ครูวงม่วง) จึงตัดออก
+const TPARK_Z = [14.17, 11.62, 9.07, -3.68, -6.23, -8.78, -11.33], TPARK_E = 16.8, TPARK_W = 2.55, TPARK_D = [-Math.sin(Math.PI/3), -Math.cos(Math.PI/3)];
+const TPARK = [...TPARK_Z.map(z => { const spot = [TPARK_E + TPARK_D[0]*2.6, z + TPARK_D[1]*2.6];
+    return {spot, yaw: Math.atan2(...TPARK_D), sB: sOf(11) + 17 - z, spur: [[DROP_X - 1.2, z + 1.6], [TPARK_E, z], spot]}; }),
+  // ลานหน้าอาคารเทคฯ จอดได้แค่ 2 คัน หันหน้ารถเข้าอาคารเทคโนโลยี (ครูบอก): ฝั่งอาคารไม้ = Suzuki Swift สีดำคันเล็ก, อีกคัน = กระบะ 4 ประตู Isuzu สีบรอนซ์
+  ...[[18.0, 'swift', '#15171a'], [15.2, 'dmax', '#7b6550']].map(([x, model, color]) => ({spot: [x, TECHPARK_Z], yaw: Math.PI, sB: sOf(14), model, color, spur: [[19.6, -24.6], [x, -27.2], [x, TECHPARK_Z]]}))];
+// ช่องจอดรถยนต์ครูมี TPARK.length ช่อง (7 ลานหน้าเสาธง + 2 หน้าอาคารเทคฯ): ครูที่ขับรถเกินจำนวนช่อง (คนที่มาช้าสุด) ให้ขี่มอเตอร์ไซค์แทน
+{ const cars = TEACHERS.filter(t => t.mode === 'car' && t.model !== 'atto3').sort((a, b) => b.arr0 - a.arr0), extra = TEACHERS.filter(t => t.mode === 'car').length - TPARK.length;
   for (const t of cars.slice(0, Math.max(0, extra))) t.mode = 'moto'; }
 // ที่จอดตามลำดับการมาถึง (มาก่อนจอดด้านใน) และออกกลับแบบคันที่จอดด้านนอกออกก่อน ไม่ต้องขับผ่านรถคันอื่น
 for (const mode of ['car', 'moto']) {
   const ts = TEACHERS.filter(t => t.mode === mode).sort((a, b) => a.arr0 - b.arr0), deps = ts.map(t => t.dep0).sort((a, b) => b - a);
   ts.forEach((t, k) => { t.rank = k; t.dep1 = deps[k]; });
 }
+// 2 ช่องหน้าอาคารเทคฯ เป็นของ Swift ดำ กับกระบะบรอนซ์เท่านั้น: ถ้ารถครูดีลาภ (BYD) ได้ลำดับตรงนั้น ให้สลับช่องกับคันสุดท้ายของลานหน้าเสาธง
+{ const k = TEACHERS.find(t => t.model === 'atto3'), nF = TPARK_Z.length;
+  if (k && k.rank >= nF) { const o = TEACHERS.find(t => t.mode === 'car' && t.rank === nF - 1); if (o) { o.slot = k.rank; k.slot = nF - 1; } } }
 { const k = TEACHERS.find(t => t.model === 'atto3'); if (k) { const o = TEACHERS.find(t => t !== k && t.mode === 'car' && t.dep1 === k.dep0); if (o) o.dep1 = k.dep1; k.dep1 = k.dep0; } }   // ครูดีลาภกลับตามเวลาจริง (ช่องจอดไม่ขวางทาง)
-// ที่จอดรถครู (ครูวงเส้นเหลือง): ลานหน้าเสาธงริมถนนหน้าอาคารเฉลิมพระเกียรติ จอดหันหัวเข้าลาน เว้นช่องหน้าศาลพระภูมิ
-// ช่องที่เหลือต่อแนวเดียวกันข้ามถนนเชื่อม ลงไปลานหน้าอาคารไม้ (ลานจอดเดิมหลังอาคาร ป.1 ป.2 อยู่นอกรั้วใหม่แล้ว)
-// ช่องจอดริมลานเป็นแบบเฉียง 60° (ครูขอ) หันหัวไปตามทิศรถวิ่ง เลี้ยวเข้าจอดได้เลยไม่ต้องหักพวงมาลัยมาก · TPARK_Z คือจุดปากช่องริมถนน
-const TECHPARK_Z = -34.0, TPARK_SLOTS = 12;   // จุดกลางรถ 2 คันหน้าอาคารเทคฯ, ช่องจอดครูทั้งหมด (10 ลานหน้าเสาธง + 2 หน้าอาคารเทคฯ)
-const TPARK_Z = [14.17, 11.62, 9.07, 3.97, 1.42, -1.13, -3.68, -6.23, -8.78, -11.33], TPARK_E = 16.8, TPARK_W = 2.55, TPARK_D = [-Math.sin(Math.PI/3), -Math.cos(Math.PI/3)];
-const TPARK = [...TPARK_Z.map(z => { const spot = [TPARK_E + TPARK_D[0]*2.6, z + TPARK_D[1]*2.6];
-    return {spot, yaw: Math.atan2(...TPARK_D), sB: sOf(11) + 17 - z, spur: [[DROP_X - 1.2, z + 1.6], [TPARK_E, z], spot]}; }),
-  // ลานหน้าอาคารเทคฯ จอดได้แค่ 2 คัน หันหน้ารถเข้าอาคารเทคโนโลยี (ครูบอก): ฝั่งอาคารไม้ = Suzuki Swift สีดำคันเล็ก, อีกคัน = กระบะ 4 ประตู Isuzu สีบรอนซ์
-  ...[[18.0, 'swift', '#15171a'], [15.2, 'dmax', '#7b6550']].map(([x, model, color]) => ({spot: [x, TECHPARK_Z], yaw: Math.PI, sB: sOf(14), model, color, spur: [[19.6, -24.6], [x, -27.2], [x, TECHPARK_Z]]}))];
 TEACHERS.forEach((t, i) => {
   const arr = t.arr0, dep = t.dep1, nCar = t.rank;
-  const P = t.mode === 'car' ? TPARK[nCar % TPARK.length] : null;
-  t.spot = P ? P.spot : [7.4, -32.2 + nCar*.95];   // มอเตอร์ไซค์จอดเรียงชิดกันริมถนนสั้น (ไม่ล้ำถนน LANE)
+  const P = t.mode === 'car' ? TPARK[t.slot ?? nCar % TPARK.length] : null;
+  t.spot = P ? P.spot : [7.4, -32.2 + nCar*.68];   // มอเตอร์ไซค์จอดเรียงชิดกันริมถนนสั้น (ไม่ล้ำถนน LANE)
   t.veh = addVeh(t.mode, t.model === 'atto3' ? '#f1f5f9' : P?.color ?? (t.mode === 'car' ? pick(CAR_COLS) : '#111827'), [], t.model ? fullName(t.name) : undefined); t.veh.model = t.model ?? P?.model; t.veh.park = t.spot; if (P) t.veh.parkYaw = P.yaw;
   const moto = t.mode === 'moto', sB = moto ? sOf(16) - 1 : P.sB;
   const spur = moto ? [[MOTO_LANE[0] + 1, LANE - 2], [MOTO_LANE[0] + 1, t.spot[1]], t.spot] : P.spur;
