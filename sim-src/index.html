@@ -3108,8 +3108,8 @@ function buildChalerm(){   // ลานหน้าอาคารเฉลิ�
   // กระบะต้นไม้ปูนข้างลาน: พุ่มไม้เตี้ย + ไม้ดัด 2 ต้น
   B(1.4, .5, 2*R + 1, '#9ca3af', PCX - 1.05, .25, PCZ); B(1.2, .55, 2*R + .6, '#3f7d32', PCX - 1.05, .75, PCZ);
   for (const dz of [-2.4, 2.6]) { B(.12, 1.6, .12, '#6b4f3a', PCX - 1.1, 1.3, PCZ + dz); for (const [hy, s] of [[1.4, .55], [2.0, .45], [2.5, .32]]) add(new THREE.SphereGeometry(s, 8, 6), '#2f6b2a', PCX - 1.1, hy, PCZ + dz); }
-  // ต้นลั่นทมข้างสวนวิทยาศาสตร์ (ครูวง): ลำต้นเทาแตกกิ่งเป็นง่าม ใบเป็นกระจุกปลายกิ่ง ดอกขาวใจเหลือง
-  { const LX = PCX - 3.4, LZ = PCZ + 2.6, bark = M('#8b8178'), leaf = M('#3f7d32'), fl = M('#fff7e0'), fy = M('#facc15');
+  // ต้นลั่นทม (ลีลาวดี) ข้างสวนวิทยาศาสตร์: ครูวงย้ายจากข้างเสาไฟไปปลายกระบะต้นไม้ ฝั่งป้ายบอกทาง (ปลายกระบะ z = PCZ - R - .5) ลำต้นเทาแตกกิ่งเป็นง่าม ใบเป็นกระจุกปลายกิ่ง ดอกขาวใจเหลือง
+  { const LX = PCX - 1.0, LZ = PCZ - R - 1.4, bark = M('#8b8178'), leaf = M('#3f7d32'), fl = M('#fff7e0'), fy = M('#facc15');
     add(new THREE.CylinderGeometry(.16, .24, 1.6, 8), bark, LX, .8, LZ);
     for (const [dx, dz] of [[.9, .3], [-.8, .5], [.2, -.9], [-.3, .9]]) { const tx = LX + dx, tz = LZ + dz, br = add(new THREE.CylinderGeometry(.08, .13, 1.6, 6), bark, LX + dx/2, 2.2, LZ + dz/2); br.rotation.set(dz*.6, 0, -dx*.6);
       add(new THREE.SphereGeometry(.75, 8, 6), leaf, tx, 3.05, tz).scale.y = .55;
