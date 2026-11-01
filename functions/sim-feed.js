@@ -28,8 +28,9 @@ export async function onRequestGet({ env, request, waitUntil }) {
   const d = sis.ok ? sis.d : {}, t = sb.ok ? sb.d : null;
   // เลือกเฉพาะฟิลด์ที่เป็นตัวเลข/เวลา กันข้อมูลอื่นหลุดออกมาถ้าฝั่งต้นทางเปลี่ยนรูปแบบ
   const hhmm = a => (Array.isArray(a) ? a : []).filter(x => /^\d\d:\d\d$/.test(x));
+  const M = ['sig', 'photo', 'finger'], ck = a => (Array.isArray(a) ? a : []).filter(x => x && /^\d\d:\d\d$/.test(x.t)).map(x => ({ t: x.t, m: M.includes(x.m) ? x.m : null }));
   const fresh = out({ ok: true, date: d.date || t?.date, late_after: d.late_after, rooms: d.rooms || [], scans: d.scans || [],
-    teachers: t && { total: +t.total || 0, scanned: +t.scanned || 0, late: +t.late || 0, left: +t.left || 0, start: t.start, times: hhmm(t.times), out_times: hhmm(t.out_times) },
+    teachers: t && { total: +t.total || 0, scanned: +t.scanned || 0, late: +t.late || 0, left: +t.left || 0, start: t.start, times: hhmm(t.times), out_times: hhmm(t.out_times), checkins: ck(t.checkins), checkouts: ck(t.checkouts) },
     sources: { sis: sis.ok || sis.error, saraban: sb.ok || sb.error },
     sis_generated_at: d.generated_at, fetched_at: new Date().toISOString() });
   waitUntil(cache.put(key, fresh.clone()));

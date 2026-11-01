@@ -321,7 +321,7 @@ body:not(.sheet) #left,body:not(.sheet) #right{display:none!important}
   <div id="legend" title="สีสถานะอาคาร: ตามตารางเรียน/กิจวัตร ไม่ได้ยืนยันว่ามีบุคคลอยู่จริง"></div>
   <div class="grid">
     <div>มาแล้ว<b id="kIn">0</b></div><div>ยังไม่มา<b id="kOut">184</b></div>
-    <div>มาสาย<b id="kLate" style="color:var(--late)">0</b></div><div>ครูมาแล้ว<b id="kT">0/21</b></div>
+    <div>มาสาย<b id="kLate" style="color:var(--late)">0</b></div><div>ครูมาแล้ว<b id="kT">0/21</b><small id="kTm" style="display:block;font-size:10.5px;opacity:.8;line-height:1.3"></small></div>
   </div>
   <div id="srcl"></div>
   <div class="cls" id="cls"></div>
@@ -550,6 +550,10 @@ if (FEED) FEED.fetched = DataAdapter.updated.toLocaleTimeString('th-TH', {hour: 
 const SREAL = !!FEED?.rooms?.length && !!FEED.scans?.some(x => x.t);
 const hm2min = x => { const [h, mm] = x.split(':').map(Number); return h*60 + mm; };
 const TREAL = FEED?.teachers?.scanned ? FEED.teachers.times.map(hm2min) : null;
+// วิธีลงเวลาของครู (ไม่มีรูป/ลายเซ็น มีแค่ชนิด): sig = เซ็นชื่อ · photo = ถ่ายหน้า · finger = ลายนิ้วมือ
+const T_METHOD = {sig: '✍️ เซ็นชื่อ', photo: '📷 ถ่ายหน้า', finger: '👆 ลายนิ้วมือ'};
+const TIN = TREAL ? (FEED.teachers.checkins?.length ? FEED.teachers.checkins.map(x => ({t: hm2min(x.t), m: x.m})) : TREAL.map(t => ({t}))) : null;
+const tMethods = m => TIN ? Object.entries(T_METHOD).map(([k, v]) => [v, TIN.filter(x => x.t <= m && x.m === k).length]).filter(x => x[1]).map(x => x.join(' ')).join(' · ') : '';
 const TOUT = TREAL ? (FEED.teachers.out_times || []).map(hm2min) : null;
 const T_TOTAL = TREAL && FEED.teachers.total || 21;
 const SCAN_REAL = new Map();   // 'ป.1#12' → {m: นาที, status, girl}
@@ -782,7 +786,7 @@ const SRC = {sim: ['SIMULATED', 'ข้อมูลจำลอง'], sch: ['SCH
 const srcB = k => `<span class="src ${k}" title="${SRC[k][1]}">${SRC[k][0]}</span>`;
 // เวลาสแกนของครูเป็นค่าจำลองทั้งหมด จึงไม่แสดงชื่อจริงคู่กับเวลา (ไม่สร้างสถานะของบุคคลจริงขึ้นเอง)
 const SCANS = [...STUDENTS.filter(s=>s.scan!=null).map(s=>({t:s.scan, who:`${s.cls} เลขที่ ${s.no}`, cls:s.cls, src: s.real != null ? 'ver' : 'sim'})),
-               ...(TREAL ? TREAL.map(t=>({t, who:'ครู (ไม่แสดงชื่อ)', cls:'ครู', src:'ver'})) : TEACHERS.map(s=>({t:s.scan, who:'ครู (ไม่แสดงชื่อ)', cls:'ครู', src:'sim'})))].sort((a,b)=>a.t-b.t);
+               ...(TIN ? TIN.map(x=>({t:x.t, who:'ครู (ไม่แสดงชื่อ)' + (T_METHOD[x.m] ? ' · ' + T_METHOD[x.m] : ''), cls:'ครู', src:'ver'})) : TEACHERS.map(s=>({t:s.scan, who:'ครู (ไม่แสดงชื่อ)', cls:'ครู', src:'sim'})))].sort((a,b)=>a.t-b.t);
 
 /* ---------- รอบนอกโรงเรียน: ถนนหน้าโรงเรียน + ซอยข้าง มีรถชาวบ้านผ่านพอประมาณ และตลาดชุมชนฝั่งตรงข้าม ---------- */
 const FAR = 150, SOI_E = 57.4, SOI_W = 54;   // ซอยข้างโรงเรียน: เลนขาออก (ไปทางตะวันออก) / เลนขาเข้า
@@ -3160,7 +3164,7 @@ function update(force){
   const pres = present(m), late = pres.filter(s => s.scan > LATE).length;
   $('kIn').textContent = pres.length; $('kOut').textContent = STUDENTS.length - pres.length; $('kLate').textContent = late;
   $('kT').textContent = `${TREAL ? TREAL.filter(t=>t<=m).length : TEACHERS.filter(t=>t.scan<=m).length}/${T_TOTAL}`;
-  if (TREAL) $('kT').title = `ลงเวลาผ่านมือถือจริง (ไม่แสดงชื่อ) · กลับแล้ว ${TOUT.filter(t=>t<=m).length} คน`;
+  if (TREAL) { const mt = tMethods(m); $('kT').title = `ลงเวลาผ่านมือถือจริง (ไม่แสดงชื่อ)${mt ? ' · ' + mt : ''} · กลับแล้ว ${TOUT.filter(t=>t<=m).length} คน`; $('kTm').textContent = mt; }
   $('cls').innerHTML = CLASSES.map(([c,n]) => {
     const p = pres.filter(s=>s.cls===c), l = p.filter(s=>s.scan>LATE).length;
     return `<div class="row"><span>${c}</span><div class="track"><i style="width:${(p.length-l)/n*100}%;background:var(--ok)"></i><i style="width:${l/n*100}%;background:var(--late)"></i></div><span>${p.length}/${n}</span></div>`;
