@@ -1737,6 +1737,7 @@ function fixP12Site(){   // ศาลาเดิมในโมเดล (ก�
   let n = 0; scene.traverse(o => { if (o.name === 'poly_11' || o.name === 'poly_12') { o.visible = false; n++; }
     if (o.name === 'poly_10' && o.material) { o.material = o.material.clone(); o.material.color.set('#4f8f3c'); n++; } });
   scene.traverse(o => { if (o.name === 'poly_7' || o.name === 'Futsal_Ball') o.visible = false; });   // เส้นขาวเส้นเดียวเดิมกลางลานเสาธง และลูกฟุตซอล (ลานเป็นสนามวอลเลย์แล้ว)
+  scene.traverse(o => { if (o.name === 'poly_8' && o.parent?.name === 'Site_Mesh') o.visible = false; });   // แถบรั้วเขียวทึบรอบโรงเรียนเดิมในโมเดล (พาดขวางถนนตรงประตู) ครูให้เอาออก
   scene.traverse(o => { if (/^box330(_2|_3)?$/.test(o.name)) { o.visible = false; n++; } });   // กล่องสระเดิมในโมเดล แทนด้วยสระยกพื้นตามรูป
   scene.traverse(o => { if (o.name === 'poly_14' && o.material && !o.userData.mango) { o.material = o.material.clone(); o.material.color.set('#2f6b2a'); o.userData.mango = 1; n++; } });   // ต้นมะม่วง 2 ต้นข้างสนามเปตอง (ใบเขียวเข้ม)
   scene.traverse(o => { if (o.name === 'poly_3' && o.geometry?.index) { n++; const g = o.geometry; if (g.userData.bandGrass) return;   // ลบแปลงหญ้าใต้วงขิมเดิม
