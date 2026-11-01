@@ -1556,6 +1556,7 @@ const GARDEN_SCHED = [[450, 460, 'รอบเช้า'], [960, 970, 'รอบ
 let gSpray = null, gLed = null, gLvl = 0, gardenLab = null, gLast = null;
 const gardenOn = m => GARDEN_SCHED.some(([a, b]) => m >= a && m < b);
 function animGarden(dt, t){
+  if (windRotor) windRotor.rotation.z += dt*1.3;   // กังหันลมข้างลาน Science Park
   if (!gSpray) return;
   const on = gardenOn(simMin); gLvl += ((on ? 1 : 0) - gLvl) * Math.min(1, dt*2.5);
   gSpray.material.opacity = gLvl * .85; gSpray.visible = gLvl > .02; gLed.material.color.set(on ? '#22c55e' : '#334155');
@@ -3413,6 +3414,17 @@ function buildChalerm(){   // ลานหน้าอาคารเฉลิ�
       add(new THREE.SphereGeometry(.75, 8, 6), leaf, tx, 3.05, tz).scale.y = .55;
       for (let k = 0; k < 5; k++) { const a = k*1.26 + dx, fx = tx + Math.cos(a)*.5, fz = tz + Math.sin(a)*.5; add(new THREE.SphereGeometry(.13, 6, 4), fl, fx, 3.35, fz); add(new THREE.SphereGeometry(.05, 4, 3), fy, fx, 3.45, fz); } }
     add(new THREE.TorusGeometry(.6, .08, 6, 16), '#9a5b3c', LX, .08, LZ).rotation.x = Math.PI/2; }
+  // กังหันลมผลิตไฟฟ้า 3 ใบพัด ข้างลาน Bankhum Science Park ริมถนน (จุดที่ครูวงสีม่วง แทนเสาไฟเดิม) ใบพัดหมุนช้า ๆ หันหน้าเข้าลาน
+  { const WX = PCX + 3.6, WZ = PCZ + 2.6, H = 7.2, wg = new THREE.Group(), white = M('#f4f6f5'), grey = M('#cbd5d1');
+    wg.position.set(WX, 0, WZ); wg.rotation.y = -Math.PI/4; g.add(wg);
+    add(new THREE.CylinderGeometry(.75, .85, .3, 16), '#9ca3af', 0, .15, 0, wg);
+    add(new THREE.CylinderGeometry(.11, .22, H, 12), white, 0, H/2 + .3, 0, wg);
+    for (const y of [1.6, 3.4]) add(new THREE.CylinderGeometry(.2, .2, .07, 12), '#2cc5bd', 0, y, 0, wg);   // แถบสีฟ้าเทอร์ควอยซ์ให้เข้ากับเสาลาน
+    B(.36, .36, 1.0, grey, 0, H + .45, -.18, wg);
+    windRotor = new THREE.Group(); windRotor.position.set(0, H + .45, .38); wg.add(windRotor);
+    add(new THREE.ConeGeometry(.2, .45, 12).rotateX(Math.PI/2), white, 0, 0, .12, windRotor);
+    for (let k = 0; k < 3; k++) { const arm = new THREE.Group(); arm.rotation.z = k*2*Math.PI/3; windRotor.add(arm);
+      const bl = add(new THREE.BoxGeometry(.36, 2.4, .06), white, 0, 1.35, 0, arm); bl.rotation.y = .3; } }
   // ป้ายบอกทางไม้ "Bankhum Studio" / "แปลงเกษตร"
   const arrowT = t => cvTex(256, 48, (c, w, h) => { c.fillStyle = '#7c3f32'; c.beginPath(); c.moveTo(0, 0); c.lineTo(w - 24, 0); c.lineTo(w, h/2); c.lineTo(w - 24, h); c.lineTo(0, h); c.fill(); c.fillStyle = '#f8fafc'; c.font = 'bold 24px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(t, w/2 - 10, h/2); });
   const SPX = PCX + 2.8, SPZ = PCZ - 4.4; B(.1, 2.7, .1, '#7c3f32', SPX, 1.35, SPZ); add(new THREE.ConeGeometry(.08, .2, 8), '#d4a017', SPX, 2.8, SPZ);
@@ -4058,6 +4070,7 @@ function atmApplyPreset(p, q = p, f = 0, setSliders = true){
 atmApplyPreset(ATM.day);
 let hemi = null; scene.traverse(o => { if (o.isHemisphereLight) hemi = o; });
 const sunDir = new THREE.Vector3();
+let windRotor = null;
 let warmT = 0, atmUiT = 0, rainFx = null, lampFx = null;
 const winMats = new Set();
 // โทนสีโมเดลจำลอง: เปลี่ยนสีวัสดุตามชื่อ (โมเดลหลัก) หรือปรับให้อุ่นขึ้นเล็กน้อย (ของที่สร้างในหน้าเว็บ) · เก็บสีเดิมไว้คืนได้
@@ -4094,6 +4107,8 @@ function buildLamps(){
     for (let d = acc; d < L; d += 15) { const x = ax + (bx-ax)*d/L + nx*3.1, z = az + (bz-az)*d/L + nz*3.1; if (x > FENCE.x0 + 1 && x < FENCE.x1 - 1 && z > FENCE.z0 + 1 && z < FENCE.z1 - 1) pts.push([x, z]); acc = d + 15 - L; }
     if (acc > L) acc -= L; else acc = Math.max(0, acc);
   }
+  // เอาเสาไฟริมถนนหน้าอาคารเฉลิมพระเกียรติ (ฝั่งลาน Bankhum Science Park แนว x ≈ 16.4) ออกทั้งแถว 4 ต้น ตามที่ครูวงแดง
+  for (let i = pts.length - 1; i >= 0; i--) { const [x, z] = pts[i]; if (Math.abs(x - (DROP_X - 3.1)) < .6 && z > -14 && z < 23) pts.splice(i, 1); }
   pts.push([MARKET.x0 + 1, MARKET.z0 + 1], [MARKET.x0 + 1, MARKET.z1 - 1], [MARKET.x1 - 1, MARKET.z0 + 1], [MARKET.x1 - 1, MARKET.z1 - 1]);
   const n = pts.length, poleM = new THREE.MeshLambertMaterial({color: '#4b5563'});
   const pole = new THREE.InstancedMesh(new THREE.CylinderGeometry(.09, .12, 4.6, 6).translate(0, 2.3, 0), poleM, n);
