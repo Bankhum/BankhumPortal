@@ -3116,7 +3116,9 @@ function applyXrayAll(){ for (const n in zones) setXray(n, xrayAll || n === sele
 
 /* ---------- UI ---------- */
 const $ = id => document.getElementById(id);
-const slider = $('time'); { const q = +new URLSearchParams(location.search).get('t'); if (q >= 355 && q <= 1000) slider.value = q; }
+const slider = $('time'); { const q = +new URLSearchParams(location.search).get('t'), n = new Date(), now = n.getHours()*60 + n.getMinutes();
+  // เปิดดูวันนี้ในเวลาเรียน → เริ่มที่เวลาปัจจุบัน จะได้เห็นครูที่ลงเวลาแล้วทันที (นอกเวลาเรียนเริ่ม 07:00 เหมือนเดิม)
+  if (q >= 355 && q <= 1000) slider.value = q; else if (n.getDay() === day + 1 && now >= 360 && now <= 1000) slider.value = now; }
 let playing = true, simMin = +slider.value, lastKey = '', speed = [.1, 1, 3, 10].includes(+new URLSearchParams(location.search).get('s')) ? +new URLSearchParams(location.search).get('s') : .1;   // เปิดเว็บมาเริ่มที่ความเร็ว "ช้า" (ครูขอ)
 const setPlaying = p => { playing = p; $('play').textContent = $('tPlay').textContent = p ? '⏸' : '▶'; };
 $('play').onclick = $('tPlay').onclick = () => setPlaying(!playing);
