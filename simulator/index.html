@@ -308,7 +308,7 @@ body:not(.sheet) #left,body:not(.sheet) #right{display:none!important}
   <div class="brand"><img id="topLogo" alt=""><div><b>BANKHUM CAMPUS SIM</b><small>ระบบจำลองกิจกรรมโรงเรียน เชื่อมข้อมูลลงเวลาครูจริง · โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)</small></div></div>
   <div class="tclock" title="เวลานี้เป็นเวลาจำลอง ไม่ใช่เวลาจริง"><span class="badge">เวลาจำลอง</span><b id="tDay">วันจันทร์</b><b id="tTime">07:00</b></div>
   <span class="mode" id="tMode" title="ข้อมูลที่ใช้แสดงผล"><i></i><span>ข้อมูลจำลอง</span></span>
-  <div class="tctl"><button id="tPlay" aria-label="เล่น/หยุด">⏸</button><button id="tReset" aria-label="กลับเวลาเริ่มต้น" title="กลับเวลาเริ่มต้น">⟲</button><select id="tSpeed" aria-label="ความเร็วจำลอง"></select></div>
+  <div class="tctl"><button id="tPlay" aria-label="เล่น/หยุด">⏸</button><button id="tReset" aria-label="กลับเวลาปัจจุบัน" title="กลับเวลาปัจจุบัน (วันนี้) หรือเวลาเริ่มต้นของวันจำลอง">⟲</button><select id="tSpeed" aria-label="ความเร็วจำลอง"></select></div>
   <select id="tBld" aria-label="เลือกอาคาร"><option value="">🏫 เลือกอาคาร</option></select>
   <button id="tDash" aria-label="Dashboard">📊 Dashboard</button>
 </header>
@@ -2436,7 +2436,7 @@ const whoOf = a => a.kind === 't' ? fullName(a.ref.name) : `${a.cls} เลข�
 function statusOf(a){
   if (a.kind === 's' && a.ref.scan == null) return {where: 'ไม่ได้มาโรงเรียน', what: 'ขาดเรียนวันนี้', src: 'sim'};
   const [z, txt] = placeOfAgent(a, simMin);
-  if (!z) return {where: simMin < (a.ref.scan ?? 0) ? 'ยังไม่ถึงโรงเรียน' : 'กลับบ้านแล้ว', what: simMin < (a.ref.scan ?? 0) ? 'สแกนหน้าเวลา ' + fmt(a.ref.scan) : '', src: 'sim'};
+  if (!z) return {where: simMin < (a.ref.scan ?? 0) ? 'ยังไม่ถึงโรงเรียน' : 'กลับบ้านแล้ว', what: simMin < (a.ref.scan ?? 0) ? (a.kind === 't' ? (TREAL ? 'เวลาลงเวลาจริงไม่ผูกกับชื่อ ดูยอดรวมที่ช่อง "ครู"' : 'ลงเวลาจำลอง ' + fmt(a.ref.scan)) : 'สแกนหน้าเวลา ' + fmt(a.ref.scan)) : '', src: 'sim'};
   const room = a.kind === 's' && typeof phaseAt(simMin)[2] === 'number' ? lesson(a.cls, phaseAt(simMin)[2]).room : null;
   return {where: placeTh(z) + (room && ROOMS[room] ? ' · ' + ROOMS[room].th : ''), what: txt || '', src: typeof phaseAt(simMin)[2] === 'number' ? 'sch' : 'sim'};
 }
@@ -3123,7 +3123,9 @@ const slider = $('time'); { const q = +new URLSearchParams(location.search).get(
 let playing = true, simMin = +slider.value, lastKey = '', speed = [.1, 1, 3, 10].includes(+new URLSearchParams(location.search).get('s')) ? +new URLSearchParams(location.search).get('s') : .1;   // เปิดเว็บมาเริ่มที่ความเร็ว "ช้า" (ครูขอ)
 const setPlaying = p => { playing = p; $('play').textContent = $('tPlay').textContent = p ? '⏸' : '▶'; };
 $('play').onclick = $('tPlay').onclick = () => setPlaying(!playing);
-$('tReset').onclick = () => { simMin = +slider.min; slider.value = simMin; setPlaying(false); update(true); };   // กลับเวลาเริ่มต้นของวันจำลอง
+// ⟲ ดูวันนี้ในเวลาเรียน → กลับมาที่เวลาปัจจุบันแล้วเล่นต่อ · นอกนั้นกลับเวลาเริ่มต้นของวันจำลอง
+const nowLive = () => { const n = new Date(), m = n.getHours()*60 + n.getMinutes(); return n.getDay() === day + 1 && m >= 360 && m <= 1000 ? m : null; };
+$('tReset').onclick = () => { const m = nowLive(); simMin = m ?? +slider.min; slider.value = simMin; setPlaying(m != null); update(true); };
 slider.oninput = () => { simMin = +slider.value; update(); };
 for (const [lab,m] of [['รถมาส่ง',440],['ทำเวร',462],['เข้าแถว',480],['คาบ 1',515],['คาบ 2',575],['คาบ 3',635],['พักเที่ยง',700],['คาบ 4',755],['คาบ 5',815],['คาบ 6',875],['ทำเวรห้อง',921],['รถมารับ',932]]) {
   const b = document.createElement('button'); b.textContent = lab; b.onclick = () => { simMin = m; slider.value = m; if (lab.startsWith('รถ')) { setSpeed(.1); setPlaying(true); } else { setPlaying(false); } update(); };
