@@ -3515,8 +3515,8 @@ function buildChalerm(){   // ลานหน้าอาคารเฉลิ�
       add(new THREE.SphereGeometry(.75, 8, 6), leaf, tx, 3.05, tz).scale.y = .55;
       for (let k = 0; k < 5; k++) { const a = k*1.26 + dx, fx = tx + Math.cos(a)*.5, fz = tz + Math.sin(a)*.5; add(new THREE.SphereGeometry(.13, 6, 4), fl, fx, 3.35, fz); add(new THREE.SphereGeometry(.05, 4, 3), fy, fx, 3.45, fz); } }
     add(new THREE.TorusGeometry(.6, .08, 6, 16), '#9a5b3c', LX, .08, LZ).rotation.x = Math.PI/2; }
-  // กังหันลมผลิตไฟฟ้า 3 ใบพัด ข้างลาน Bankhum Science Park ริมถนน (จุดที่ครูวงสีม่วง แทนเสาไฟเดิม) ใบพัดหมุนช้า ๆ หันหน้าเข้าลาน
-  { const WX = PCX + 3.6, WZ = PCZ + 2.6, H = 7.2, wg = new THREE.Group(), white = M('#f4f6f5'), grey = M('#cbd5d1');
+  // กังหันลมผลิตไฟฟ้า 3 ใบพัด ที่มุมท้ายแท่นป้าย Bankhum Science Park ฝั่งคำว่า "Park" ข้างเสาไฟ (ครูวงจุดแดง ย้ายจากริมถนนฝั่งอาคารเฉลิมฯ) ใบพัดหมุนช้า ๆ หันหน้าเข้าลาน
+  { const WX = PCX + .2, WZ = PCZ + R + 1.2, H = 7.2, wg = new THREE.Group(), white = M('#f4f6f5'), grey = M('#cbd5d1');
     wg.position.set(WX, 0, WZ); wg.rotation.y = -Math.PI/4; g.add(wg);
     add(new THREE.CylinderGeometry(.75, .85, .3, 16), '#9ca3af', 0, .15, 0, wg);
     add(new THREE.CylinderGeometry(.11, .22, H, 12), white, 0, H/2 + .3, 0, wg);
