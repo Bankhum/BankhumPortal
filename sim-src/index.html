@@ -443,7 +443,7 @@ const teachYaw = r => Math.atan2(Math.sin(r.rot), Math.cos(r.rot));   // คร�
 const dogLeg = (zE, zL, zW) => { const xL = 24.1, xU = 25.1, zm = (zL + zW)/2; return {xL, xU, zE, zL, zW, bot: [xL, zE], top: [xU, zE],
   pts: [new THREE.Vector3(xL, 0, zE), new THREE.Vector3(xL, F2/2, zm), new THREE.Vector3(xU, F2/2, zm), new THREE.Vector3(xU, F2, zE)]}; };
 const CH_STAIRS = [dogLeg(-7.2, -12.4, -13.4), dogLeg(21.0, 25.2, 26.2)];
-const STAIR = {Chalerm_Building: CH_STAIRS[0], Wooden_Building: {bot: [24.5, -31.6], top: [24.5, -37.4]}, Technology_Building: {bot: [8.5, -39.3], top: [14.3, -39.3]}};
+const STAIR = {Chalerm_Building: CH_STAIRS[0], Wooden_Building: {bot: [24.5, -31.6], top: [24.5, -37.4]}, Technology_Building: {bot: [8.5, -39.93], top: [14.3, -39.93]}};
 for (const s of [...Object.values(STAIR), ...CH_STAIRS]) { s.bot3 = new THREE.Vector3(s.bot[0], 0, s.bot[1]); s.top3 = new THREE.Vector3(s.top[0], F2, s.top[1]); s.pts ??= [s.bot3, s.top3]; }
 // บันไดที่ใกล้จุด p ที่สุด (อาคารเฉลิมฯ มี 2 ชุด)
 const stairFor = (b, p) => b === 'Chalerm_Building' ? CH_STAIRS.reduce((m, s) => Math.abs(p.z - s.zE) < Math.abs(p.z - m.zE) ? s : m) : STAIR[b];
@@ -2536,7 +2536,7 @@ el.addEventListener('pointerup', e => {
   if (hit) { select(hit.object.userData.zone); if (selected) document.body.classList.add('sheet'); } else if (selected) select(selected);
 });
 window.__select = select;
-window.__view = (x, z, zoom, yaw) => { view.touched = true; target.set(x, 0, z); if (yaw != null) view.yaw = yaw; setZoom(zoom); };   // ใช้ถ่ายภาพตรวจงาน
+window.__view = (x, z, zoom, yaw, y = 0) => { view.touched = true; target.set(x, y, z); if (yaw != null) view.yaw = yaw; setZoom(zoom); };   // ใช้ถ่ายภาพตรวจงาน
 function focusZone(n){ if (!zones[n]) return; if (selected !== n) select(n); const z = zones[n]; view.touched = true; target.set(z.c.x, 0, z.c.z); setZoom(Math.max(view.zoom, 2)); document.body.classList.add('sheet'); }
 /* ---------- เข้าห้องเรียน: ซูมเข้าไปในห้อง เห็นกระดาน โต๊ะครู ชั้นวางของ และนักเรียนนั่งโต๊ะ ---------- */
 let roomView = null; const classFx = {};
@@ -2550,7 +2550,7 @@ function compStations(){
   if (compStations.v) return compStations.v;
   const R = ROOMS[COMP], x0 = R.c.x - R.sx/2, v = [];
   for (const zc of [R.c.z - 2.15, R.c.z + 2.15]) for (const side of [-1, 1]) for (let k = 0; k < 8; k++) {
-    const q = new THREE.Vector3(x0 + 1.65 + k*.65, R.y, zc + side*.95); q.side = side; q.zc = zc; q.yaw = side < 0 ? 0 : Math.PI; v.push(q);
+    const q = new THREE.Vector3(x0 + 2.6 + k*.65, R.y, zc + side*.95); q.side = side; q.zc = zc; q.yaw = side < 0 ? 0 : Math.PI; v.push(q);
   }
   return compStations.v = v;
 }
@@ -2655,39 +2655,67 @@ function buildCompFx(){
   const M = c => new THREE.MeshLambertMaterial({color: c}), R = ROOMS[COMP], y = R.y, g = new THREE.Group();
   const W = R.sx, D = R.sz, cx = R.c.x, cz = R.c.z, x0 = cx - W/2, x1 = cx + W/2, z0 = cz - D/2, z1 = cz + D/2;
   const bx = (w, h, d, m, x, yy, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y + yy, z); o.castShadow = true; g.add(o); return o; };
-  const white = M('#f1f5f9'), teal = M('#1f4a50'), wood = M('#d9a566'), black = M('#111827'), purple = M('#5b3cc4'), screen = new THREE.MeshBasicMaterial({color: '#93c5fd'}), glass = new THREE.MeshBasicMaterial({color: '#c2655a'});
+  const white = M('#f1f5f9'), teal = M('#1f4a50'), wood = M('#d9a566'), black = M('#111827'), purple = M('#5b3cc4'), screen = new THREE.MeshBasicMaterial({color: '#eee6ee'}), glass = new THREE.MeshBasicMaterial({color: '#c2655a'});
   bx(W - .1, .03, D - .1, M('#e5e7eb'), cx, .03, cz).castShadow = false;                        // พื้นกระเบื้องขาว
-  // ผนัง: ล่างเขียวเข้มสูง 1.2 ม. บนขาว (ผนังตะวันออกมีหน้าต่างบานเลื่อนเห็นอาคารไม้สีแดง)
+  // ผนัง: ล่างเขียวเข้มสูง 1.2 ม. บนขาว
   for (const [w, d, x, z] of [[.06, D, x1 - .05, cz], [W, .06, cx, z0 + .05], [W, .06, cx, z1 - .05], [.06, D, x0 + .05, cz]]) { bx(w, 1.2, d, teal, x, .6, z); bx(w, 1.4, d, white, x, 1.9, z); }
-  for (const wz of [cz - 2.4, cz + 2.4]) { bx(.04, 1.2, 1.9, M('#cbd5e1'), x1 - .09, 1.85, wz); bx(.02, 1.08, 1.78, glass, x1 - .12, 1.85, wz); bx(.03, 1.08, .04, M('#cbd5e1'), x1 - .13, 1.85, wz); }
-  bx(.08, 1.3, 2.3, black, x1 - .12, 1.9, cz); bx(.02, 1.18, 2.18, M('#a78bfa'), x1 - .17, 1.9, cz);   // จอทีวี/อินเทอร์แอกทีฟติดผนัง
-  bx(.12, .4, .6, M('#f8fafc'), x1 - .12, 1.6, cz + 1.5);                                       // ตู้ไฟ/จอเล็กข้างทีวี
-  // สนามหุ่นยนต์บนพื้นหน้าห้อง
-  const cv = document.createElement('canvas'); cv.width = cv.height = 128; const c2 = cv.getContext('2d');
-  c2.fillStyle = '#fafafa'; c2.fillRect(0, 0, 128, 128); c2.strokeStyle = '#111'; c2.lineWidth = 4; c2.beginPath(); c2.roundRect(14, 14, 100, 100, 18); c2.stroke();
-  c2.lineWidth = 3; for (let i = 1; i < 5; i++) { c2.beginPath(); c2.moveTo(30 + i*14, 26); c2.lineTo(30 + i*14, 102); c2.stroke(); c2.beginPath(); c2.moveTo(26, 30 + i*14); c2.lineTo(102, 30 + i*14); c2.stroke(); }
-  const matT = new THREE.CanvasTexture(cv); matT.colorSpace = THREE.SRGBColorSpace;
-  const can = M('#c9a227'), bot = M('#f8fafc');
-  for (const mz of [cz - 1.7, cz + 1.7]) {
-    const mat = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.8), new THREE.MeshLambertMaterial({map: matT})); mat.rotation.x = -Math.PI/2; mat.position.set(x1 - 1.6, y + .05, mz); g.add(mat);
-    for (const [dx, dz] of [[-.5, -.6], [.4, .5], [-.1, .55], [.55, -.3]]) { const o = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, .14, 8), can); o.position.set(x1 - 1.6 + dx, y + .12, mz + dz); g.add(o); }
-    bx(.18, .1, .14, bot, x1 - 2.3, .1, mz + .2); bx(.1, .02, .1, M('#16a34a'), x1 - 2.3, .16, mz + .2);   // หุ่นยนต์ micro:bit
-  }
-  bx(.35, 1.2, .35, teal, cx - 2.2, .6, cz); bx(.35, 1.7, .35, white, cx - 2.2, 2.05, cz);       // เสากลางห้อง (ล่างเขียว บนขาว)
+  const cvT = (w, h, draw) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; };
+  const tvTex = cvT(192, 112, (c, w, h) => { c.fillStyle = '#dbeafe'; c.fillRect(0, 0, w, h); c.fillStyle = '#2563eb'; c.fillRect(0, 0, w, 10); c.fillStyle = '#1e3a8a'; c.fillRect(0, h - 6, w, 6);   // หน้าจอครูควบคุม (ภาพเครื่องนักเรียนเป็นตาราง)
+    for (let r = 0; r < 4; r++) for (let k = 0; k < 7; k++) { c.fillStyle = '#93c5fd'; c.fillRect(8 + k*26, 16 + r*22, 22, 18); c.fillStyle = '#f8fafc'; c.fillRect(10 + k*26, 18 + r*22, 18, 11); } });
+  const tvM = new THREE.MeshBasicMaterial({map: tvTex}), tvScr = (w, h, x, yy, z) => { const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), tvM); p.rotation.y = -Math.PI/2; p.position.set(x, y + yy, z); g.add(p); };
+  // ผนังหน้าห้อง (ตะวันออก): หน้าต่างแคบ · เสาผนังติดทีวีเล็ก · ทีวีใหญ่ · หน้าต่างบานเลื่อนกว้าง (เห็นอาคารไม้สีแดง)
+  for (const [wz, ww] of [[cz - 2.2, 1.0], [cz + 2.45, 1.9]]) { bx(.04, 1.2, ww, M('#cbd5e1'), x1 - .09, 1.85, wz); bx(.02, 1.08, ww - .12, glass, x1 - .12, 1.85, wz); bx(.03, 1.08, .04, M('#cbd5e1'), x1 - .13, 1.85, wz); }
+  const pz = cz - 1.0; bx(.3, 1.2, .45, teal, x1 - .2, .6, pz); bx(.3, 1.4, .45, white, x1 - .2, 1.9, pz);   // เสาผนัง
+  bx(.06, .66, 1.12, black, x1 - .38, 2.0, pz); tvScr(1.04, .58, x1 - .415, 2.0, pz);                         // ทีวีเล็กติดเสา
+  bx(.07, 1.05, 1.85, black, x1 - .12, 1.95, cz + .5); tvScr(1.77, .97, x1 - .16, 1.95, cz + .5);              // ทีวีใหญ่
+  bx(.5, .55, .62, M('#e7e2d6'), x1 - .45, 1.35, z1 - .55); for (const [lx, lz] of [[-.2, -.25], [-.2, .25], [.2, -.25], [.2, .25]]) bx(.04, 1.07, .04, M('#e5e7eb'), x1 - .45 + lx, .54, z1 - .55 + lz);   // ตู้อุปกรณ์บนขาตั้ง มุมหน้าห้อง
+  bx(.08, .3, .45, white, x1 - .06, 2.05, z1 - 1.35); bx(.01, .2, .35, M('#334155'), x1 - .105, 2.07, z1 - 1.35);   // ตู้เบรกเกอร์
+  // เสากลางห้อง 2 ต้น (ล่างเขียว บนขาว) ต้นหลังมีกล่องสัญญาณ/สายไฟ
+  for (const px of [cx - 1.0, cx + 3.25]) { bx(.35, 1.2, .35, teal, px, .6, cz); bx(.35, 1.7, .35, white, px, 2.05, cz); }
+  bx(.06, .18, .14, black, cx - 1.0 - .2, 2.05, cz); bx(.04, .06, .04, M('#dc2626'), cx - 1.0 - .2, 2.4, cz);
   for (const ax of [cx - 2.6, cx + 1.4]) bx(1.0, .3, .22, white, ax, 2.55, z0 + .16);              // แอร์ 2 ตัวผนังเหนือ
-  for (const wx of [cx + .4, cx + 2.6]) { bx(1.3, 1.1, .04, M('#cbd5e1'), wx, 1.85, z1 - .09); bx(1.2, 1.0, .02, M('#e0f2fe'), wx, 1.85, z1 - .12); }   // หน้าต่างผนังใต้
+  for (const wx of [cx - 1.65, cx + 1.65]) { bx(1.5, 1.1, .04, M('#cbd5e1'), wx, 1.85, z1 - .09); bx(1.4, 1.0, .02, M('#e0f2fe'), wx, 1.85, z1 - .12); }   // หน้าต่างผนังใต้ (ฝั่งระเบียง)
+  bx(.9, 2.1, .05, M('#cbd5e1'), x1 - 1.0, 1.05, z1 - .06); bx(.76, 1.95, .02, M('#bae6fd'), x1 - 1.0, 1.05, z1 - .09);   // ประตูกระจกออกระเบียง (ปลายฝั่งสะพาน)
   for (let i = 0; i < 4; i++) bx(.45, .2, .45, purple, x1 - .45, .3 + i*.2, z0 + .45);           // เก้าอี้ม่วงซ้อนมุมหน้าห้อง
-  bx(.05, 2.1, .9, M('#cbd5e1'), x0 + .06, 1.05, z1 - .9); bx(.02, 1.95, .75, M('#bae6fd'), x0 + .09, 1.05, z1 - .9);   // ประตูกระจกออกระเบียง
+  for (let i = 0; i < 3; i++) { bx(.36, .05, .36, purple, x1 - 1.3 - i*.55, .45, z0 + .35); bx(.32, .42, .32, purple, x1 - 1.3 - i*.55, .21, z0 + .35); }   // เก้าอี้ม่วง 3 ตัวชิดผนัง
   for (const [fx, fz] of [[cx - 3.6, z0 + .15], [cx - .4, z0 + .15], [cx - 1, z1 - .15], [cx + 3.6, z1 - .15]]) { const f = new THREE.Mesh(new THREE.CylinderGeometry(.28, .28, .1, 14), white); f.rotation.x = Math.PI/2; f.position.set(fx, y + 2.5, fz + (fz < cz ? .12 : -.12)); g.add(f); }   // พัดลมติดผนัง
-  // โต๊ะครูหลังห้อง (ผนังตะวันตก มุมเหนือ) จอคอม เครื่องพิมพ์ เก้าอี้ดำ · ประตูกระจกออกระเบียงฝั่งใต้
-  const tz = z0 + 1.5;                                                                           // มุมตะวันตกเฉียงเหนือ (ตามรูปกล้อง)
-  bx(.7, .05, 2.2, M('#e5e7eb'), x0 + .5, .76, tz); for (const lz of [-1, 1]) bx(.6, .74, .05, M('#94a3b8'), x0 + .5, .37, tz + lz);
-  bx(.04, .36, .55, black, x0 + .3, 1.0, tz - .4); bx(.4, .22, .45, black, x0 + .5, .9, tz + .55); bx(.08, .25, .08, M('#dc2626'), x0 + .3, .9, tz - .9);   // จอ เครื่องพิมพ์ กระป๋องสเปรย์
-  bx(.45, .06, .45, black, x0 + 1.15, .48, tz - .4); bx(.06, .5, .45, black, x0 + 1.4, .78, tz - .4);   // เก้าอี้ครูสีดำ
+  // มุม Bankhum Maker Lab ผนังหลัง (ตะวันตก) ฝั่งใต้: โต๊ะดำขอบแดง เครื่องพิมพ์ 3 มิติ + กล่องเส้นพลาสติก peg board ป้ายโลโก้ ชั้นเหล็กฉากดำ ถังขยะ
+  const dz = z1 - 1.35, mx = x0 + .4, red = M('#b91c1c'), silver = M('#cbd5e1'), wht = M('#f8fafc');
+  bx(.6, .035, 1.6, black, mx, .76, dz); bx(.62, .015, 1.62, red, mx, .735, dz);
+  for (const [lx, lz] of [[-.25, -.75], [-.25, .75], [.25, -.75], [.25, .75]]) bx(.05, .73, .05, black, mx + lx, .37, dz + lz); bx(.04, .04, 1.45, black, mx + .25, .15, dz);
+  bx(.36, .006, .5, M('#26302b'), mx + .05, .782, dz + .45);                                       // แผ่นรองตัด
+  for (const [jz, jh, jc] of [[.62, .2, '#e2e8f0'], [.4, .14, '#f472b6'], [.28, .1, '#93c5fd']]) { const j = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, jh, 10), M(jc)); j.position.set(mx - .15, y + .78 + jh/2, dz + jz); g.add(j); }   // โหลอุปกรณ์
+  bx(.34, .08, .4, wht, mx, .82, dz - .05); bx(.28, .015, .28, silver, mx + .02, .87, dz - .05);       // เครื่องพิมพ์ 3 มิติ: ฐาน + แผ่นพิมพ์
+  for (const sz of [-.22, .22]) bx(.04, .5, .04, silver, mx - .14, 1.1, dz - .05 + sz); bx(.04, .05, .5, silver, mx - .14, 1.33, dz - .05); bx(.08, .1, .07, wht, mx - .08, 1.2, dz - .05);   // โครงแกน Z + หัวฉีด
+  bx(.3, .28, .4, wht, mx - .02, .92, dz - .58); bx(.01, .18, .3, M('#1f2937'), mx + .135, .92, dz - .58);   // กล่องเส้นพลาสติก (4 ม้วน)
+  for (let k = 0; k < 4; k++) bx(.03, .05, .03, black, mx - .05, 1.09, dz - .72 + k*.09);
+  bx(.02, .5, .8, black, x0 + .09, 1.6, dz + .3); for (const [tz, tc] of [[.05, '#16a34a'], [.25, '#2563eb'], [.42, '#f59e0b']]) bx(.03, .16, .04, M(tc), x0 + .11, 1.45, dz + tz);   // peg board + คีม ไขควง
+  const logo = cvT(128, 150, (c, w) => { c.fillStyle = '#1f2937'; c.beginPath(); c.roundRect(14, 0, 100, 100, 10); c.fill(); c.lineWidth = 7; c.strokeStyle = '#3b82f6'; c.strokeRect(30, 16, 68, 68); c.strokeStyle = '#f97316'; c.beginPath(); c.moveTo(30, 50); c.lineTo(30, 16); c.lineTo(64, 16); c.stroke();
+    c.fillStyle = '#f8fafc'; c.font = 'bold 40px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('BM', 64, 52); c.fillStyle = '#1f2937'; c.beginPath(); c.roundRect(4, 108, 120, 40, 8); c.fill(); c.fillStyle = '#f8fafc'; c.font = 'bold 21px sans-serif'; c.fillText('BANKHUM', 64, 123); c.fillStyle = '#f97316'; c.font = 'bold 10px sans-serif'; c.fillText('MAKER LAB', 64, 141); });
+  { const p = new THREE.Mesh(new THREE.PlaneGeometry(.5, .58), new THREE.MeshBasicMaterial({map: logo, transparent: true})); p.rotation.y = Math.PI/2; p.position.set(x0 + .1, y + 2.2, dz - .1); g.add(p); }   // ป้าย BANKHUM MAKER LAB
+  const sz0 = dz - 1.3;                                                                                  // ชั้นเหล็กฉากสีดำ 4 ชั้น
+  for (const lx of [-.18, .18]) for (const lz of [-.44, .44]) bx(.035, 1.6, .035, black, x0 + .3 + lx, .8, sz0 + lz);
+  for (const ly of [.12, .6, 1.08, 1.58]) bx(.4, .025, .9, black, x0 + .3, ly, sz0);
+  for (let k = 0; k < 4; k++) bx(.18, .2, .17, M('#e2e8f0'), x0 + .3, .24, sz0 - .3 + k*.2);          // กล่องเก็บเส้นพลาสติก
+  bx(.3, .3, .3, M('#c08a4a'), x0 + .3, .76, sz0 + .2); for (const [fz, fh] of [[-.25, .22], [-.05, .3], [.15, .12]]) bx(.1, fh, .1, M('#4b5563'), x0 + .3, 1.6 + fh/2, sz0 + fz);   // กล่อง + โมเดลที่พิมพ์ไว้บนสุด
+  { const b1 = new THREE.Mesh(new THREE.CylinderGeometry(.17, .15, .45, 12), M('#1f2937')); b1.position.set(x0 + .3, y + .23, z1 - .3); g.add(b1); bx(.3, .38, .34, M('#2a6f78'), x0 + .7, .19, z1 - .28); }   // ถังขยะ
+  // เสาผนังหลัง: นาฬิกา กล้องวงจรปิด ตู้แร็กสัญญาณ · พัดลมตั้งพื้น
+  const pw = sz0 - .75; bx(.2, 1.2, .4, teal, x0 + .15, .6, pw); bx(.2, 1.4, .4, white, x0 + .15, 1.9, pw);
+  { const ck = new THREE.Mesh(new THREE.CylinderGeometry(.16, .16, .04, 18), black); ck.rotation.z = Math.PI/2; ck.position.set(x0 + .27, y + 2.3, pw); g.add(ck); }
+  bx(.35, .35, .55, black, x0 + .24, 1.6, pw - .55); bx(.08, .08, .08, wht, x0 + .3, 2.05, pw + .05);
+  bx(.05, 1.0, .05, M('#e5e7eb'), x0 + .7, .5, pw - .9); bx(.3, .05, .3, M('#e5e7eb'), x0 + .7, .03, pw - .9); { const f = new THREE.Mesh(new THREE.CylinderGeometry(.24, .24, .08, 16), wht); f.rotation.z = Math.PI/2; f.position.set(x0 + .7, y + 1.1, pw - .9); g.add(f); }
+  // โต๊ะครู มุมตะวันตกเฉียงเหนือ: โครงเหล็กขาว หน้าโต๊ะขาวลายเส้นดำ จอคอม เครื่องพิมพ์ ขวดสเปรย์แดง กล่องใส เก้าอี้ตาข่ายดำ
+  const stripe = cvT(64, 32, c => { c.fillStyle = '#f1f5f9'; c.fillRect(0, 0, 64, 32); c.fillStyle = '#475569'; for (const yy of [6, 13, 20]) c.fillRect(0, yy, 64, 2); });
+  const tx = x0 + 1.25, tz = z0 + 1.05;
+  { const top = new THREE.Mesh(new THREE.BoxGeometry(1.4, .04, .7), [white, white, new THREE.MeshLambertMaterial({map: stripe}), white, white, white]); top.position.set(tx, y + .76, tz); g.add(top); }
+  for (const lx of [-.66, .66]) { bx(.04, .74, .04, M('#e5e7eb'), tx + lx, .37, tz - .32); bx(.04, .74, .04, M('#e5e7eb'), tx + lx, .37, tz + .32); bx(.04, .04, .66, M('#e5e7eb'), tx + lx, .04, tz); }
+  bx(.5, .32, .04, black, tx + .1, 1.0, tz - .2); bx(.4, .2, .35, black, tx - .45, .88, tz); bx(.07, .24, .07, M('#dc2626'), tx - .2, .9, tz + .2); bx(.3, .14, .22, M('#e0f2fe'), tx + .45, .85, tz + .15);
+  bx(.5, .06, .5, black, tx + .1, .48, tz - .7); bx(.5, .65, .06, black, tx + .1, .85, tz - .95); bx(.06, .44, .06, black, tx + .1, .23, tz - .7);   // เก้าอี้ครูตาข่ายดำ หันเข้าห้อง
+  bx(.45, .28, .2, M('#111827'), tx + .2, .14, tz + .6);                                                // กระเป๋าโน้ตบุ๊กวางพื้น
   const st = compStations(), mm = new THREE.Matrix4(), n = st.length;
   const I = (geo, mat, k) => { const o = new THREE.InstancedMesh(geo, mat, k); o.castShadow = true; g.add(o); return o; };
   const mon = I(new THREE.BoxGeometry(.04, .34, .52), black, n), scr = I(new THREE.BoxGeometry(.01, .29, .47), screen, n), stand = I(new THREE.BoxGeometry(.06, .16, .06), black, n);
-  const kb = I(new THREE.BoxGeometry(.14, .02, .44), black, n), cpu = I(new THREE.BoxGeometry(.42, .4, .18), M('#1f2937'), n), seat = I(new THREE.BoxGeometry(.34, .05, .34), purple, n), sleg = I(new THREE.BoxGeometry(.3, .42, .3), purple, n), kit = I(new THREE.BoxGeometry(.22, .1, .3), M('#e0f2fe'), n), cam = I(new THREE.BoxGeometry(.08, .06, .06), black, n);
+  const kb = I(new THREE.BoxGeometry(.14, .02, .44), black, n), cpu = I(new THREE.BoxGeometry(.42, .4, .18), M('#1f2937'), n), seat = I(new THREE.BoxGeometry(.34, .05, .34), purple, n), sleg = I(new THREE.BoxGeometry(.3, .42, .3), purple, n), mouse = I(new THREE.BoxGeometry(.1, .035, .06), black, n), cam = I(new THREE.BoxGeometry(.08, .06, .06), black, n);
   st.forEach((q, i) => {
     const s = q.side, ry = mm.makeRotationY(Math.PI/2).clone(), at = (dz, yy, dx = 0) => mm.makeTranslation(q.x + dx, y + yy, q.zc + dz);   // dz วัดจากแนวกลางโต๊ะ
     mon.setMatrixAt(i, at(s*.12, 1.03).multiply(ry)); scr.setMatrixAt(i, at(s*.145, 1.03).multiply(ry));   // จอหันออกหาคนนั่ง หลังจอชนกันกลางโต๊ะ
@@ -2695,7 +2723,7 @@ function buildCompFx(){
     cpu.setMatrixAt(i, at(s*.35, .2, .2).multiply(ry));
     seat.setMatrixAt(i, mm.makeTranslation(q.x, y + .45, q.z)); sleg.setMatrixAt(i, mm.makeTranslation(q.x, y + .21, q.z));   // เก้าอี้พลาสติกม่วง
     cam.setMatrixAt(i, at(s*.12, 1.24));                                                        // กล้องเว็บแคมบนจอ
-    kit.setMatrixAt(i, i % 3 ? mm.makeScale(0, 0, 0) : at(s*.45, .84, .28).multiply(ry));   // กล่องชุดหุ่นยนต์ (บางที่)
+    mouse.setMatrixAt(i, at(s*.45, .8, .33));   // เมาส์ข้างคีย์บอร์ด
   });
   const xs = st.map(q => q.x), xa = Math.min(...xs) - .45, xb = Math.max(...xs) + .45;
   for (const zc of new Set(st.map(q => q.zc))) {                                                // โต๊ะไม้ยาวกว้างสองฝั่ง ขาเหล็กดำ
@@ -2785,7 +2813,7 @@ function buildMusicFx(){
 // อาคารเทคโนโลยี + อาคารไม้ (อาคาร ๒) ตามรูปจริง 8 รูปที่ครูส่ง: แทนกล่องเดิมจากโมเดล สร้างใหม่ทั้งหลังในพิกัดโลก แล้วผูกกับโหนดเดิม (คลิก/มองทะลุได้เหมือนเดิม)
 // อาคารเทคฯ: หน้าจั่วหันไปทางลาน (+z) ผนังจั่วขาว ป้ายน้ำเงิน "อาคารเทคโนโลยี" ระเบียงชั้น 2 ลูกกรงแก้วสีน้ำเงิน ชั้นล่างภาพวาด TECHNOLOGY / AI / หุ่นยนต์ ประตูม้วนกลาง
 // อาคารไม้: ระเบียงหันไปทางอาคารเทคฯ (-x) ชั้นบนไม้สีแดงราวกากบาท ชั้นล่างผนังขาวขอบเขียว · ปลายฝั่งโรงอาหารปิดทึบ 2 ชั้น มีภาพจิตรกรรมไทย 2 ภาพ
-const TECH = {x0: 7.3, x1: 19.3, zb: -48.1, zf: -38.6, z2: -40.4, ye: 6.7, yr: 9.6};   // zf = ผนังหน้าชั้นล่าง, z2 = ผนังหน้าชั้น 2 (ระเบียงอยู่ระหว่าง z2–zf)
+const TECH = {x0: 7.3, x1: 19.3, zb: -48.1, zf: -38.6, z2: -40.4, ye: 6.7, yr: 9.6, sx0: 8.4, sx1: 14.4, sw: .95};   // sx0–sx1 × sw = ช่องบันไดในพื้นระเบียง ชิดผนังห้อง   // zf = ผนังหน้าชั้นล่าง, z2 = ผนังหน้าชั้น 2 (ระเบียงอยู่ระหว่าง z2–zf)
 const WB = {xf: 23.4, xw: 25.6, xb: 35.8, zs: -44.2, zm: -25.4, zn: -18.6, ye: 6.8};   // xf แนวระเบียง, xw ผนังหลังระเบียง, zm–zn ช่วงปิดทึบมีภาพวาดไทย (ปลายฝั่งโรงอาหาร)
 const BRIDGE_Z = [-40.6, -38.8];
 function buildTechWood(root){
@@ -2816,7 +2844,11 @@ function buildTechWood(root){
   /* ================= อาคารเทคโนโลยี ================= */
   const T = TECH, tg = own('Technology_Building'), TW = T.x1 - T.x0, TX = (T.x0 + T.x1)/2;
   B(TW + .4, .15, T.zf - T.zb + .4, '#b8bab6', TX, .075, (T.zb + T.zf)/2, tg);   // ฐานปูน
-  B(TW, F2, T.zf - T.zb, white, TX, F2/2, (T.zb + T.zf)/2, tg);                   // ชั้นล่าง (ห้องเก็บของ)
+  const SZ1 = T.z2 + T.sw;                                                         // ขอบนอกช่องบันได
+  B(TW, F2, T.z2 - T.zb, white, TX, F2/2, (T.zb + T.z2)/2, tg);                   // ชั้นล่าง (ห้องเก็บของ)
+  B(TW, F2, T.zf - SZ1, white, TX, F2/2, (SZ1 + T.zf)/2, tg);                     // ช่วงหน้าใต้ระเบียง
+  B(T.x1 - T.sx1, F2, T.sw, white, (T.sx1 + T.x1)/2, F2/2, T.z2 + T.sw/2, tg);    // เว้นช่องบันได (ปลายล่างทะลุออกฝั่งตะวันตก)
+  B(T.sx1 - T.x0, F2 - .15, .02, '#1f4e6e', (T.x0 + T.sx1)/2, .15 + (F2 - .15)/2, T.z2 + .01, tg);   // ผนังช่องบันไดสีน้ำเงินเข้ม
   B(TW, T.ye - F2, T.z2 - T.zb, white, TX, (F2 + T.ye)/2, (T.zb + T.z2)/2, tg);    // ชั้น 2 (ห้องคอม)
   // ภาพวาดผนังชั้นล่าง: ซ้ายน้ำเงินเข้ม หน้าหุ่นยนต์ AI / internet of things / CODING · กลางประตูม้วน TECHNOLOGY · ขวาฟ้า ชิป AI หุ่นยนต์ขาว หุ่นยนต์ชมพู มือแตะกัน
   const PX = 110, mural = cvTex(TW*PX, Math.round(F2*PX), (c, w, h) => { const X = m => m*PX, Y = m => h - m*PX;
@@ -2859,19 +2891,31 @@ function buildTechWood(root){
   plane(TW, F2, mural, TX, F2/2, T.zf + .02, 0, tg);
   const circuitSide = (L, dark) => cvTex(Math.round(L*48), Math.round(F2*48), (c, w, h) => { const gr = c.createLinearGradient(0, 0, w, h); gr.addColorStop(0, dark ? '#0f2350' : '#3aa3ea'); gr.addColorStop(1, dark ? '#2563b8' : '#1f6fc4'); c.fillStyle = gr; c.fillRect(0, 0, w, h);
     c.strokeStyle = 'rgba(220,240,255,.55)'; c.lineWidth = 2; for (let i = 0; i < 14; i++) { const x = (i*53) % w, y = 20 + (i*37) % (h - 40); c.beginPath(); c.moveTo(x, y); c.lineTo(x + 30, y); c.lineTo(x + 40, y + 12); c.lineTo(x + 70, y + 12); c.stroke(); c.beginPath(); c.arc(x + 72, y + 12, 3, 0, 7); c.stroke(); } });
-  plane(T.zf - T.zb, F2, circuitSide(T.zf - T.zb, true), T.x0 - .02, F2/2, (T.zb + T.zf)/2, -Math.PI/2, tg);
+  plane(T.z2 - T.zb, F2, circuitSide(T.z2 - T.zb, true), T.x0 - .02, F2/2, (T.zb + T.z2)/2, -Math.PI/2, tg); plane(T.zf - SZ1, F2, circuitSide(T.zf - SZ1, true), T.x0 - .02, F2/2, (SZ1 + T.zf)/2, -Math.PI/2, tg);
   plane(T.zf - T.zb, F2, circuitSide(T.zf - T.zb, false), T.x1 + .02, F2/2, (T.zb + T.zf)/2, Math.PI/2, tg);
   // บันไดกระเบื้องหน้าประตูม้วน
   const tileT = cvTex(64, 32, (c, w, h) => { c.fillStyle = '#2f9e6a'; c.fillRect(0, 0, w, h); c.fillStyle = '#f59e0b'; for (let x = 0; x < w; x += 16) { c.beginPath(); c.moveTo(x, h); c.lineTo(x + 8, 0); c.lineTo(x + 16, h); c.fill(); } c.fillStyle = '#e11d48'; c.fillRect(0, h - 5, w, 5); });
   B(1.2, .32, .5, new THREE.MeshLambertMaterial({map: tileT}), TX + .9, .16, T.zf + .25, tg); B(1.2, .16, .4, new THREE.MeshLambertMaterial({map: tileT}), TX + .9, .08, T.zf + .7, tg);
   // ชั้น 2: ผนังหน้า ประตูซ้าย หน้าต่างบานเลื่อน 2 บาน ถังดับเพลิง
-  const f2 = cvTex(TW*64, Math.round((T.ye - F2)*64), (c, w, h) => { const X = m => m*64, Y = m => h - m*64; c.fillStyle = '#eef0ee'; c.fillRect(0, 0, w, h);
-    for (const [x, ww, hh] of [[1.2, 1.0, 2.1], [4.6, 1.5, 1.45], [8.6, 1.5, 1.45]]) { c.fillStyle = '#d4d4d8'; c.fillRect(X(x) - 4, Y(hh + (hh > 2 ? 0 : .75)) - 4, X(ww) + 8, X(hh) + 8); c.fillStyle = '#3b4250'; c.fillRect(X(x), Y(hh + (hh > 2 ? 0 : .75)), X(ww), X(hh)); c.fillStyle = '#cbd5e1'; c.fillRect(X(x + ww/2) - 2, Y(hh + (hh > 2 ? 0 : .75)), 4, X(hh)); }
-    c.fillStyle = '#dc2626'; c.fillRect(X(2.5), Y(1.5), 12, 32); c.fillStyle = '#e5e7eb'; c.fillRect(X(11.0), Y(2.3), 16, 30); });
+  // ผนังห้องคอมฝั่งระเบียง (ตามรูป): ล่างน้ำเงินเข้มสูง 1.2 ม. บนขาว หน้าต่างบานเลื่อน 2 บาน ประตูกระจกปลายฝั่งสะพาน ถังดับเพลิงข้างประตู
+  const f2 = cvTex(TW*64, Math.round((T.ye - F2)*64), (c, w, h) => { const X = m => m*64, Y = m => h - m*64; c.fillStyle = '#eef0ee'; c.fillRect(0, 0, w, h); c.fillStyle = '#1f4e6e'; c.fillRect(0, Y(1.2), w, X(1.2));
+    for (const [x, ww, y0, hh] of [[4.6, 1.5, 1.25, 1.15], [7.9, 1.5, 1.25, 1.15], [10.25, .9, 0, 2.1]]) { c.fillStyle = '#c7ccd1'; c.fillRect(X(x) - 4, Y(y0 + hh) - 4, X(ww) + 8, X(hh) + 8); c.fillStyle = '#3b4250'; c.fillRect(X(x), Y(y0 + hh), X(ww), X(hh)); c.fillStyle = '#cbd5e1'; c.fillRect(X(x + ww/2) - 2, Y(y0 + hh), 4, X(hh)); }
+    c.fillStyle = '#dc2626'; c.fillRect(X(9.7), Y(1.75), 12, 30); c.fillStyle = '#e5e7eb'; c.fillRect(X(3.4), Y(2.3), 16, 30); });
   plane(TW, T.ye - F2, f2, TX, (F2 + T.ye)/2, T.z2 + .02, 0, tg);
   // ระเบียงชั้น 2: พื้น เสาขาวโคนเทาเขียว ราวเทาเขียว ลูกกรงแก้วน้ำเงิน
   const bd = T.zf - T.z2, bz = (T.zf + T.z2)/2;
-  B(TW, .14, bd, '#d6d3cd', TX, F2 + .07, bz, tg);
+  const tileF = (w, d) => { const tx = cvTex(64, 64, (c) => { c.fillStyle = '#a9c2b7'; c.fillRect(0, 0, 64, 64); c.strokeStyle = '#8fa89c'; c.lineWidth = 2; c.strokeRect(1, 1, 62, 62); }); tx.wrapS = tx.wrapT = THREE.RepeatWrapping; tx.repeat.set(w/.3, d/.3); return new THREE.MeshLambertMaterial({map: tx}); };
+  for (const [xa, xb, za, zb2] of [[T.x0, T.sx0, T.z2, T.zf], [T.sx1, T.x1, T.z2, T.zf], [T.sx0, T.sx1, SZ1, T.zf]]) B(xb - xa, .14, zb2 - za, tileF(xb - xa, zb2 - za), (xa + xb)/2, F2 + .07, (za + zb2)/2, tg);   // พื้นกระเบื้องเขียวอมเทา เว้นช่องบันได
+  // บันไดลงชั้นล่าง ชิดผนังห้อง: ขึ้นจากปลายตะวันตก (ใต้ระเบียง) ถึงพื้นระเบียงฝั่งตะวันออก · ราวกันตกเหล็กกลมสีขาวรอบช่อง
+  { const S = STAIR.Technology_Building, N = 20, run = (S.top[0] - S.bot[0])/N, rise = F2/N, stepM = tileF(run, T.sw), zc = T.z2 + T.sw/2;
+    for (let i = 0; i < N; i++) { const yt = rise*(i + 1); B(run + .01, Math.min(.3, yt), T.sw - .02, stepM, S.bot[0] + run*(i + .5), yt - Math.min(.3, yt)/2 + .02, zc, tg); }
+    B(S.bot[0] - T.x0, .04, T.sw, stepM, (T.x0 + S.bot[0])/2, .17, zc, tg);                         // ชานพักล่าง
+    const rw = M('#f4f6f8'), ry = F2 + .14 + .95;
+    B(T.sx1 - T.sx0, .05, .05, rw, (T.sx0 + T.sx1)/2, ry, SZ1 - .03, tg); B(.05, .05, T.sw, rw, T.sx0 + .03, ry, zc, tg);   // ราวบน (ด้านยาว + ปลายตะวันตก)
+    B(T.sx1 - T.sx0, .035, .035, rw, (T.sx0 + T.sx1)/2, F2 + .5, SZ1 - .03, tg);
+    for (let x = T.sx0 + .03; x <= T.sx1 + .01; x += (T.sx1 - T.sx0 - .06)/12) B(.035, .95, .035, rw, x, F2 + .14 + .475, SZ1 - .03, tg);
+    for (const z of [T.z2 + .3, T.z2 + .62]) B(.035, .95, .035, rw, T.sx0 + .03, F2 + .14 + .475, z, tg);
+  }
   B(TW, .2, .16, slate, TX, F2 + .2, T.zf - .1, tg); B(TW, .14, .26, slate, TX, F2 + 1.02, T.zf - .1, tg);
   B(.16, .2, bd, slate, T.x0 + .1, F2 + .2, bz, tg); B(.26, .14, bd, slate, T.x0 + .1, F2 + 1.02, bz, tg);
   const colX = [T.x0 + .18, T.x0 + 4.05, T.x0 + 7.95, T.x1 - .18];
@@ -2879,7 +2923,7 @@ function buildTechWood(root){
   { const pr = [[.04, 0], [.07, .05], [.05, .2], [.09, .45], [.05, .7], [.06, .76], [.04, .8]].map(([r, y]) => new THREE.Vector2(r, y)), bal = new THREE.LatheGeometry(pr, 8);
     const pts = []; for (let k = 0; k < 3; k++) for (let x = colX[k] + .35; x < colX[k + 1] - .25; x += .3) pts.push([x, T.zf - .1]);
     for (let z = T.z2 + .3; z < T.zf - .3; z += .3) pts.push([T.x0 + .1, z]);
-    const im = new THREE.InstancedMesh(bal, new THREE.MeshStandardMaterial({color: '#2c3d9e', metalness: .35, roughness: .3}), pts.length), mm = new THREE.Matrix4();
+    const im = new THREE.InstancedMesh(bal, new THREE.MeshStandardMaterial({color: '#2138c4', metalness: .2, roughness: .3}), pts.length), mm = new THREE.Matrix4();
     pts.forEach(([x, z], i) => im.setMatrixAt(i, mm.makeTranslation(x, F2 + .22, z))); im.castShadow = true; tg.add(im); }
   // จานดาวเทียม 2 ใบที่มุมซ้าย
   for (const [x, z] of [[T.x0 + .3, T.zf + .25], [T.x0 + 1.25, T.zf + .3]]) { const d = mk(new THREE.SphereGeometry(.48, 14, 8, 0, Math.PI*2, 0, .9), new THREE.MeshLambertMaterial({color: '#ece7de', side: THREE.DoubleSide}), x, F2 + .45, z, tg); d.rotation.x = Math.PI/2 + .3; B(.04, .5, .04, '#6b7280', x, F2 + .25, z - .1, tg); }
@@ -3804,11 +3848,11 @@ function chalermRoomFx(c, g){
 const roomLabs = [];
 function buildFloors(){
   const slabM = new THREE.MeshLambertMaterial({color:'#e2e8f0', transparent:true, opacity:.5, depthWrite:false}), stairM = new THREE.MeshLambertMaterial({color:'#94a3b8'});
-  const SLAB = {Chalerm_Building: [23.5, 35.5, -7.2, 26.4], Wooden_Building: [20.2 + WOOD.dx, 32.2 + WOOD.dx, -43.7 + WOOD.dz, -21.4 + WOOD.dz], Technology_Building: [7.3, 19.3, -48.1, -40.1]};
+  const SLAB = {Chalerm_Building: [23.5, 35.5, -7.2, 26.4], Wooden_Building: [20.2 + WOOD.dx, 32.2 + WOOD.dx, -43.7 + WOOD.dz, -21.4 + WOOD.dz], Technology_Building: [7.3, 19.3, -48.1, -40.4]};
   SLAB.Chalerm_Corridor = [23.5, 25.6, -7.2, CH_STAIRS[1].zE]; SLAB.Chalerm_Building = [25.6, 35.5, -13.6, 26.4];   // เว้นช่องบันไดปลายอาคารฝั่ง ป.3
   for (const [b, [x0, x1, z0, z1]] of Object.entries(SLAB)) {
     const s = new THREE.Mesh(new THREE.BoxGeometry(x1-x0, .16, z1-z0), slabM); s.position.set((x0+x1)/2, F2 - .08, (z0+z1)/2); s.renderOrder = 1; scene.add(s);
-    if (b.startsWith('Chalerm')) continue;   // บันไดผนังเขียว สร้างใน buildChalermF2
+    if (b.startsWith('Chalerm') || b === 'Technology_Building') continue;   // บันไดผนังเขียว สร้างใน buildChalermF2 · บันไดอาคารเทคโนโลยีสร้างใน buildTechWood
     const S = STAIR[b], len = S.bot3.distanceTo(S.top3), st = new THREE.Mesh(new THREE.BoxGeometry(1.3, .18, len), stairM);
     st.position.copy(S.bot3).add(S.top3).multiplyScalar(.5); st.lookAt(S.top3); st.castShadow = true; scene.add(st);
     for (let i = 1; i < 10; i++) { const q = S.bot3.clone().lerp(S.top3, i/10), step = new THREE.Mesh(new THREE.BoxGeometry(1.3, .06, .12), stairM); step.position.copy(q).setY(q.y + .1); step.lookAt(S.top3.clone().setY(q.y + .1)); scene.add(step); }
