@@ -603,6 +603,7 @@ const TSCAN_PT = [26.7, 2];   // จุดสแกนหน้าครู อ�
 const V_SCHOOL = 130, V_ROAD = 450, V_BIKE = 180, GAP = 1.8;   // ม./นาที (≈ 8 กม./ชม. ในโรงเรียน)
 const VEH = [];
 const GATE_IN_Z = 24, GATE_OUT_Z = -26.8, FENCE = {x0: -64, x1: 63, z0: -49.5, z1: 48.5};
+const MOTO_GATE = {x: 21.35, w: 3.0};   // ประตูรั้วหลังสำหรับรถจักรยานยนต์ (วงม่วงที่ครูส่ง): ช่องระหว่างอาคารไม้กับอาคารเทคฯ ริมรั้วด้านหลัง (z0)
 // แนวอาคารริมรั้วฝั่งถนน (ห้องน้ำอนุบาล อาคารอนุบาล สระว่ายน้ำ ห้องดนตรี อาคารอเนกประสงค์ ห้องธนาคาร) ขยับไปชิดรั้ว (ตามที่ครูขอ): ระยะเลื่อน z ของแต่ละอาคาร ให้หลังอาคารห่างรั้ว ~1 ม.
 const ROW_DZ = {Kinder_Toilet: 5.5, Kindergarten: 6.5, Swimming_Pool: 4.5};
 // เอาอาคารหลังคาขาว (ห้องน้ำอนุบาลในโมเดล) ออก แล้วขยับ+ขยายอาคารอนุบาลไปเต็มที่ว่าง สระว่ายน้ำยาวขึ้นตามมา (ตามที่ครูขอ): ช่วง x ของอาคารอนุบาล และรั้วตาข่ายสระฝั่งตะวันตก
@@ -1765,7 +1766,7 @@ function buildFence(){ // รั้วรอบโรงเรียน เว�
   fenceBuilt = true; buildOutside(); buildRoad(); buildGarden(); buildP12Lane(); buildKgPool(); const {x0, x1, z0, z1} = FENCE, H = 1.6, segs = [];
   const gaps = [[GATE_IN_Z - 4, GATE_IN_Z + 4], [GATE_OUT_Z - 4, GATE_OUT_Z + 4]];
   let z = z0; for (const [a, b] of gaps.sort((p, q) => p[0] - q[0])) { segs.push([x0, z, x0, a]); z = b; } segs.push([x0, z, x0, z1]);
-  segs.push([x0, z1, x1, z1], [x1, z1, x1, z0], [x1, z0, x0, z0]);
+  segs.push([x0, z1, x1, z1], [x1, z1, x1, z0], [x1, z0, MOTO_GATE.x + MOTO_GATE.w/2, z0], [MOTO_GATE.x - MOTO_GATE.w/2, z0, x0, z0]);   // รั้วหลังเว้นช่องประตูรถจักรยานยนต์
   for (let i = 1; i < BACK_FENCE.length; i++) segs.push([...BACK_FENCE[i-1], ...BACK_FENCE[i]]);
   const mat = new THREE.MeshLambertMaterial({color: '#64748b'}), posts = [];
   buildFrontage(segs.filter(([ax, , bx]) => ax === x0 && bx === x0));   // ด้านหน้า (ติดถนน) เป็นรั้วไม้ระแนงสีเขียวตามภาพจริง
@@ -1779,6 +1780,29 @@ function buildFence(){ // รั้วรอบโรงเรียน เว�
   const im = new THREE.InstancedMesh(new THREE.BoxGeometry(.18, H, .18).translate(0, H/2, 0), mat, posts.length);
   posts.forEach(([x, z], i) => { dummy.position.set(x, 0, z); dummy.rotation.set(0, 0, 0); dummy.scale.setScalar(1); dummy.updateMatrix(); im.setMatrixAt(i, dummy.matrix); });
   im.castShadow = true; scene.add(im);
+  buildMotoGate();
+}
+function buildMotoGate(){   // ประตูเหล็กบานคู่ในรั้วหลัง ทางเข้าออกรถจักรยานยนต์ (ระหว่างอาคารไม้กับอาคารเทคฯ) เปิดค้างไว้หนึ่งบาน
+  const g = new THREE.Group(); g.name = 'MotoGate'; scene.add(g);
+  const {x: gx, w} = MOTO_GATE, z = FENCE.z0, H = 1.6, M = c => new THREE.MeshLambertMaterial({color: c});
+  const steel = M('#475569'), bar = M('#64748b'), conc = M('#bdb7ad'), yel = M('#eab308');
+  const B = (bw, bh, bd, m, x, y, zz, par = g) => { const o = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), m); o.position.set(x, y, zz); o.castShadow = o.receiveShadow = true; par.add(o); return o; };
+  for (const sx of [-1, 1]) { B(.26, H + .35, .26, steel, gx + sx*(w/2 + .02), (H + .35)/2, z); B(.34, .06, .34, steel, gx + sx*(w/2 + .02), H + .38, z); }   // เสาประตูเหล็กกล่อง
+  const lw = w/2 - .08;
+  const leaf = (hx, open) => {   // บานประตู: กรอบเหล็ก ลูกกรงตั้ง คานขวางกลาง หมุนรอบบานพับที่เสา
+    const p = new THREE.Group(); p.position.set(hx, 0, z); p.rotation.y = open; g.add(p); const d = hx < gx ? 1 : -1, cx = d*lw/2;
+    for (const y of [.12, .78, H - .05]) B(lw, .07, .06, steel, cx, y, 0, p);
+    for (const ex of [.03, lw - .03]) B(.07, H - .1, .06, steel, d*ex, H/2, 0, p);
+    for (let k = 1; k < 9; k++) B(.035, H - .2, .035, bar, d*k*lw/9, H/2, 0, p);
+    return p; };
+  leaf(gx - w/2 + .06, 0); leaf(gx + w/2 - .06, 1.25);   // บานซ้ายปิด บานขวาเปิดเข้าด้านใน
+  B(.12, .14, .05, yel, gx - .08, .8, z + .05);   // กลอนประตู
+  B(w + .6, .04, 6.6, conc, gx, .02, z + 3.2);   // ทางปูนจากประตูเข้าไประหว่างอาคาร
+  B(w + .6, .04, 2.2, conc, gx, .02, z - 1.1);   // ลานปูนหน้าประตูฝั่งนอกรั้ว
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 96; const c = cv.getContext('2d');   // ป้ายเล็กบนเสา
+  c.fillStyle = '#1e3a8a'; c.fillRect(0, 0, 256, 96); c.fillStyle = '#fff'; c.font = 'bold 34px sans-serif'; c.textAlign = 'center'; c.fillText('🏍 ทางเข้า', 128, 42); c.font = '26px sans-serif'; c.fillText('รถจักรยานยนต์', 128, 80);
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace;
+  const sg = new THREE.Mesh(new THREE.PlaneGeometry(.75, .28), new THREE.MeshLambertMaterial({map: t, side: THREE.DoubleSide})); sg.position.set(gx - w/2 - .02, 1.45, z - .15); sg.rotation.y = Math.PI; g.add(sg);
 }
 /* ---------- หน้าโรงเรียนตามภาพถ่ายจริง (school-photos/01-ภาพรวม-ประตู-รั้ว) ----------
    รั้วระแนงขาว-เขียว เสาเขียว, ป้ายผลงาน/รางวัลเรียงริมรั้ว, ป้ายชื่อโรงเรียนสีดำบนกำแพงเขียวมิ้นต์ (พ.ศ. 2548),
@@ -3123,6 +3147,23 @@ function buildTechWood(root){
       cyl(.09, .14, 5.0, bark, tx, .3 + 2.5, tz);
       for (const [dx, dz, y, r] of [[.6, .2, 4.3, .9], [-.5, .3, 4.9, .8], [.2, -.5, 5.7, .85], [-.3, -.2, 6.5, .7], [.5, .4, 7.0, .55], [-.7, -.4, 3.9, .6]]) {
         rod(tx, y - 1.0, tz, tx + dx, y, tz + dz, .035, bark); mk(new THREE.IcosahedronGeometry(r, 0), leaf, tx + dx, y + .15, tz + dz, sy).scale.y = .55; } }
+  }
+
+  /* ================= คอมเพรสเซอร์แอร์ 3 ตัว (วงแดงที่ครูส่ง): ติดผนังหลังชั้นล่างอาคารเทคฯ ฝั่งรั้ว บนขาแขวนเหล็ก ท่อน้ำยาขึ้นไปห้องคอมชั้น 2 ================= */
+  { const ac = new THREE.Group(); ac.name = 'AcCompressors'; scene.add(ac);
+    const T = TECH, wz = T.zb - .02, body = M('#eceeee'), side = M('#d6d9da'), dark = M('#2b3034'), grill = M('#9aa1a6'), brk = M('#6b7280'), pipe = M('#ffffff'), tape = M('#9ca3af');
+    const UW = .86, UH = .62, UD = .32, Y = 1.25, uz = wz - .1 - UD/2;
+    for (const ux of [17.4, 15.1, 12.8]) {
+      B(UW, UH, UD, body, ux, Y, uz, ac); B(UW + .02, .04, UD + .02, side, ux, Y + UH/2 + .01, uz, ac);   // ตัวเครื่อง + ฝาบน
+      B(.2, UH - .08, .01, side, ux - UW/2 + .12, Y, uz - UD/2 - .005, ac);   // แผงข้างฝั่งวาล์ว
+      const fan = mk(new THREE.CircleGeometry(.22, 20), dark, ux + .1, Y, uz - UD/2 - .006, ac); fan.rotation.y = Math.PI;   // ช่องพัดลม
+      const ring = mk(new THREE.RingGeometry(.2, .24, 20), grill, ux + .1, Y, uz - UD/2 - .008, ac); ring.rotation.y = Math.PI;
+      for (const a of [0, Math.PI/2]) { const r = B(.44, .015, .01, grill, ux + .1, Y, uz - UD/2 - .01, ac); r.rotation.z = a + Math.PI/4; }
+      for (const dx of [-.3, .3]) { B(.05, .05, .5, brk, ux + dx, Y - UH/2 - .03, wz - .25, ac); const st = B(.04, .5, .04, brk, ux + dx, Y - UH/2 - .25, wz - .03, ac); const dg = B(.03, .03, .62, brk, ux + dx, Y - UH/2 - .2, wz - .21, ac); dg.rotation.x = -.75; }   // ขาแขวนเหล็กฉาก
+      B(.07, .07, .14, tape, ux - UW/2 + .1, Y - .12, wz - .08, ac);   // ท่อน้ำยาออกจากเครื่องเข้าผนัง
+      B(.11, 4.0 - Y, .09, pipe, ux - UW/2 + .1, (Y + 4.0)/2, wz - .05, ac);   // รางครอบท่อขึ้นไปชั้น 2 (ห้องคอม)
+      B(.03, Y - .1, .03, M('#cbd5e1'), ux + UW/2 - .08, (Y - .1)/2, wz - .05, ac);   // ท่อน้ำทิ้ง
+    }
   }
 
   /* ================= ทางเดินมีหลังคาไปโรงอาหาร (ระหว่างอาคารไม้กับอาคารเฉลิมฯ) ================= */
