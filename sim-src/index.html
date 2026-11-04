@@ -927,6 +927,12 @@ function onModel(g) {
     const m = o.material; if (m && m.color) { const hsl={}; m.color.getHSL(hsl); m.color.setHSL(hsl.h, hsl.s*0.85, Math.min(.9, hsl.l*1.02+.04)); m.roughness = .85; }
   }});
   buildTechWood(root);   // อาคารเทคโนโลยี + อาคารไม้ ตามรูปจริง (ก่อนสร้างกล่องคลิกอาคาร)
+  // พุ่มไม้เดิมในโมเดล (poly_15 รวมทั้งไซต์เป็นก้อนเดียว) ที่ค้างอยู่ในแนวอาคารไม้หลังสร้างอาคารใหม่: ตัดเฉพาะสามเหลี่ยมในแนวอาคารออก ไม่ให้โผล่กลางห้องชั้น 2
+  { const o = root.getObjectByName('Site')?.getObjectByName('poly_15'), g = o?.geometry;
+    if (g) { o.updateMatrixWorld(true); const P = g.attributes.position, v = new THREE.Vector3(), idx = g.index ? Array.from(g.index.array) : [...Array(P.count).keys()], keep = [];
+      const inside = i => { v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld); return v.x > WB.xf - 1.2 && v.x < WB.xb + .6 && v.z > WB.zs - .6 && v.z < WB.zn + .4 && v.y > 1.2; };
+      for (let t = 0; t < idx.length; t += 3) if (!(inside(idx[t]) && inside(idx[t + 1]) && inside(idx[t + 2]))) keep.push(idx[t], idx[t + 1], idx[t + 2]);
+      g.setIndex(keep); g.computeBoundingSphere(); } }
   // จุดสแกนหน้า (GATE) อิงตำแหน่งเดิมของอาคารสีขาวหน้าโรงเรียน แล้วค่อยขยับอาคารนั้นไปชิดรั้วด้านหน้า
   const sign = root.getObjectByName('School_Sign'); if (sign) { GATE.copy(new THREE.Box3().setFromObject(sign).getCenter(new THREE.Vector3())).setY(0).add(new THREE.Vector3(-4,0,0)); sign.position.x -= 5; }
   root.getObjectByName('Goal')?.removeFromParent(); root.getObjectByName('Goal001')?.removeFromParent();   // ประตูเดิมเล็ก แทนด้วยประตูฟุตบอลใน buildField
@@ -1482,7 +1488,8 @@ function targetOf(a, m){
       const k = L[a.cls], r = subRect(k.z, k.i, k.n), pose = poseOf(k.z, k.l.sub);
       const mates = a.cohort ??= STUDENTS.filter(s => s.cls === a.cls && s.scan != null);
       if (k.z === COMP) { const st = compStations(), j = mates.indexOf(a.ref) + k.i*Math.floor(st.length/k.n); if (j < st.length) return {p: st[j].clone(), pose, yaw: st[j].yaw}; }   // นั่งหน้าเครื่องคอมพิวเตอร์ หันหน้าเข้าหาจอ
-      return {p: slotOf(r, pose, mates.indexOf(a.ref), mates.length, a.ox, a.oz), pose, yaw: pose === 'sit' ? faceOf(r) : undefined};
+      const fixed = (k.z === SCI || k.z === ENG) && k.n === 1 && pose === 'sit';   // ห้องวิทย์/อังกฤษ: นั่งตามโต๊ะที่ตั้งไว้ในห้อง (SUBJ_SEATS ที่)
+      return {p: slotOf(r, pose, mates.indexOf(a.ref), fixed ? Math.max(SUBJ_SEATS, mates.length) : mates.length, a.ox, a.oz), pose, yaw: pose === 'sit' ? faceOf(r) : undefined};
     }
     const ts = tslot(a.ref.name.slice(3), where), mine = Object.entries(L).find(([c, k]) => 'ครู'+k.l.tea === a.ref.name || ts?.[1] === c || (a.ref.name.startsWith('ครูอนุบาล') && c === 'อ.'+a.ref.name.slice(-1)));
     if (mine) { const k = mine[1], r = subRect(k.z, k.i, k.n), ps = poseOf(k.z, k.l.sub); return {p: teacherFront(r, ps), pose:'stand', teach: true, yaw: ps === 'sit' ? teachYaw(r) : undefined}; }
@@ -2571,7 +2578,7 @@ function focusZone(n){ if (!zones[n]) return; if (selected !== n) select(n); con
 /* ---------- เข้าห้องเรียน: ซูมเข้าไปในห้อง เห็นกระดาน โต๊ะครู ชั้นวางของ และนักเรียนนั่งโต๊ะ ---------- */
 let roomView = null; const classFx = {};
 // ห้องพิเศษที่เข้าไปดูได้ (ไม่ใช่ห้องประจำชั้น): ห้องคอมพิวเตอร์
-const COMP = 'ห้องคอมพิวเตอร์', SPECIAL = {[COMP]: 'Technology_Building'};
+const SUBJ_SEATS = 36, COMP = 'ห้องคอมพิวเตอร์', SCI = 'ห้องวิทยาศาสตร์', ENG = 'ห้องภาษาอังกฤษ', SPECIAL = {[COMP]: 'Technology_Building', [SCI]: 'Wooden_Building', [ENG]: 'Wooden_Building'};
 const fxB = c => SPECIAL[c] || HOMEROOM[c];
 // ที่นั่งหน้าเครื่องคอม ตามรูปกล้องวงจรปิด: โต๊ะไม้ยาวคู่ 2 แนว ชิดผนังเหนือ/ใต้ ชี้ไปทางผนังทีวี จอหันหลังชนกันกลางโต๊ะ
 // นักเรียนนั่งสองฝั่งหันหน้าเข้าหากันข้ามโต๊ะ (ฝั่งทางเดินหันเข้าผนัง ฝั่งผนังหันเข้ากลางห้อง) ฝั่งละ 8 เครื่อง รวม 32 · กลางห้องทางเดินโล่งมีเสา · หน้าห้องโล่ง
@@ -2648,9 +2655,102 @@ function buildClassFx(){
     const el = document.createElement('div'); el.className = 'rlab'; el.textContent = 'ห้อง ' + c; $('labels').appendChild(el);
     roomLabs.push({el, R: {b: HOMEROOM[c]}, p: new THREE.Vector3(r.cx, y + 2.6, r.cz)});
   }
-  buildCompFx(); buildKgExtra();
+  buildCompFx(); buildKgExtra(); buildSubjectFx();
 }
 // อาคารอนุบาล ห้องที่ 3 (ฝั่งสระว่ายน้ำ) แบ่งครึ่ง: ห้องพยาบาล (ติดห้อง อ.3) + ห้องเปลี่ยนชุดว่ายน้ำ (ฝั่งสระ)
+// ห้องวิทย์ + ห้องอังกฤษ ชั้น 2 อาคารไม้: ของในห้องรอบขอบห้อง (กลางห้องเว้นให้โต๊ะนักเรียนตอนมีคาบเรียน) กระดานอยู่ผนังฝั่ง +z ตาม roomRot
+function buildSubjectFx(){
+  const M = c => new THREE.MeshLambertMaterial({color: c});
+  const cvT = (w, h, draw) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; };
+  const white = M('#f8fafc'), black = M('#1f2937'), frame = M('#475569'), wood = M('#a16207'), blueC = M('#1e3a8a');
+  const room = (key, wallLo, wallHi, floorC, deskM, chairM, fill) => {
+    const R = ROOMS[key]; if (!R) return; const g = new THREE.Group(), y = R.y, W = R.sx, D = R.sz, cx = R.c.x, cz = R.c.z, x0 = cx - W/2, x1 = cx + W/2, z0 = cz - D/2, z1 = cz + D/2;
+    const bx = (w, hh, d, m, x, yy, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, hh, d), typeof m === 'string' ? M(m) : m); o.position.set(x, y + yy, z); o.castShadow = true; g.add(o); return o; };
+    const cyl = (r, hh, m, x, yy, z, r2 = r) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(r, r2, hh, 14), typeof m === 'string' ? M(m) : m); o.position.set(x, y + yy, z); g.add(o); return o; };
+    // แผ่นภาพบนผนัง: ry = ทิศหันหน้า (0 = หันไป +z)
+    const poster = (w, hh, tex, x, yy, z, ry) => { const p = new THREE.Mesh(new THREE.PlaneGeometry(w, hh), new THREE.MeshBasicMaterial({map: tex})); p.position.set(x, y + yy, z); p.rotation.y = ry; g.add(p); return p; };
+    bx(W - .1, .03, D - .1, floorC, cx, .03, cz).castShadow = false;
+    for (const [w, d, x, z] of [[.06, D, x1 - .05, cz], [W, .06, cx, z0 + .05], [W, .06, cx, z1 - .05], [.06, D, x0 + .05, cz]]) { bx(w, 1.1, d, wallLo, x, .55, z); bx(w, 1.5, d, wallHi, x, 1.85, z); }
+    // กระดานไวท์บอร์ด + ทีวีกลางกระดาน ผนังหน้าห้อง (ฝั่ง +z) นักเรียนหันมาทางนี้
+    const fz = z1 - .1; bx(4.36, 1.36, .08, frame, cx, 1.55, fz); bx(4.2, 1.2, .1, white, cx, 1.55, fz - .02); bx(4.2, .05, .14, frame, cx, .93, fz - .07);
+    bx(1.25, .72, .06, '#111827', cx, 1.6, fz - .1); bx(1.15, .64, .01, new THREE.MeshBasicMaterial({color: '#1f2937'}), cx, 1.6, fz - .135);
+    // โต๊ะ-เก้าอี้นักเรียนตั้งไว้ครบ SUBJ_SEATS ที่ ตำแหน่งเดียวกับที่นักเรียนนั่งตอนมีคาบ ห้องจึงไม่โล่ง
+    { const r = subRect(key, 0, 1), rot = r.rot, mm = new THREE.Matrix4(), qr = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rot), V = new THREE.Vector3(), S = new THREE.Vector3(), co = Math.cos(rot), si = Math.sin(rot);
+      const n = SUBJ_SEATS, dk = new THREE.InstancedMesh(new THREE.BoxGeometry(.95, .08, .6).translate(0, .62, 0), deskM, n*3), ch = new THREE.InstancedMesh(new THREE.BoxGeometry(.42, .05, .38).translate(0, .4, 0), chairM, n*2);
+      const put = (m, k, q, lx, yy, lz, a = 1, b = 1, c = 1) => m.setMatrixAt(k, mm.compose(V.set(q.x + lx*co + lz*si, y + yy, q.z - lx*si + lz*co), qr, S.set(a, b, c)));
+      for (let i = 0; i < n; i++) { const q = slotOf(r, 'sit', i, n, .5, .5);
+        put(dk, i*3, q, 0, 0, -.55); put(dk, i*3 + 1, q, -.4, -4.35, -.55, .07, 7.5, .1); put(dk, i*3 + 2, q, .4, -4.35, -.55, .07, 7.5, .1);
+        put(ch, i*2, q, 0, 0, .05); put(ch, i*2 + 1, q, 0, -2.95, .25, 1, 9, .15); }
+      dk.castShadow = ch.castShadow = true; g.add(dk, ch); }
+    fill({g, y, W, D, cx, cz, x0, x1, z0, z1, fz, bx, cyl, poster});
+    g.visible = false; scene.add(g); classFx[key] = g;
+  };
+  // ---------- ห้องวิทยาศาสตร์ ----------
+  room(SCI, M('#0f766e'), M('#ecfdf5'), M('#e5e7eb'), M('#374151'), M('#64748b'), ({x0, x1, z0, z1, cx, fz, bx, cyl, poster}) => {
+    const top = M('#111827'), cab = M('#f1f5f9'), glass = new THREE.MeshLambertMaterial({color: '#bfdbfe', transparent: true, opacity: .55}), steel = M('#9ca3af');
+    const sink = (x, z) => { bx(.42, .03, .34, steel, x, .92, z); bx(.04, .3, .04, steel, x, 1.06, z - .12); bx(.04, .04, .16, steel, x, 1.2, z - .06); };
+    // โต๊ะสาธิตครูหน้ากระดาน: ท็อปดำ ตู้ขาว อ่างล้าง ตะเกียง บีกเกอร์
+    const dz = fz - .75, dx = cx + 2.9; bx(1.8, .82, .55, cab, dx, .41, dz); bx(1.9, .06, .62, top, dx, .85, dz); sink(dx + .55, dz);   // ข้างกระดาน ไม่บังที่ครูยืนสอน
+    cyl(.06, .16, '#2563eb', dx - .6, .96, dz); cyl(.05, .14, glass, dx - .35, .95, dz + .1); cyl(.07, .18, glass, dx - .1, .97, dz - .1); cyl(.03, .26, '#f8fafc', dx + .2, 1.01, dz);
+    // เคาน์เตอร์แล็บยาวชิดผนังด้านหลังอาคาร (x1) มีอ่างล้าง 3 จุด ชั้นวางสารเคมีบนผนัง
+    const L = (z1 - z0) - 3.2, zc = (z0 + z1)/2 - .6; bx(.7, .82, L, cab, x1 - .45, .41, zc); bx(.8, .06, L, top, x1 - .45, .85, zc);
+    for (const k of [-1, 0, 1]) sink(x1 - .5, zc + k*L/3);
+    bx(.3, .03, L, wood, x1 - .25, 1.55, zc); bx(.3, .03, L, wood, x1 - .25, 1.95, zc);
+    const bc = ['#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#a855f7', '#f8fafc'];
+    for (let i = 0; i < 14; i++) for (const sh of [1.55, 1.95]) cyl(.045, .16 + (i % 3)*.04, bc[(i + (sh > 1.6 ? 2 : 0)) % bc.length], x1 - .25, sh + .1 + (i % 3)*.02, zc - L/2 + .3 + i*(L - .6)/13);
+    for (const k of [-.3, .3]) { const mz = zc + k*L; bx(.18, .04, .14, black, x1 - .45, .9, mz); bx(.05, .3, .05, black, x1 - .5, 1.05, mz); bx(.08, .14, .08, black, x1 - .42, 1.16, mz); }   // กล้องจุลทรรศน์
+    // ตู้กระจกอุปกรณ์ท้ายห้อง (ฝั่ง -z): บีกเกอร์ ขวดรูปชมพู่ หลอดทดลอง
+    const tz = z0 + .3; for (const tx of [cx - 2.2, cx - .9]) { bx(1.2, 1.9, .45, wood, tx, .95, tz); bx(1.1, 1.75, .02, glass, tx, .97, tz + .23); for (const sy of [.5, 1.0, 1.5]) { bx(1.1, .03, .4, wood, tx, sy, tz); for (let i = 0; i < 4; i++) cyl(.05, .14, i % 2 ? glass : bc[i + 1], tx - .4 + i*.27, sy + .09, tz); } }
+    // โครงกระดูก + ลูกโลกบนตู้เตี้ย
+    { const sx = cx + 1.6, sz = z0 + .45; bx(.04, 1.5, .04, steel, sx, .75, sz); bx(.3, .05, .3, steel, sx, .03, sz); const bone = '#f5f5f4';
+      cyl(.11, .2, bone, sx, 1.62, sz + .05); bx(.05, .45, .05, bone, sx, 1.27, sz + .05); for (let i = 0; i < 4; i++) bx(.3 - i*.03, .03, .14, bone, sx, 1.42 - i*.08, sz + .05); bx(.26, .08, .1, bone, sx, 1.0, sz + .05);
+      for (const s of [-1, 1]) { bx(.04, .5, .04, bone, sx + s*.17, 1.2, sz + .05); bx(.05, .7, .05, bone, sx + s*.08, .62, sz + .05); } }
+    bx(1.0, .8, .45, cab, cx + 2.8, .4, z0 + .3); bx(1.05, .04, .5, top, cx + 2.8, .82, z0 + .3); cyl(.2, .02, frame, cx + 2.8, .85, z0 + .3); { const gl = cyl(.18, .36, '#2563eb', cx + 2.8, 1.08, z0 + .3); gl.geometry.dispose(); gl.geometry = new THREE.SphereGeometry(.18, 16, 12); }
+    // โปสเตอร์: ตารางธาตุ ความปลอดภัยในห้องแล็บ วัฏจักรน้ำ
+    const ptab = cvT(360, 200, (c, w, h) => { c.fillStyle = '#f8fafc'; c.fillRect(0, 0, w, h); c.fillStyle = '#0f172a'; c.font = 'bold 18px sans-serif'; c.textAlign = 'center'; c.fillText('ตารางธาตุ PERIODIC TABLE', w/2, 22);
+      const col = ['#fca5a5', '#fdba74', '#fde68a', '#86efac', '#93c5fd', '#c4b5fd']; for (let r = 0; r < 7; r++) for (let k = 0; k < 18; k++) { if (r === 0 && k > 0 && k < 17) continue; if ((r === 1 || r === 2) && k > 1 && k < 12) continue; c.fillStyle = col[(k < 2 ? 0 : k < 12 ? 2 : k < 17 ? 4 : 5) + (r % 2 ? 0 : 0)]; c.fillRect(8 + k*19.2, 32 + r*22, 17, 20); c.fillStyle = '#334155'; c.font = '8px sans-serif'; c.fillText(String(r*18 + k + 1), 16 + k*19.2, 46 + r*22); } });
+    poster(1.6, .9, ptab, cx - 3.1, 1.75, fz - .07, Math.PI);
+    const safe = cvT(200, 260, (c, w, h) => { c.fillStyle = '#facc15'; c.fillRect(0, 0, w, h); c.fillStyle = '#111827'; c.fillRect(8, 8, w - 16, 58); c.fillStyle = '#facc15'; c.font = 'bold 22px sans-serif'; c.textAlign = 'center'; c.fillText('ความปลอดภัย', w/2, 34); c.font = 'bold 14px sans-serif'; c.fillText('ในห้องปฏิบัติการ', w/2, 56);
+      c.fillStyle = '#111827'; c.font = '15px sans-serif'; ['สวมแว่นตานิรภัย', 'ห้ามชิมสารเคมี', 'ล้างมือหลังทดลอง', 'แจ้งครูเมื่อเกิดเหตุ'].forEach((t, i) => { c.beginPath(); c.arc(22, 98 + i*40, 8, 0, 7); c.fill(); c.fillText(t, w/2 + 10, 103 + i*40); }); });
+    poster(.75, .98, safe, cx + 3.0, 1.75, fz - .07, Math.PI);
+    const water = cvT(300, 200, (c, w, h) => { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#bae6fd'); gr.addColorStop(1, '#bbf7d0'); c.fillStyle = gr; c.fillRect(0, 0, w, h); c.fillStyle = '#0ea5e9'; c.fillRect(0, h - 40, w, 40); c.fillStyle = '#facc15'; c.beginPath(); c.arc(50, 45, 24, 0, 7); c.fill();
+      c.fillStyle = '#f8fafc'; c.beginPath(); c.ellipse(200, 45, 50, 20, 0, 0, 7); c.fill(); c.strokeStyle = '#1e3a8a'; c.lineWidth = 3; c.beginPath(); c.arc(150, 110, 60, Math.PI*1.1, Math.PI*1.9); c.stroke(); c.fillStyle = '#1e3a8a'; c.font = 'bold 18px sans-serif'; c.textAlign = 'center'; c.fillText('วัฏจักรน้ำ', w/2, h - 14); });
+    poster(1.2, .8, water, x0 + .1, 1.85, (z0 + z1)/2 + 1.0, Math.PI/2);
+    const bod = cvT(220, 300, (c, w, h) => { c.fillStyle = '#f0fdf4'; c.fillRect(0, 0, w, h); c.fillStyle = '#fbcfe8'; c.beginPath(); c.arc(w/2, 50, 30, 0, 7); c.fill(); c.fillRect(w/2 - 40, 84, 80, 120); c.fillRect(w/2 - 70, 90, 26, 100); c.fillRect(w/2 + 44, 90, 26, 100); c.fillRect(w/2 - 36, 204, 30, 80); c.fillRect(w/2 + 6, 204, 30, 80);
+      c.fillStyle = '#dc2626'; c.beginPath(); c.arc(w/2 - 8, 120, 12, 0, 7); c.fill(); c.fillStyle = '#f472b6'; c.fillRect(w/2 - 30, 100, 18, 30); c.fillRect(w/2 + 12, 100, 18, 30); c.fillStyle = '#92400e'; c.fillRect(w/2 - 22, 150, 44, 30); c.fillStyle = '#14532d'; c.font = 'bold 16px sans-serif'; c.textAlign = 'center'; c.fillText('ร่างกายมนุษย์', w/2, h - 6); });
+    poster(.7, .95, bod, x0 + .1, 1.85, (z0 + z1)/2 - 1.2, Math.PI/2);
+    // อ่างล้างตาฉุกเฉิน + ถังดับเพลิง
+    bx(.3, .9, .3, '#16a34a', x0 + .3, .45, z0 + .4); cyl(.11, .5, '#dc2626', x0 + .3, .3, fz - .4);
+    const sg = cvT(320, 72, (c, w, h) => { c.fillStyle = '#0f766e'; c.fillRect(0, 0, w, h); c.fillStyle = '#f8fafc'; c.font = 'bold 30px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('ห้องวิทยาศาสตร์', w/2, h/2 + 2); });
+    poster(1.6, .36, sg, cx, 2.45, fz - .07, Math.PI);
+  });
+  // ---------- ห้องภาษาอังกฤษ ----------
+  room(ENG, M('#2563eb'), M('#eff6ff'), M('#e7d8bf'), M('#b45309'), M('#1e40af'), ({x0, x1, z0, z1, cx, cz, fz, bx, poster}) => {
+    const abc = cvT(1024, 64, (c, w, h) => { c.fillStyle = '#fff7ed'; c.fillRect(0, 0, w, h); const col = ['#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#a855f7', '#ec4899']; c.font = 'bold 34px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      for (let i = 0; i < 26; i++) { c.fillStyle = col[i % 6]; c.fillText(String.fromCharCode(65 + i) + String.fromCharCode(97 + i), 20 + i*38.6, h/2 + 2); } });
+    poster(5.6, .34, abc, cx, 2.45, fz - .07, Math.PI);
+    const sg = cvT(320, 72, (c, w, h) => { c.fillStyle = '#1e3a8a'; c.fillRect(0, 0, w, h); c.fillStyle = '#f8fafc'; c.font = 'bold 30px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('ENGLISH ROOM', w/2, h/2 + 2); });
+    poster(1.5, .34, sg, cx - 3.4, 1.85, fz - .07, Math.PI);
+    const words = (title, list, bg) => cvT(220, 280, (c, w, h) => { c.fillStyle = bg; c.fillRect(0, 0, w, h); c.fillStyle = '#f8fafc'; c.fillRect(10, 10, w - 20, h - 20); c.fillStyle = '#1e293b'; c.font = 'bold 24px sans-serif'; c.textAlign = 'center'; c.fillText(title, w/2, 46);
+      c.font = '19px sans-serif'; list.forEach((t, i) => c.fillText(t, w/2, 88 + i*36)); });
+    poster(.75, .95, words('Greetings', ['Hello!', 'Good morning', 'How are you?', 'Thank you', 'See you!'], '#f97316'), cx + 3.0, 1.75, fz - .07, Math.PI);
+    poster(.75, .95, words('Days', ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], '#22c55e'), x0 + .1, 1.85, cz + 1.6, Math.PI/2);
+    poster(.75, .95, words('Colors', ['red', 'blue', 'green', 'yellow', 'pink'], '#a855f7'), x0 + .1, 1.85, cz + .6, Math.PI/2);
+    const map = cvT(400, 220, (c, w, h) => { c.fillStyle = '#7dd3fc'; c.fillRect(0, 0, w, h); c.fillStyle = '#4ade80'; for (const [x, y, rx, ry] of [[80, 70, 50, 35], [105, 150, 25, 45], [205, 65, 30, 22], [215, 130, 32, 50], [300, 70, 75, 38], [330, 165, 30, 18]]) { c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, 7); c.fill(); }
+      c.fillStyle = '#0c4a6e'; c.font = 'bold 20px sans-serif'; c.textAlign = 'center'; c.fillText('WORLD MAP', w/2, h - 10); });
+    poster(2.0, 1.1, map, x1 - .1, 1.85, cz - .4, -Math.PI/2);
+    // ธงราวเหนือห้อง (สีธงชาติหลายประเทศ) 
+    const fl = ['#dc2626', '#f8fafc', '#1d4ed8', '#facc15', '#16a34a', '#dc2626', '#1d4ed8', '#f8fafc'];
+    bx(x1 - x0 - .4, .015, .015, '#334155', cx, 2.71, cz); for (let i = 0; i < 16; i++) { bx(.22, .2, .02, fl[i % fl.length], x0 + .4 + i*(x1 - x0 - .8)/15, 2.6, cz); }
+    // ชั้นหนังสือนิทานภาษาอังกฤษ + มุมอ่านหนังสือท้ายห้อง (พรม หมอนอิง)
+    const bk = ['#2563eb', '#dc2626', '#16a34a', '#f59e0b', '#7c3aed'];
+    for (const sx of [cx - 3.0, cx - 1.8]) { bx(1.1, 1.3, .35, wood, sx, .65, z0 + .3); for (const sy of [.35, .8, 1.22]) for (let i = 0; i < 6; i++) bx(.12, .3, .22, bk[(i + Math.round(sy*3)) % 5], sx - .45 + i*.18, sy, z0 + .3); }
+    bx(2.6, .02, 1.2, '#f472b6', cx + 1.6, .04, z0 + .8).castShadow = false; for (const [dx, col] of [[.6, '#fde68a'], [1.5, '#93c5fd'], [2.4, '#86efac']]) bx(.5, .14, .5, col, cx + dx, .12, z0 + .7);
+    // โต๊ะครูมุมหน้าห้อง + ลำโพง
+    const tx = x1 - 1.0, tz = fz - 1.0; bx(1.3, .06, .65, wood, tx, .76, tz); for (const sx of [-.58, .58]) for (const sz of [-.26, .26]) bx(.05, .74, .05, wood, tx + sx, .37, tz + sz);
+    bx(.45, .05, .45, blueC, tx, .45, tz - .6); bx(.45, .5, .06, blueC, tx, .72, tz - .83); bx(.5, .32, .04, '#111827', tx + .2, 1.0, tz + .15); bx(.18, .3, .18, '#111827', tx - .45, .94, tz + .1);
+  });
+}
 function buildKgExtra(){
   const Z = keyRect('Kindergarten'); if (!Z) return;
   const M = c => new THREE.MeshLambertMaterial({color: c}), g = new THREE.Group(), long = Z.sx >= Z.sz, y = Z.y;
