@@ -453,18 +453,15 @@ function paintToday() {
     </header>
     <div class="today-body${news ? '' : ' no-news'}">
       ${news}
-      <ul class="today-stats">
-        <li><span class="today-ic c-blue"><i data-lucide="mouse-pointer-click"></i></span>
-          <div><b>${u.today.toLocaleString()}</b><span>${en ? 'system opens today' : 'ครั้งที่ใช้ระบบออนไลน์วันนี้'}</span>${trend ? `<small class="${diff >= 0 ? 'up' : 'down'}">${escapeAttr(trend)}</small>` : ''}</div></li>
-        <li><span class="today-ic c-green"><i data-lucide="layout-grid"></i></span>
-          <div><b>${u.systemsToday}</b><span>${en ? 'systems in use today' : 'ระบบที่มีการใช้งานวันนี้'}</span></div></li>
-        <li><span class="today-ic c-orange"><i data-lucide="trophy"></i></span>
-          <div><b class="today-text">${escapeAttr(topName || (en ? '—' : 'ยังไม่มีการใช้งาน'))}</b><span>${en ? 'most used today' : 'ใช้มากที่สุดวันนี้'}</span></div></li>
-        <li><span class="today-ic c-pink"><i data-lucide="newspaper"></i></span>
-          <div><b>${n ? n.thisMonth : '—'}</b><span>${en ? 'newsletters this month' : 'จดหมายข่าวเดือนนี้ (ฉบับ)'}</span>${n ? `<small>${en ? `${n.total.toLocaleString()} in archive` : `ในคลังทั้งหมด ${n.total.toLocaleString()} ฉบับ`}</small>` : ''}</div></li>
-      </ul>
-    </div>
-    <p class="today-note"><i data-lucide="shield-check"></i> ${en ? 'Totals only — no personal information is shown.' : 'แสดงเฉพาะยอดรวม ไม่มีข้อมูลส่วนบุคคล'}</p>`;
+      <nav class="today-depts" aria-label="${en ? 'Departments' : 'ฝ่ายงาน'}">
+        ${MENU.filter(m => /^mod-(academic|budget|hr|general|student)$/.test(m.id)).map(m => `
+        <a class="today-dept c-${m.color}${m.audience === 'student' ? ' is-student' : ''}" href="#${m.id}">
+          <span class="today-dept-ic"><i data-lucide="${escapeAttr(m.icon)}"></i></span>
+          <span class="today-dept-text"><strong>${escapeAttr(en ? m.en : m.th)}</strong><small>${m.items.filter(i => i.url).length} ${en ? 'systems ready' : 'ระบบพร้อมใช้'}</small></span>
+          <i class="today-dept-go" data-lucide="chevron-right"></i>
+        </a>`).join('')}
+      </nav>
+    </div>`;
   refreshIcons();
 }
 
@@ -538,7 +535,7 @@ window.addEventListener('appinstalled', () => showToast('ติดตั้ง B
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('./sw.js?v=49', { updateViaCache: 'none' });
+      const reg = await navigator.serviceWorker.register('./sw.js?v=50', { updateViaCache: 'none' });
       await reg.update();
     } catch (_) {}
   });

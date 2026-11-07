@@ -739,3 +739,18 @@ html .module.c-yellow .menu-tile.is-ready .menu-icon{background:rgba(255,255,255
 html .module.c-yellow .menu-tile.is-ready .menu-go{color:#713f12}
 /* V49: mobile — logo already in the top bar, hide the duplicate in the hero */
 @media (max-width:700px){.hero-logo-wrap{display:none!important}.hero-main{gap:0!important}}
+/* V50: ปุ่มฝ่ายงานในการ์ด "วันนี้ที่บ้านคุ้ม" แทนตัวเลขสถิติ, ซ่อน "ใช้บ่อย" */
+.quick-section[hidden]{display:none!important}
+.today-depts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-content:start}
+.today-dept{display:flex;align-items:center;gap:10px;min-height:64px;padding:10px 12px;border-radius:16px;text-decoration:none;color:#fff;background:linear-gradient(135deg,color-mix(in srgb,var(--c) 92%,#000),color-mix(in srgb,var(--c) 72%,#000));border:1px solid color-mix(in srgb,var(--c) 70%,#000);box-shadow:0 6px 14px color-mix(in srgb,var(--c) 26%,transparent),inset 0 1px 0 rgba(255,255,255,.18);transition:transform .18s,filter .18s}
+.today-dept:hover{transform:translateY(-2px);filter:brightness(1.08)}
+.today-dept:focus-visible{outline:3px solid var(--c);outline-offset:2px}
+.today-dept-ic{flex:0 0 38px;width:38px;height:38px;display:grid;place-items:center;border-radius:12px;background:rgba(255,255,255,.2)}
+.today-dept-ic svg{width:20px;height:20px}
+.today-dept-text{flex:1;min-width:0;display:flex;flex-direction:column}
+.today-dept-text strong{font-size:14px;line-height:1.3;font-weight:600}
+.today-dept-text small{font-size:11px;opacity:.85}
+.today-dept-go{flex:0 0 16px;width:16px;height:16px;opacity:.8}
+.today-dept.is-student{grid-column:1/-1;background:linear-gradient(135deg,#fde047,#facc15);border-color:#eab308;color:#422006}
+.today-dept.is-student .today-dept-ic{background:rgba(255,255,255,.55);color:#713f12}
+@media (max-width:700px){.today-depts{gap:8px}.today-dept{min-height:58px;padding:9px 10px;gap:8px}.today-dept-ic{flex-basis:34px;width:34px;height:34px}.today-dept-text strong{font-size:13px}}

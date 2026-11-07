@@ -42,7 +42,7 @@ async function usage(db) {
 
 async function newsletters() {
   try {
-    const res = await fetch(NEWS_ORIGIN + '/', { cf: { cacheTtl: 600, cacheEverything: true } });
+    const res = await fetch(NEWS_ORIGIN + '/', { cf: { cacheTtl: 300, cacheEverything: true } });
     if (!res.ok) return null;
     const html = await res.text();
     const start = html.indexOf('/*ISSUES*/');
@@ -53,7 +53,27 @@ async function newsletters() {
     const issues = (block.match(/\{"id":[^{}]*\}/g) || [])
       .map(s => { try { return JSON.parse(s); } catch (_) { return null; } })
       .filter(Boolean);
+    // + issues published later via the newsletter admin page / Google Drive sync (stored in its D1)
+    try {
+      const r = await fetch(NEWS_ORIGIN + '/api/issues', { cf: { cacheTtl: 120, cacheEverything: true } });
+      if (r.ok) {
+        const d = await r.json();
+        const del = new Set(d.deleted || []);
+        const by = new Map((d.items || []).map(x => [x.id, x]));
+        for (let i = issues.length - 1; i >= 0; i--) {
+          const x = issues[i];
+          if (del.has(x.id)) issues.splice(i, 1);
+          else if (by.has(x.id)) { issues[i] = { ...by.get(x.id) }; by.delete(x.id); }
+        }
+        for (const x of by.values()) if (!del.has(x.id)) issues.push({ ...x });
+      }
+    } catch (_) {}
     if (!issues.length) return null;
+    // dates may come in Buddhist years (e.g. 2569-11-05) from the AI reader — normalise to CE
+    for (const it of issues) {
+      const m = /^(\d{4})(-\d{2}-\d{2})/.exec(it.date || '');
+      if (m && +m[1] > 2400) it.date = (+m[1] - 543) + m[2];
+    }
     issues.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.n || 0) - (a.n || 0));
     const latest = issues[0];
     const thisMonth = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 7);
