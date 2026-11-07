@@ -129,7 +129,7 @@ window.BANKHUM_MENU = [
     id: 'mod-student', no: 'นร.', color: 'yellow', icon: 'backpack', audience: 'student',
     th: 'สำหรับนักเรียนและผู้ปกครอง', en: 'For Students & Parents', code: 'BANKHUM STUDENT', short: 'นักเรียน', shortEn: 'Students',
     items: [
-      { th: 'ผลการเรียนและตารางเรียน', en: 'Grades & timetable', icon: 'award', url: 'https://bankhum.krusarawut.com/login.php', statId: 'assessment-system', statName: 'ระบบวัดผลและประเมินผลโรงเรียน', keywords: 'เกรด คะแนน ผลการเรียน grade' },
+      { th: 'ผลการเรียนและตารางเรียน', en: 'Grades & timetable', icon: 'award', url: 'https://sis.bankhum.ac.th/', statId: 'sis', statName: 'สารสนเทศนักเรียน (ใหม่)', keywords: 'เกรด คะแนน ผลการเรียน grade' },
       { th: 'ออมทรัพย์นักเรียน', en: 'Student savings', icon: 'piggy-bank', url: 'https://script.google.com/macros/s/AKfycbzGwx_eA0a3ZBd0cTcPUXVU11mYOgXmjRJI-UHZVFyeKdKRwF7GQfPVCwiE2jh5mO1YGw/exec', statId: 'savings', statName: 'ระบบออมทรัพย์โรงเรียน', keywords: 'ออม เงินออม savings' },
       { th: 'สะสมความดี', en: 'Good deeds points', icon: 'medal', url: 'https://good.bankhum.ac.th/', statId: 'goodstudent', statName: 'ระบบสะสมความดีนักเรียน', keywords: 'ความดี คะแนนความดี สะสมความดี พฤติกรรม good student' },
       { th: 'อีเมล์ นักเรียน / ครู', en: 'Student / teacher email', icon: 'mail', url: 'https://email.bankhum.ac.th', statId: 'school-email', statName: 'อีเมล์ นักเรียน/ครู', keywords: 'อีเมล email mail' },
