@@ -737,3 +737,5 @@ html .module .menu-tile.is-ready .menu-go{color:#fff;opacity:.85}
 html .module.c-yellow .menu-tile.is-ready{background:linear-gradient(135deg,#fde047,#facc15)!important;border-color:#eab308!important;color:#422006!important;text-shadow:none}
 html .module.c-yellow .menu-tile.is-ready .menu-icon{background:rgba(255,255,255,.55);color:#713f12}
 html .module.c-yellow .menu-tile.is-ready .menu-go{color:#713f12}
+/* V49: mobile — logo already in the top bar, hide the duplicate in the hero */
+@media (max-width:700px){.hero-logo-wrap{display:none!important}.hero-main{gap:0!important}}
