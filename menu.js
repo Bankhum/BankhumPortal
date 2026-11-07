@@ -13,119 +13,14 @@
  *   statId   รหัสสำหรับนับสถิติการใช้งาน (ใส่เมื่อมีลิงก์ ใช้รหัสเดิมเพื่อให้สถิตินับต่อเนื่อง)
  *   statName ชื่อที่แสดงบนกราฟสถิติ (ไม่ใส่ = ใช้ชื่อเมนู)
  *   keywords คำค้นเพิ่มเติม
+ *
+ * กลุ่มเรียงตามแผนภูมิโครงสร้างการบริหาร: ผู้บริหาร → วิชาการ → งบประมาณ → บุคคล → บริหารทั่วไป
+ * กลุ่มที่มี audience: 'student' จะแสดงแยกเป็นส่วน "สำหรับนักเรียนและผู้ปกครอง" ด้านล่าง
  */
 window.BANKHUM_MENU = [
   {
-    id: 'mod-academic', no: '01', color: 'blue', icon: 'graduation-cap',
-    th: 'งานวิชาการ', en: 'Academic Affairs', code: 'BANKHUM SIS', short: 'วิชาการ', shortEn: 'Academic',
-    main: [
-      { url: 'https://sis.bankhum.ac.th/', statId: 'sis', th: 'เปิด BANKHUM SIS', en: 'Open BANKHUM SIS' },
-      { url: 'https://inno.bankhum.ac.th/', statId: 'inno', icon: 'lightbulb', th: 'INNO BANKHUM ศูนย์เผยแพร่นวัตกรรม', en: 'INNO Bankhum innovations' }
-    ],
-    items: [
-      { th: 'ข้อมูลนักเรียน', en: 'Student information', icon: 'id-card', url: 'https://sis.bankhum.ac.th/', statId: 'sis', statName: 'สารสนเทศนักเรียน (ใหม่)', keywords: 'sis สารสนเทศนักเรียน student' },
-      { th: 'เช็กชื่อนักเรียน', en: 'Student attendance check', icon: 'user-check', keywords: 'เช็คชื่อ มาเรียน attendance' },
-      { th: 'ตารางเรียน / ตารางสอน', en: 'Class & teaching timetable', icon: 'calendar-days', keywords: 'timetable schedule' },
-      { th: 'วัดผลและประเมินผล', en: 'Measurement & evaluation', icon: 'clipboard-list', url: 'https://bankhum.krusarawut.com/login.php', statId: 'assessment-system', statName: 'ระบบวัดผลและประเมินผลโรงเรียน', keywords: 'คะแนน เกรด ผลการเรียน grade assessment' },
-      { th: 'แผนการจัดการเรียนรู้ออนไลน์', en: 'Online lesson plans', icon: 'notebook-pen', url: 'https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbyUZPqvNrehG-h_xLrX1_pNpSMbyxu-ZWPfb46n5l370yDaEzWINLqbGOAk7r38Xrv-/exec', statId: 'lessonplan', statName: 'สร้างแผนการสอนออนไลน์', keywords: 'แผนการสอน lesson plan' },
-      { th: 'นวัตกรรมและวิจัยในชั้นเรียน', en: 'Teaching innovations & research', icon: 'lightbulb', url: 'https://inno.bankhum.ac.th/', statId: 'inno', statName: 'INNO BANKHUM นวัตกรรมการเรียนการสอน', keywords: 'inno นวัตกรรม วิจัยในชั้นเรียน สื่อการสอน ผลงานวิชาการ research innovation' },
-      { th: 'นิเทศภายใน', en: 'Internal supervision', icon: 'presentation', url: 'https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbxSqnz3gYAjEPAiVe9YZ_ubhgA8Dqqyr1YE5Uf4kpYi0C-VVEL3ZaJC8ESFSoJltkkm/exec', statId: 'supervision', statName: 'ระบบนิเทศการจัดกิจกรรมการเรียนการสอน', keywords: 'นิเทศ supervision การเรียนการสอน' }
-    ]
-  },
-  {
-    id: 'mod-budget', no: '02', color: 'green', icon: 'wallet',
-    th: 'งบประมาณ', en: 'Budget & Finance', code: 'BK Management', short: 'งบประมาณ', shortEn: 'Budget',
-    items: [
-      { th: 'แผนพัฒนาการศึกษา', en: 'Education development plan', icon: 'map' },
-      { th: 'แผนปฏิบัติการประจำปี', en: 'Annual action plan', icon: 'calendar-check' },
-      { th: 'โครงการและกิจกรรม', en: 'Projects & activities', icon: 'folder-kanban', keywords: 'project' },
-      { th: 'งบประมาณ', en: 'Budget', icon: 'wallet', keywords: 'budget' },
-      { th: 'การเงินและพัสดุ', en: 'Finance & supplies', icon: 'banknote', url: 'https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbwUz9mm1SC5LS2wpQPMDblnGBcJ2s4Y4-A073e42ZGrT_bIGuBLIc1nBylaj56LS_HiRw/exec', statId: 'finance', statName: 'ระบบบริหารการเงินและพัสดุโรงเรียน', keywords: 'การเงิน พัสดุ finance' },
-      { th: 'ระบบบริหารการเงินและพัสดุ (ปีงบ 2569)', en: 'Finance & inventory system (FY2569)', icon: 'warehouse', url: 'https://school-finance-inventory.kamonwan.workers.dev/', statId: 'finance-inventory', statName: 'ระบบบริหารการเงินและพัสดุ (ปีงบ 2569)', keywords: 'การเงิน พัสดุ คลัง ครุภัณฑ์ งบประมาณ finance inventory 2569' },
-      { th: 'ร่วมบริจาคสนับสนุนโรงเรียน', en: 'Donate to the school', icon: 'hand-heart', url: 'https://school-finance-inventory.kamonwan.workers.dev/donate?campaign=f68fb276-7d8e-4fde-a23b-001ecdd6dc26', statId: 'donate', statName: 'ร่วมบริจาคสนับสนุนโรงเรียน', keywords: 'บริจาค ระดมทุน สนับสนุน ทำบุญ donate donation campaign' },
-      // ซ่อนไว้ก่อน: เปิดใช้โดยใส่กลับ url: 'https://class-card-tracker.lovable.app/', statId: 'supply'
-      { th: 'สั่งซื้ออุปกรณ์การเรียน (เรียนฟรี)', en: 'School supplies (free education)', icon: 'pencil-ruler', keywords: 'อุปกรณ์การเรียน เรียนฟรี school supply สั่งซื้อ เครื่องเขียน' },
-      { th: 'จัดซื้อจัดจ้าง (e-GP)', en: 'Procurement (e-GP)', icon: 'package-check', keywords: 'จัดซื้อ จัดจ้าง egp procurement' }
-    ]
-  },
-  {
-    id: 'mod-hr', no: '03', color: 'orange', icon: 'users',
-    th: 'บุคลากร', en: 'Human Resources', code: 'BANKHUM HR', short: 'บุคลากร', shortEn: 'HR',
-    items: [
-      { th: 'ข้อมูลบุคลากร', en: 'Staff information', icon: 'contact' },
-      { th: 'การลา (ยื่นใบลาผ่านระบบสารบรรณ)', en: 'Leave requests (via E-Sarabun)', icon: 'calendar-x', url: 'https://sarabun.bankhum.ac.th/', statId: 'document', statName: 'ระบบงานสารบรรณ', keywords: 'ลา ใบลา ลาป่วย ลากิจ ลาพักผ่อน leave สารบรรณ' },
-      { th: 'ลงเวลาปฏิบัติงาน', en: 'Time attendance', icon: 'clock-3', url: 'https://zlink.minervaiot.com/login', statId: 'attendance', statName: 'ระบบลงเวลาครู', keywords: 'ลงเวลา เข้างาน ออกงาน zlink attendance' },
-      { th: 'แจ้งผลการเลื่อนขั้นเงินเดือน', en: 'Salary increment results', icon: 'badge-dollar-sign', url: 'https://money.bankhum.ac.th/', statId: 'salary', statName: 'ระบบแจ้งผลการเลื่อนขั้นเงินเดือน', keywords: 'เงินเดือน เลื่อนขั้น salary money bkmoney' },
-      { th: 'PA (ข้อตกลงในการพัฒนางาน)', en: 'PA (Performance agreement)', icon: 'handshake', url: 'https://pa.bankhum.ac.th/', statId: 'pa', statName: 'BANKHUM PA FLOW ระบบบริหารจัดการ PA', keywords: 'pa วpa ข้อตกลง ข้อตกลงในการพัฒนางาน ส่งเอกสาร ติดตามสถานะ ผลการประเมิน performance agreement' },
-      { th: 'SAR ครู (รายงานประเมินตนเอง)', en: 'Teacher SAR', icon: 'file-text', keywords: 'sar' },
-      { th: 'ประเมินครูและบุคลากร', en: 'Teacher & staff evaluation', icon: 'star' },
-      { th: 'ประเมินลูกจ้าง', en: 'Employee evaluation', icon: 'user-cog' }
-    ]
-  },
-  {
-    id: 'mod-general', no: '04', color: 'violet', icon: 'landmark',
-    th: 'บริหารทั่วไป', en: 'General Administration', code: 'BANKHUM GENERAL', short: 'บริหารทั่วไป', shortEn: 'General',
-    items: [
-      { th: 'ระบบสารสนเทศโรงเรียน', en: 'School information system', icon: 'chart-no-axes-combined', url: 'https://bankhum.com/login.php', statId: 'information', statName: 'ระบบสารสนเทศโรงเรียน', keywords: 'สารสนเทศ information' },
-      { th: 'BANKHUM SIM ศูนย์ข้อมูลครูและผู้บริหาร', en: 'BANKHUM SIM data centre (staff only)', icon: 'lock', url: 'https://sim.bankhum.ac.th/', statId: 'sim', statName: 'BANKHUM SIM ศูนย์ข้อมูลครูและผู้บริหาร', keywords: 'sim ศูนย์ข้อมูล ข้อมูลนักเรียน การมาเรียน ผู้บริหาร ครู dashboard' },
-      { th: 'ระบบสะสมความดีนักเรียน', en: 'Student good deeds system', icon: 'medal', url: 'https://good.bankhum.ac.th/', statId: 'goodstudent', statName: 'ระบบสะสมความดีนักเรียน', keywords: 'ความดี คะแนนความดี สะสมความดี พฤติกรรม good student' },
-      { th: 'แจ้งซ่อมและบำรุงรักษา', en: 'Repair & maintenance requests', icon: 'wrench', keywords: 'ซ่อม repair' },
-      { th: 'จองห้องประชุม / สถานที่', en: 'Room & venue booking', icon: 'calendar-clock', keywords: 'จองห้อง booking' },
-      { th: 'ขอใช้รถโรงเรียน', en: 'School vehicle requests', icon: 'bus', keywords: 'รถ vehicle' },
-      { th: 'งานเวรประจำวัน', en: 'Daily duty roster', icon: 'clipboard-check', keywords: 'เวร duty' },
-      { th: 'ศูนย์พิทักษ์สิทธิ เสรีภาพ และความปลอดภัย', en: 'Rights, Liberty & Safety Protection Centre', icon: 'shield-check', url: 'https://safety.bankhum.ac.th/', statId: 'safety', statName: 'ศูนย์พิทักษ์สิทธิ เสรีภาพ และความปลอดภัย', keywords: 'ศูนย์พิทักษ์สิทธิ สิทธิ เสรีภาพ ความปลอดภัย safety อาคารสถานที่ แจ้งเหตุ ร้องเรียน คุ้มครอง' },
-      { th: 'ประชาสัมพันธ์และชุมชนสัมพันธ์', en: 'Public & community relations', icon: 'megaphone' }
-    ]
-  },
-  {
-    id: 'mod-quality', no: '05', color: 'magenta', icon: 'target',
-    th: 'แผนและคุณภาพ', en: 'Planning & Quality', code: 'BANKHUM SWOT & QA', short: 'แผน/คุณภาพ', shortEn: 'Quality',
-    items: [
-      { th: 'วิเคราะห์ SWOT', en: 'SWOT analysis', icon: 'grid-2x2', keywords: 'swot' },
-      { th: 'TOWS Matrix', en: 'TOWS matrix', icon: 'layout-grid', keywords: 'tows' },
-      { th: 'แผนพัฒนาคุณภาพ', en: 'Quality improvement plan', icon: 'trending-up' },
-      { th: 'SAR สถานศึกษา', en: 'School SAR', icon: 'file-check', keywords: 'sar' },
-      { th: 'โรงเรียนคุณภาพ', en: 'Quality School', icon: 'school', url: 'https://sites.google.com/bankhum.ac.th/onesqa5/ONESQA', statId: 'quality-school', statName: 'โรงเรียนคุณภาพ', keywords: 'quality school' },
-      { th: 'ประเมิน สมศ. รอบ 5', en: 'ONESQA Round 5', icon: 'badge-check', url: 'https://sites.google.com/bankhum.ac.th/oneqa2568/ONESQA', statId: 'onesqa5', statName: 'ประเมิน สมศ. รอบ 5', keywords: 'สมศ onesqa ประกันคุณภาพภายนอก' },
-      { th: 'รายงานและหลักฐาน', en: 'Reports & evidence', icon: 'folder-open' }
-    ]
-  },
-  {
-    id: 'mod-sarabun', no: '06', color: 'red', icon: 'file-text',
-    th: 'สารบรรณ', en: 'E-Sarabun', code: 'E-Sarabun', short: 'สารบรรณ', shortEn: 'Sarabun',
-    main: { url: 'https://sarabun.bankhum.ac.th/', statId: 'document', th: 'เปิดระบบสารบรรณ', en: 'Open E-Sarabun' },
-    items: [
-      { th: 'รับ–ส่ง หนังสือราชการ', en: 'Send & receive official letters', icon: 'send', url: 'https://sarabun.bankhum.ac.th/', statId: 'document', statName: 'ระบบงานสารบรรณ', keywords: 'สารบรรณ หนังสือราชการ ธุรการ sarabun document' },
-      { th: 'ค้นหาเอกสาร', en: 'Document search', icon: 'file-search' },
-      { th: 'แจ้งเตือนผ่าน LINE', en: 'LINE notifications', icon: 'bell-ring', url: 'https://lin.ee/pUEv7V7', statId: 'sarabun-line', statName: 'LINE E-SaraBun', keywords: 'line ไลน์ แจ้งเตือน' },
-      { th: 'เอกสารเวียน', en: 'Circular documents', icon: 'files' },
-      { th: 'แบบฟอร์มหนังสือราชการ', en: 'Official letter templates', icon: 'file-pen-line', keywords: 'แบบฟอร์ม template' },
-      { th: 'รายงานสารบรรณ', en: 'Sarabun reports', icon: 'chart-column' }
-    ]
-  },
-  {
-    id: 'mod-student', no: '07', color: 'yellow', icon: 'backpack',
-    th: 'นักเรียนและผู้ปกครอง', en: 'Students & Parents', code: 'BANKHUM STUDENT', short: 'นักเรียน', shortEn: 'Students',
-    items: [
-      { th: 'ข้อมูลของฉัน', en: 'My profile', icon: 'circle-user' },
-      { th: 'ผลการเรียนและตารางเรียน', en: 'Grades & timetable', icon: 'award', url: 'https://bankhum.krusarawut.com/login.php', statId: 'assessment-system', statName: 'ระบบวัดผลและประเมินผลโรงเรียน', keywords: 'เกรด คะแนน ผลการเรียน grade' },
-      { th: 'ประวัติการมาเรียน', en: 'Attendance history', icon: 'calendar-check' },
-      { th: 'ออมทรัพย์นักเรียน', en: 'Student savings', icon: 'piggy-bank', url: 'https://script.google.com/macros/s/AKfycbzGwx_eA0a3ZBd0cTcPUXVU11mYOgXmjRJI-UHZVFyeKdKRwF7GQfPVCwiE2jh5mO1YGw/exec', statId: 'savings', statName: 'ระบบออมทรัพย์โรงเรียน', keywords: 'ออม เงินออม savings' },
-      { th: 'สะสมความดี', en: 'Good deeds points', icon: 'medal', url: 'https://good.bankhum.ac.th/', statId: 'goodstudent', statName: 'ระบบสะสมความดีนักเรียน', keywords: 'ความดี คะแนนความดี สะสมความดี พฤติกรรม good student' },
-      { th: 'อีเมล์ นักเรียน / ครู', en: 'Student / teacher email', icon: 'mail', url: 'https://email.bankhum.ac.th', statId: 'school-email', statName: 'อีเมล์ นักเรียน/ครู', keywords: 'อีเมล email mail' },
-      { th: 'E-Portfolio (แฟ้มสะสมผลงาน)', en: 'E-Portfolio', icon: 'briefcase', keywords: 'portfolio แฟ้มสะสมผลงาน' }
-    ]
-  },
-  {
-    id: 'mod-teachers', no: '08', color: 'indigo', icon: 'book-user',
-    th: 'เว็บไซต์ครู', en: 'Teacher Websites', code: 'TEACHER SITES', short: 'เว็บครู', shortEn: 'Teachers',
-    items: [
-      { th: 'ครูกั้มสอนคอม', en: 'Krugum Teaches Computers', icon: 'laptop', url: 'https://krugum.bankhum.ac.th/', statId: 'krugum', statName: 'ครูกั้มสอนคอม', keywords: 'ครูกั้ม คอมพิวเตอร์ วิทยาการคำนวณ coding scratch microbit python arduino หุ่นยนต์ ใบงาน krugum' }
-    ]
-  },
-  {
-    id: 'mod-executive', no: 'EX', color: 'teal', icon: 'layout-dashboard',
-    th: 'ผู้บริหาร', en: 'Executive', code: 'Executive Dashboard', short: 'ผู้บริหาร', shortEn: 'Executive',
+    id: 'mod-executive', no: 'ผอ.', color: 'teal', icon: 'layout-dashboard',
+    th: 'ผู้บริหารสถานศึกษา', en: 'School Executives', code: 'ผู้อำนวยการ · รองผู้อำนวยการ', short: 'ผู้บริหาร', shortEn: 'Executive',
     items: [
       { th: 'สถิติการใช้งานระบบ', en: 'System usage statistics', icon: 'chart-no-axes-combined', url: '#dashboard', internal: true, keywords: 'สถิติ stats dashboard' },
       { th: 'BANKHUM SIM ศูนย์ข้อมูลครูและผู้บริหาร', en: 'BANKHUM SIM data centre (staff only)', icon: 'lock', url: 'https://sim.bankhum.ac.th/', statId: 'sim', statName: 'BANKHUM SIM ศูนย์ข้อมูลครูและผู้บริหาร', keywords: 'sim ศูนย์ข้อมูล ข้อมูลนักเรียน การมาเรียน ผู้บริหาร ครู dashboard' },
@@ -138,17 +33,111 @@ window.BANKHUM_MENU = [
     ]
   },
   {
-    id: 'mod-pr', no: 'NEW', color: 'pink', icon: 'megaphone', isNew: true,
-    th: 'ประชาสัมพันธ์และเว็บไซต์โรงเรียน', en: 'PR & School Website', code: 'NEWS & WEBSITE', short: 'ประชาสัมพันธ์', shortEn: 'News',
+    id: 'mod-academic', no: '01', color: 'blue', icon: 'graduation-cap',
+    th: 'ฝ่ายบริหารวิชาการ', en: 'Academic Affairs', code: 'หลักสูตร · วัดผล · นิเทศ · ประกันคุณภาพ', short: 'วิชาการ', shortEn: 'Academic',
+    main: [
+      { url: 'https://sis.bankhum.ac.th/', statId: 'sis', th: 'เปิด BANKHUM SIS', en: 'Open BANKHUM SIS' },
+      { url: 'https://inno.bankhum.ac.th/', statId: 'inno', icon: 'lightbulb', th: 'INNO BANKHUM ศูนย์เผยแพร่นวัตกรรม', en: 'INNO Bankhum innovations' }
+    ],
     items: [
+      { th: 'ข้อมูลนักเรียน', en: 'Student information', icon: 'id-card', url: 'https://sis.bankhum.ac.th/', statId: 'sis', statName: 'สารสนเทศนักเรียน (ใหม่)', keywords: 'sis สารสนเทศนักเรียน student' },
+      { th: 'วัดผลและประเมินผล', en: 'Measurement & evaluation', icon: 'clipboard-list', url: 'https://bankhum.krusarawut.com/login.php', statId: 'assessment-system', statName: 'ระบบวัดผลและประเมินผลโรงเรียน', keywords: 'คะแนน เกรด ผลการเรียน grade assessment' },
+      { th: 'แผนการจัดการเรียนรู้ออนไลน์', en: 'Online lesson plans', icon: 'notebook-pen', url: 'https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbyUZPqvNrehG-h_xLrX1_pNpSMbyxu-ZWPfb46n5l370yDaEzWINLqbGOAk7r38Xrv-/exec', statId: 'lessonplan', statName: 'สร้างแผนการสอนออนไลน์', keywords: 'แผนการสอน lesson plan' },
+      { th: 'นิเทศภายใน', en: 'Internal supervision', icon: 'presentation', url: 'https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbxSqnz3gYAjEPAiVe9YZ_ubhgA8Dqqyr1YE5Uf4kpYi0C-VVEL3ZaJC8ESFSoJltkkm/exec', statId: 'supervision', statName: 'ระบบนิเทศการจัดกิจกรรมการเรียนการสอน', keywords: 'นิเทศ supervision การเรียนการสอน' },
+      { th: 'นวัตกรรมและวิจัยในชั้นเรียน', en: 'Teaching innovations & research', icon: 'lightbulb', url: 'https://inno.bankhum.ac.th/', statId: 'inno', statName: 'INNO BANKHUM นวัตกรรมการเรียนการสอน', keywords: 'inno นวัตกรรม วิจัยในชั้นเรียน สื่อการสอน ผลงานวิชาการ research innovation' },
+      { th: 'โรงเรียนคุณภาพ', en: 'Quality School', icon: 'school', url: 'https://sites.google.com/bankhum.ac.th/onesqa5/ONESQA', statId: 'quality-school', statName: 'โรงเรียนคุณภาพ', keywords: 'quality school' },
+      { th: 'ประเมิน สมศ. รอบ 5', en: 'ONESQA Round 5', icon: 'badge-check', url: 'https://sites.google.com/bankhum.ac.th/oneqa2568/ONESQA', statId: 'onesqa5', statName: 'ประเมิน สมศ. รอบ 5', keywords: 'สมศ onesqa ประกันคุณภาพภายนอก' },
+      { th: 'เว็บไซต์ครู: ครูกั้มสอนคอม', en: 'Teacher site: Krugum Teaches Computers', icon: 'laptop', url: 'https://krugum.bankhum.ac.th/', statId: 'krugum', statName: 'ครูกั้มสอนคอม', keywords: 'เว็บไซต์ครู สื่อและเทคโนโลยี ครูกั้ม คอมพิวเตอร์ วิทยาการคำนวณ coding scratch microbit python arduino หุ่นยนต์ ใบงาน krugum' },
+      { th: 'พัฒนาหลักสูตรสถานศึกษา', en: 'School curriculum development', icon: 'book-open', keywords: 'หลักสูตร curriculum ปฐมวัย' },
+      { th: 'เช็กชื่อนักเรียน', en: 'Student attendance check', icon: 'user-check', keywords: 'เช็คชื่อ มาเรียน attendance' },
+      { th: 'ตารางเรียน / ตารางสอน', en: 'Class & teaching timetable', icon: 'calendar-days', keywords: 'timetable schedule' },
+      { th: 'ประกันคุณภาพภายใน (SAR สถานศึกษา)', en: 'Internal QA (School SAR)', icon: 'file-check', keywords: 'sar ประกันคุณภาพ qa' },
+      { th: 'รายงานและหลักฐาน', en: 'Reports & evidence', icon: 'folder-open' },
+      { th: 'แนะแนว', en: 'Guidance', icon: 'compass', keywords: 'แนะแนว guidance' },
+      { th: 'ลูกเสือ เนตรนารี', en: 'Scouts', icon: 'tent', keywords: 'ลูกเสือ เนตรนารี scout' }
+    ]
+  },
+  {
+    id: 'mod-budget', no: '02', color: 'green', icon: 'wallet',
+    th: 'ฝ่ายบริหารงบประมาณ', en: 'Budget & Finance', code: 'แผนงาน · การเงิน · พัสดุ · อาหาร', short: 'งบประมาณ', shortEn: 'Budget',
+    items: [
+      { th: 'ระบบบริหารการเงินและพัสดุ (ปีงบ 2569)', en: 'Finance & inventory system (FY2569)', icon: 'warehouse', url: 'https://school-finance-inventory.kamonwan.workers.dev/', statId: 'finance-inventory', statName: 'ระบบบริหารการเงินและพัสดุ (ปีงบ 2569)', keywords: 'การเงิน พัสดุ คลัง ครุภัณฑ์ งบประมาณ finance inventory 2569' },
+      { th: 'การเงินและพัสดุ', en: 'Finance & supplies', icon: 'banknote', url: 'https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbwUz9mm1SC5LS2wpQPMDblnGBcJ2s4Y4-A073e42ZGrT_bIGuBLIc1nBylaj56LS_HiRw/exec', statId: 'finance', statName: 'ระบบบริหารการเงินและพัสดุโรงเรียน', keywords: 'การเงิน พัสดุ finance' },
+      { th: 'ร่วมบริจาคสนับสนุนโรงเรียน', en: 'Donate to the school', icon: 'hand-heart', url: 'https://school-finance-inventory.kamonwan.workers.dev/donate?campaign=f68fb276-7d8e-4fde-a23b-001ecdd6dc26', statId: 'donate', statName: 'ร่วมบริจาคสนับสนุนโรงเรียน', keywords: 'บริจาค ระดมทุน สนับสนุน ทำบุญ donate donation campaign' },
+      { th: 'แผนพัฒนาการศึกษา', en: 'Education development plan', icon: 'map' },
+      { th: 'แผนปฏิบัติการประจำปี', en: 'Annual action plan', icon: 'calendar-check' },
+      { th: 'โครงการและกิจกรรม', en: 'Projects & activities', icon: 'folder-kanban', keywords: 'project' },
+      { th: 'วิเคราะห์ SWOT', en: 'SWOT analysis', icon: 'grid-2x2', keywords: 'swot' },
+      { th: 'TOWS Matrix', en: 'TOWS matrix', icon: 'layout-grid', keywords: 'tows' },
+      { th: 'แผนพัฒนาคุณภาพ', en: 'Quality improvement plan', icon: 'trending-up' },
+      { th: 'งบประมาณ', en: 'Budget', icon: 'wallet', keywords: 'budget' },
+      { th: 'โครงการอาหารกลางวัน', en: 'School lunch programme', icon: 'utensils', keywords: 'อาหารกลางวัน lunch' },
+      { th: 'โครงการอาหารเสริม (นม)', en: 'School milk programme', icon: 'milk', keywords: 'นม อาหารเสริม milk' },
+      // ซ่อนไว้ก่อน: เปิดใช้โดยใส่กลับ url: 'https://class-card-tracker.lovable.app/', statId: 'supply'
+      { th: 'สั่งซื้ออุปกรณ์การเรียน (เรียนฟรี)', en: 'School supplies (free education)', icon: 'pencil-ruler', keywords: 'อุปกรณ์การเรียน เรียนฟรี school supply สั่งซื้อ เครื่องเขียน' },
+      { th: 'จัดซื้อจัดจ้าง (e-GP)', en: 'Procurement (e-GP)', icon: 'package-check', keywords: 'จัดซื้อ จัดจ้าง egp procurement' }
+    ]
+  },
+  {
+    id: 'mod-hr', no: '03', color: 'orange', icon: 'users',
+    th: 'ฝ่ายบริหารงานบุคคล', en: 'Human Resources', code: 'อัตรากำลัง · พัฒนาครู · เงินเดือน · PA', short: 'บุคคล', shortEn: 'HR',
+    items: [
+      { th: 'การลา (ยื่นใบลาผ่านระบบสารบรรณ)', en: 'Leave requests (via E-Sarabun)', icon: 'calendar-x', url: 'https://sarabun.bankhum.ac.th/', statId: 'document', statName: 'ระบบงานสารบรรณ', keywords: 'ลา ใบลา ลาป่วย ลากิจ ลาพักผ่อน leave สารบรรณ' },
+      { th: 'ลงเวลาปฏิบัติงาน', en: 'Time attendance', icon: 'clock-3', url: 'https://zlink.minervaiot.com/login', statId: 'attendance', statName: 'ระบบลงเวลาครู', keywords: 'ลงเวลา เข้างาน ออกงาน zlink attendance' },
+      { th: 'แจ้งผลการเลื่อนขั้นเงินเดือน', en: 'Salary increment results', icon: 'badge-dollar-sign', url: 'https://money.bankhum.ac.th/', statId: 'salary', statName: 'ระบบแจ้งผลการเลื่อนขั้นเงินเดือน', keywords: 'เงินเดือน เลื่อนขั้น salary money bkmoney' },
+      { th: 'PA (ข้อตกลงในการพัฒนางาน)', en: 'PA (Performance agreement)', icon: 'handshake', url: 'https://pa.bankhum.ac.th/', statId: 'pa', statName: 'BANKHUM PA FLOW ระบบบริหารจัดการ PA', keywords: 'pa วpa ข้อตกลง ข้อตกลงในการพัฒนางาน ส่งเอกสาร ติดตามสถานะ ผลการประเมิน performance agreement' },
+      { th: 'ข้อมูลบุคลากร', en: 'Staff information', icon: 'contact' },
+      { th: 'SAR ครู (รายงานประเมินตนเอง)', en: 'Teacher SAR', icon: 'file-text', keywords: 'sar' },
+      { th: 'ประเมินครูและบุคลากร', en: 'Teacher & staff evaluation', icon: 'star' },
+      { th: 'ประเมินลูกจ้าง', en: 'Employee evaluation', icon: 'user-cog' },
+      { th: 'วินัยและนิติกร', en: 'Discipline & legal', icon: 'scale', keywords: 'วินัย นิติกร' },
+      { th: 'เครื่องราชอิสริยาภรณ์', en: 'Royal decorations', icon: 'award', keywords: 'เครื่องราช' },
+      { th: 'สวัสดิการ', en: 'Staff welfare', icon: 'heart-handshake', keywords: 'สวัสดิการ welfare' }
+    ]
+  },
+  {
+    id: 'mod-general', no: '04', color: 'violet', icon: 'landmark',
+    th: 'ฝ่ายบริหารทั่วไป', en: 'General Administration', code: 'ธุรการ/สารบรรณ · อาคาร · ประชาสัมพันธ์', short: 'บริหารทั่วไป', shortEn: 'General',
+    main: { url: 'https://sarabun.bankhum.ac.th/', statId: 'document', icon: 'file-text', th: 'เปิดระบบสารบรรณ', en: 'Open E-Sarabun' },
+    items: [
+      { th: 'รับ–ส่ง หนังสือราชการ', en: 'Send & receive official letters', icon: 'send', url: 'https://sarabun.bankhum.ac.th/', statId: 'document', statName: 'ระบบงานสารบรรณ', keywords: 'สารบรรณ หนังสือราชการ ธุรการ sarabun document' },
+      { th: 'แจ้งเตือนผ่าน LINE', en: 'LINE notifications', icon: 'bell-ring', url: 'https://lin.ee/pUEv7V7', statId: 'sarabun-line', statName: 'LINE E-SaraBun', keywords: 'line ไลน์ แจ้งเตือน' },
+      { th: 'ระบบสารสนเทศโรงเรียน', en: 'School information system', icon: 'chart-no-axes-combined', url: 'https://bankhum.com/login.php', statId: 'information', statName: 'ระบบสารสนเทศโรงเรียน', keywords: 'สารสนเทศ information' },
+      { th: 'BANKHUM SIM ศูนย์ข้อมูลครูและผู้บริหาร', en: 'BANKHUM SIM data centre (staff only)', icon: 'lock', url: 'https://sim.bankhum.ac.th/', statId: 'sim', statName: 'BANKHUM SIM ศูนย์ข้อมูลครูและผู้บริหาร', keywords: 'sim ศูนย์ข้อมูล ข้อมูลนักเรียน การมาเรียน ผู้บริหาร ครู dashboard' },
+      { th: 'ระบบสะสมความดีนักเรียน', en: 'Student good deeds system', icon: 'medal', url: 'https://good.bankhum.ac.th/', statId: 'goodstudent', statName: 'ระบบสะสมความดีนักเรียน', keywords: 'ความดี คะแนนความดี สะสมความดี พฤติกรรม good student' },
+      { th: 'ศูนย์พิทักษ์สิทธิ เสรีภาพ และความปลอดภัย', en: 'Rights, Liberty & Safety Protection Centre', icon: 'shield-check', url: 'https://safety.bankhum.ac.th/', statId: 'safety', statName: 'ศูนย์พิทักษ์สิทธิ เสรีภาพ และความปลอดภัย', keywords: 'ศูนย์พิทักษ์สิทธิ สิทธิ เสรีภาพ ความปลอดภัย safety อาคารสถานที่ แจ้งเหตุ ร้องเรียน คุ้มครอง' },
       { th: 'เว็บไซต์โรงเรียน', en: 'School website', icon: 'globe', url: 'https://www.bankhum.ac.th', statId: 'website', statName: 'เว็บไซต์โรงเรียน', keywords: 'website เว็บไซต์ official' },
-      { th: 'ศูนย์เผยแพร่นวัตกรรม (INNO)', en: 'Teaching innovations (INNO)', icon: 'lightbulb', url: 'https://inno.bankhum.ac.th/', statId: 'inno', statName: 'INNO BANKHUM นวัตกรรมการเรียนการสอน', keywords: 'inno นวัตกรรม ผลงานครู เผยแพร่' },
       { th: 'จดหมายข่าวโรงเรียน', en: 'School newsletters', icon: 'newspaper', url: 'https://new.bankhum.ac.th/', statId: 'newsletter', statName: 'คลังจดหมายข่าวโรงเรียน', keywords: 'จดหมายข่าว ข่าวสาร ข่าว กิจกรรม newsletter news ประชาสัมพันธ์' },
       { th: 'สร้างจดหมายข่าวด้วย AI (onepageAi)', en: 'AI newsletter maker (onepageAi)', icon: 'wand-sparkles', url: 'https://onepageai.bankhum.ac.th/', statId: 'onepageai', statName: 'onepageAi สร้างจดหมายข่าวด้วย AI', keywords: 'onepage ai จดหมายข่าว สร้างข่าว ประชาสัมพันธ์ เขียนข่าว newsletter' },
+      { th: 'ค้นหาเอกสาร', en: 'Document search', icon: 'file-search' },
+      { th: 'เอกสารเวียน', en: 'Circular documents', icon: 'files' },
+      { th: 'แบบฟอร์มหนังสือราชการ', en: 'Official letter templates', icon: 'file-pen-line', keywords: 'แบบฟอร์ม template' },
+      { th: 'รายงานสารบรรณ', en: 'Sarabun reports', icon: 'chart-column' },
+      { th: 'แจ้งซ่อมและบำรุงรักษา', en: 'Repair & maintenance requests', icon: 'wrench', keywords: 'ซ่อม repair' },
+      { th: 'จองห้องประชุม / สถานที่', en: 'Room & venue booking', icon: 'calendar-clock', keywords: 'จองห้อง booking' },
+      { th: 'ขอใช้รถโรงเรียน', en: 'School vehicle requests', icon: 'bus', keywords: 'รถ vehicle' },
+      { th: 'งานเวรประจำวัน', en: 'Daily duty roster', icon: 'clipboard-check', keywords: 'เวร duty' },
+      { th: 'อนามัยโรงเรียน', en: 'School health', icon: 'heart-pulse', keywords: 'อนามัย พยาบาล health' },
+      { th: 'ระบบดูแลช่วยเหลือนักเรียน', en: 'Student care & support', icon: 'life-buoy', keywords: 'ดูแลช่วยเหลือ เยี่ยมบ้าน' },
       { th: 'ประกาศจากโรงเรียน', en: 'School announcements', icon: 'megaphone', keywords: 'ประกาศ announcement' },
       { th: 'แกลเลอรีรูปภาพและวิดีโอ', en: 'Photo & video gallery', icon: 'images', keywords: 'รูป วิดีโอ gallery' },
       { th: 'เชื่อมต่อ Facebook / LINE', en: 'Facebook / LINE', icon: 'share-2', keywords: 'facebook line' },
       { th: 'จัดการเนื้อหาเว็บไซต์', en: 'Website content management', icon: 'pencil-line', keywords: 'cms' }
+    ]
+  },
+  {
+    id: 'mod-student', no: 'นร.', color: 'yellow', icon: 'backpack', audience: 'student',
+    th: 'สำหรับนักเรียนและผู้ปกครอง', en: 'For Students & Parents', code: 'BANKHUM STUDENT', short: 'นักเรียน', shortEn: 'Students',
+    items: [
+      { th: 'ผลการเรียนและตารางเรียน', en: 'Grades & timetable', icon: 'award', url: 'https://bankhum.krusarawut.com/login.php', statId: 'assessment-system', statName: 'ระบบวัดผลและประเมินผลโรงเรียน', keywords: 'เกรด คะแนน ผลการเรียน grade' },
+      { th: 'ออมทรัพย์นักเรียน', en: 'Student savings', icon: 'piggy-bank', url: 'https://script.google.com/macros/s/AKfycbzGwx_eA0a3ZBd0cTcPUXVU11mYOgXmjRJI-UHZVFyeKdKRwF7GQfPVCwiE2jh5mO1YGw/exec', statId: 'savings', statName: 'ระบบออมทรัพย์โรงเรียน', keywords: 'ออม เงินออม savings' },
+      { th: 'สะสมความดี', en: 'Good deeds points', icon: 'medal', url: 'https://good.bankhum.ac.th/', statId: 'goodstudent', statName: 'ระบบสะสมความดีนักเรียน', keywords: 'ความดี คะแนนความดี สะสมความดี พฤติกรรม good student' },
+      { th: 'อีเมล์ นักเรียน / ครู', en: 'Student / teacher email', icon: 'mail', url: 'https://email.bankhum.ac.th', statId: 'school-email', statName: 'อีเมล์ นักเรียน/ครู', keywords: 'อีเมล email mail' },
+      { th: 'จดหมายข่าวโรงเรียน', en: 'School newsletters', icon: 'newspaper', url: 'https://new.bankhum.ac.th/', statId: 'newsletter', statName: 'คลังจดหมายข่าวโรงเรียน', keywords: 'จดหมายข่าว ข่าวสาร ข่าว กิจกรรม newsletter news ประชาสัมพันธ์' },
+      { th: 'เว็บไซต์โรงเรียน', en: 'School website', icon: 'globe', url: 'https://www.bankhum.ac.th', statId: 'website', statName: 'เว็บไซต์โรงเรียน', keywords: 'website เว็บไซต์ official' },
+      { th: 'ข้อมูลของฉัน', en: 'My profile', icon: 'circle-user' },
+      { th: 'ประวัติการมาเรียน', en: 'Attendance history', icon: 'calendar-check' },
+      { th: 'E-Portfolio (แฟ้มสะสมผลงาน)', en: 'E-Portfolio', icon: 'briefcase', keywords: 'portfolio แฟ้มสะสมผลงาน' }
     ]
   }
 ];

@@ -717,3 +717,15 @@ html[data-theme="dark"] .today-stats b{color:#f2fbf7}
 html[data-theme="dark"] .today-date{background:#3a2a08;border-color:#6b4d10;color:#ffd98a}
 html[data-theme="dark"] .today-news-text small{color:#fbbf24}
 html:not([data-theme="dark"]) .today-card{background:rgba(251,248,241,.93)}
+
+/* V46: แยกส่วน ครูและบุคลากร / นักเรียนและผู้ปกครอง */
+.audience-label{grid-column:1/-1;display:flex;align-items:center;gap:8px;margin:4px 0 -2px;font-size:13px;font-weight:600;color:var(--muted)}
+.audience-label svg{width:17px;height:17px}
+.audience-label::after{content:"";flex:1;height:1px;background:var(--border,#e3ddd0)}
+.audience-label.is-student{margin-top:14px;color:#a16207}
+html[data-theme="dark"] .audience-label.is-student{color:#facc15}
+.module-launcher .launcher-tile:last-child:nth-child(3n+1){grid-column:auto}
+.module-launcher .audience-label.is-student+.launcher-tile:last-child{grid-column:1/-1;flex-direction:row;justify-content:center;text-align:left;min-height:64px}
+.module[data-module="mod-student"]{grid-column:1/-1}
+.module[data-module="mod-student"] .menu-list{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.audience-label[hidden]{display:none!important}

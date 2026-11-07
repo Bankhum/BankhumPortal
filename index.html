@@ -7,14 +7,14 @@
 <meta content="#c9c3b8" name="theme-color"/>
 <meta content="ศูนย์รวมระบบและบริการออนไลน์ โรงเรียนบ้านคุ้ม (ประสารราษฎร์วิทยา)" name="description"/>
 <title>Bankhum School Portal</title>
-<link href="favicon-32.png?v=45" rel="icon" sizes="32x32" type="image/png"/>
-<link href="favicon.ico?v=45" rel="shortcut icon"/>
-<link href="icon-192.png?v=45" rel="apple-touch-icon"/>
-<link href="manifest.webmanifest?v=45" rel="manifest"/>
+<link href="favicon-32.png?v=46" rel="icon" sizes="32x32" type="image/png"/>
+<link href="favicon.ico?v=46" rel="shortcut icon"/>
+<link href="icon-192.png?v=46" rel="apple-touch-icon"/>
+<link href="manifest.webmanifest?v=46" rel="manifest"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="style.css?v=45" rel="stylesheet"/>
+<link href="style.css?v=46" rel="stylesheet"/>
 </head>
 <body>
 <div class="app-shell">
@@ -30,7 +30,7 @@
 <a href="#home">หน้าหลัก</a>
 <a href="#systems">ระบบงาน</a>
 <a href="#mod-academic">วิชาการ</a>
-<a href="#mod-sarabun">สารบรรณ</a>
+<a href="#mod-general">สารบรรณ</a>
 <a href="#mod-student">นักเรียน</a>
 <a href="#dashboard">สถิติการใช้งาน</a>
 </nav>
@@ -185,7 +185,7 @@
 <nav aria-label="เมนูมือถือ" class="mobile-nav">
 <a class="mobile-nav-item active" href="#home"><i data-lucide="house"></i><span>หน้าหลัก</span></a>
 <a class="mobile-nav-item" href="#systems"><i data-lucide="layout-grid"></i><span>ระบบงาน</span></a>
-<a class="mobile-nav-item" href="#mod-sarabun"><i data-lucide="file-text"></i><span>สารบรรณ</span></a>
+<a class="mobile-nav-item" href="#mod-general"><i data-lucide="file-text"></i><span>สารบรรณ</span></a>
 <a class="mobile-nav-item" href="#mod-student"><i data-lucide="backpack"></i><span>นักเรียน</span></a>
 <a class="mobile-nav-item" href="#dashboard"><i data-lucide="chart-no-axes-combined"></i><span>สถิติ</span></a>
 </nav>
@@ -231,19 +231,19 @@
 (function(){
   try {
     const KEY='bankhumPortalBuild';
-    const BUILD='45';
+    const BUILD='46';
     const old=localStorage.getItem(KEY);
     if(old!==BUILD){
       localStorage.setItem(KEY,BUILD);
-      if('caches' in window){caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('bankhum-portal-')&&k!=='bankhum-portal-v45').map(k=>caches.delete(k))));}
+      if('caches' in window){caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('bankhum-portal-')&&k!=='bankhum-portal-v46').map(k=>caches.delete(k))));}
       if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.update()));}
     }
   } catch(e){}
 })();
 </script>
 <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
-<script src="config.js?v=45"></script>
-<script src="menu.js?v=45"></script>
-<script src="app.js?v=45"></script>
+<script src="config.js?v=46"></script>
+<script src="menu.js?v=46"></script>
+<script src="app.js?v=46"></script>
 </body>
 </html>

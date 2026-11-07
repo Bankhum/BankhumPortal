@@ -29,7 +29,7 @@ function itemLabel(item, lang) { return lang === 'en' ? (item.en || item.th) : i
 
 function renderLauncher(lang) {
   if (!launcherRoot) return;
-  launcherRoot.innerHTML = MENU.map(mod => {
+  const tile = mod => {
     const ready = mod.items.filter(i => i.url).length;
     return `<a class="launcher-tile c-${mod.color}" href="#${mod.id}" aria-label="${escapeAttr(lang === 'en' ? mod.en : mod.th)}">
       <span class="launcher-icon"><i data-lucide="${escapeAttr(mod.icon)}"></i></span>
@@ -41,7 +41,18 @@ function renderLauncher(lang) {
       <span class="launcher-count" title="${lang === 'en' ? 'ready' : 'พร้อมใช้งาน'}">${ready}/${mod.items.length}</span>
       ${mod.isNew ? '<span class="launcher-new">NEW</span>' : ''}
     </a>`;
-  }).join('');
+  };
+  const staff = MENU.filter(m => m.audience !== 'student');
+  const students = MENU.filter(m => m.audience === 'student');
+  launcherRoot.innerHTML = audienceLabel('staff', lang) + staff.map(tile).join('')
+    + (students.length ? audienceLabel('student', lang) + students.map(tile).join('') : '');
+}
+
+function audienceLabel(kind, lang) {
+  const t = kind === 'student'
+    ? { icon: 'backpack', th: 'สำหรับนักเรียนและผู้ปกครอง', en: 'For students & parents' }
+    : { icon: 'briefcase', th: 'สำหรับครูและบุคลากร (ตามโครงสร้างการบริหาร)', en: 'For teachers & staff (by administrative structure)' };
+  return `<div class="audience-label is-${kind}"><i data-lucide="${t.icon}"></i><span>${lang === 'en' ? t.en : t.th}</span></div>`;
 }
 
 function renderItem(item, mod, lang) {
@@ -71,7 +82,7 @@ const openSoonModules = new Set();
 
 function renderModules(lang) {
   if (!modulesRoot) return;
-  modulesRoot.innerHTML = MENU.map(mod => {
+  const section = mod => {
     const ready = mod.items.filter(i => i.url).length;
     const soonN = mod.items.length - ready;
     const open = openSoonModules.has(mod.id);
@@ -95,7 +106,11 @@ function renderModules(lang) {
       ${soonToggle}
       ${main ? `<div class="module-foot">${main}</div>` : ''}
     </section>`;
-  }).join('');
+  };
+  const staff = MENU.filter(m => m.audience !== 'student');
+  const students = MENU.filter(m => m.audience === 'student');
+  modulesRoot.innerHTML = audienceLabel('staff', lang) + staff.map(section).join('')
+    + (students.length ? audienceLabel('student', lang) + students.map(section).join('') : '');
 }
 
 const quickRoot = document.getElementById('quickGrid');
@@ -171,6 +186,11 @@ function applyFilters() {
     });
     mod.hidden = modVisible === 0;
     visible += modVisible;
+  });
+  modulesRoot.querySelectorAll('.audience-label').forEach(label => {
+    let el = label.nextElementSibling, any = false;
+    while (el && !el.classList.contains('audience-label')) { if (!el.hidden) any = true; el = el.nextElementSibling; }
+    label.hidden = !any;
   });
   modulesRoot.classList.toggle('reveal-soon', !!q || currentFilter === 'soon');
   if (emptyState) emptyState.hidden = visible !== 0;
@@ -476,7 +496,7 @@ setInterval(() => { if (document.visibilityState === 'visible') loadToday(); }, 
 
 // Mobile navigation highlight
 const mobileLinks = [...document.querySelectorAll('.mobile-nav-item')];
-const targets = ['home','systems','mod-sarabun','mod-student','dashboard']
+const targets = ['home','systems','mod-general','mod-student','dashboard']
   .map(id => document.getElementById(id))
   .filter(Boolean);
 
@@ -518,7 +538,7 @@ window.addEventListener('appinstalled', () => showToast('ติดตั้ง B
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('./sw.js?v=45', { updateViaCache: 'none' });
+      const reg = await navigator.serviceWorker.register('./sw.js?v=46', { updateViaCache: 'none' });
       await reg.update();
     } catch (_) {}
   });
