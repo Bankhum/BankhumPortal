@@ -573,7 +573,8 @@ const DataAdapter = {
       if (r.status === 503) { this.status = 'unconfigured'; this.message = 'ยังไม่ได้เปิดใช้การเชื่อม SIS'; return null; }
       if (!r.ok || !d.ok) { this.status = 'error'; this.message = 'SIS ไม่พร้อมใช้งาน (' + (d.error || r.status) + ')'; return null; }
       // นักเรียน (SIS) กับครู (ลงเวลาผ่านมือถือ ระบบสารบรรณ) สลับเป็นของจริงแยกกัน: ฝั่งไหนยังไม่มีข้อมูลก็ใช้ค่าจำลองต่อ
-      const sOk = !!d.rooms?.length && d.scans?.some(x => x.t), tOk = !!d.teachers?.scanned;
+      const sOk = !!d.rooms?.length && !!d.scans?.length,   // เช็คชื่อด้วยมือไม่มีเวลา ก็นับเป็นข้อมูลจริง
+            tOk = !!d.teachers?.scanned;
       if (!sOk && !tOk) { this.status = 'empty'; this.message = 'ยังไม่มีผลสแกนนักเรียนหรือการลงเวลาครูวันนี้ ใช้ข้อมูลจำลอง'; return null; }
       this.status = 'ok'; this.updated = d.fetched_at ? new Date(d.fetched_at) : new Date(); this.message = 'ได้รับข้อมูลจาก' + [sOk && ' BANKHUM SIS', tOk && ' ระบบลงเวลาครู (สารบรรณ)'].filter(Boolean).join(' และ'); return d;
     } catch (e) { this.status = 'error'; this.message = 'ติดต่อ SIS ไม่ได้'; return null; }
@@ -583,7 +584,7 @@ const AUTH_P = loadAuth();
 const FEED = await DataAdapter.loadTodayScans();
 if (FEED) FEED.fetched = DataAdapter.updated.toLocaleTimeString('th-TH', {hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'});
 // SREAL = มีผลสแกนนักเรียนจริงจาก SIS · TREAL = เวลาครูลงเวลามาจริงผ่านมือถือ (ระบบสารบรรณ ไม่มีชื่อ)
-const SREAL = !!FEED?.rooms?.length && !!FEED.scans?.some(x => x.t);
+const SREAL = !!FEED?.rooms?.length && !!FEED.scans?.length;
 const hm2min = x => { const [h, mm] = x.split(':').map(Number); return h*60 + mm; };
 const TREAL = FEED?.teachers?.scanned ? FEED.teachers.times.map(hm2min) : null;
 // วิธีลงเวลาของครู (ไม่มีรูป/ลายเซ็น มีแค่ชนิด): sig = เซ็นชื่อ · photo = ถ่ายหน้า · finger = ลายนิ้วมือ
@@ -597,7 +598,11 @@ if (SREAL) {
   for (const row of CLASSES) { const n = FEED.rooms.filter(x => x.cls === row[0]).reduce((a, x) => a + x.enrolled, 0); if (n) row[1] = n; }
   const tg = document.getElementById('feedTag'); tg.textContent = 'สแกนจริง · SIS'; tg.title = 'ผลสแกนหน้าวันนี้จาก BANKHUM SIS (ไม่แสดงชื่อ)';
   document.getElementById('note').textContent = document.getElementById('note').textContent.replace('ผลสแกนหน้า: ข้อมูลตัวอย่าง', `ผลสแกนหน้า: ของจริงจาก SIS วันที่ ${FEED.date} (คนที่ยังไม่สแกนเป็นค่าจำลอง)`);
-  for (const x of FEED.scans) { const [h, mm] = (x.t || '').split(':').map(Number); SCAN_REAL.set(`${x.cls}#${x.no}`, {m: x.t ? h*60 + mm : null, status: x.status, girl: x.gender === 'F'}); }
+  // ไม่มีเลขที่ใน SIS → ให้เลขที่ว่างถัดไปของชั้นนั้น (ไม่ระบุตัวตนอยู่แล้ว ใช้แค่จับคู่กับหุ่นนักเรียน)
+  const used = {}; for (const x of FEED.scans) if (+x.no > 0) (used[x.cls] ??= new Set()).add(+x.no);
+  const nextNo = c => { const u = used[c] ??= new Set(); let n = 1; while (u.has(n)) n++; u.add(n); return n; };
+  for (const x of FEED.scans) { const [h, mm] = (x.t || '').split(':').map(Number), no = +x.no > 0 ? +x.no : nextNo(x.cls);
+    SCAN_REAL.set(`${x.cls}#${no}`, {m: x.t ? h*60 + mm : null, status: x.status, girl: x.gender === 'F'}); }
 }
 // สร้างผลสแกนหน้าจำลอง (ของจริง: จาก SIS ด้านบน · คนที่ยังไม่สแกนใช้ค่าจำลอง)
 let seed = 7; const rnd = () => (seed = (seed*16807) % 2147483647) / 2147483647;
@@ -607,7 +612,8 @@ for (const [c,n] of CLASSES) for (let i=1;i<=n;i++) {
   const r = rnd(); const absent = r < .03;
   const t = r > .95 ? 470 + rnd()*40 : 420 + Math.pow(rnd(),.8)*48;
   const rl = SCAN_REAL.get(`${c}#${i}`), away = rl && !['PRESENT','LATE'].includes(rl.status);
-  STUDENTS.push({cls:c, no:i, scan: away ? null : rl?.m != null ? rl.m : absent ? null : Math.round(t), real: away || rl?.m == null ? null : rl.m});
+  // มาเรียน (PRESENT/LATE) แต่ไม่มีเวลาสแกน (เช็คชื่อด้วยมือ) → มาแน่นอน ใช้เวลามาโดยประมาณ · ไม่มีในข้อมูลจริง → จำลอง
+  STUDENTS.push({cls:c, no:i, scan: away ? null : rl?.m != null ? rl.m : rl ? Math.round(t) : absent ? null : Math.round(t), real: away || rl?.m == null ? null : rl.m, here: !!rl && !away, st: rl?.status || null});
 }
 const NAMED0 = ['ราตรี','กมลวรรณ','สุทิสา','พลกฤต','ดีลาภ','ณัชลักษมณ์','รัตติกาล','อรวรรณ','วิไลวรรณ','นิภา','ทรงวุฒิ','ภัทรวดี','วริทธิ์นันท์','ยุรนันท์','กนกวรรณ'];
 // ครูใหม่จากตารางสอน SIS เข้ามาแทนช่อง "ครู คนที่ …" (รวมอย่างน้อย 21 คนเท่าเดิม)
@@ -2502,7 +2508,7 @@ function select(name){
 let follow = null, findMark = null;
 const whoOf = a => a.kind === 't' ? fullName(a.ref.name) : `${a.cls} เลขที่ ${a.ref.no}`;
 function statusOf(a){
-  if (a.kind === 's' && a.ref.scan == null) return {where: 'ไม่ได้มาโรงเรียน', what: 'ขาดเรียนวันนี้', src: 'sim'};
+  if (a.kind === 's' && a.ref.scan == null) return {where: 'ไม่ได้มาโรงเรียน', what: ({LEAVE: 'ลากิจ', SICK: 'ลาป่วย', ABSENT: 'ขาดเรียน'})[a.ref.st] ? ({LEAVE: 'ลากิจ', SICK: 'ลาป่วย', ABSENT: 'ขาดเรียน'})[a.ref.st] + 'วันนี้ (จาก SIS)' : 'ขาดเรียนวันนี้', src: a.ref.st ? 'ver' : 'sim'};
   const [z, txt] = placeOfAgent(a, simMin);
   if (!z) return {where: simMin < (a.ref.scan ?? 0) ? 'ยังไม่ถึงโรงเรียน' : 'กลับบ้านแล้ว', what: simMin < (a.ref.scan ?? 0) ? (a.kind === 't' ? (TREAL ? 'เวลาลงเวลาจริงไม่ผูกกับชื่อ ดูยอดรวมที่ช่อง "ครู"' : 'ลงเวลาจำลอง ' + fmt(a.ref.scan)) : 'สแกนหน้าเวลา ' + fmt(a.ref.scan)) : '', src: 'sim'};
   const room = a.kind === 's' && typeof phaseAt(simMin)[2] === 'number' ? lesson(a.cls, phaseAt(simMin)[2]).room : null;
@@ -2525,7 +2531,7 @@ function findMatches(q){
 function renderFind(){
   const ul = $('fres'), q = $('fq').value, list = findMatches(q).slice(0, 40), pl = placeMatches(q);
   ul.innerHTML = !q.trim() ? '<li style="cursor:default;color:var(--mute)">พิมพ์ชื่อครู หรือชั้นเรียน แล้วแตะรายชื่อเพื่อดูตำแหน่งบนแผนที่</li>'
-    : list.length ? list.map(a => { const st = statusOf(a); return `<li data-i="${AGENTS.indexOf(a)}" class="${a === follow ? 'on' : ''}"><span class="av">${a.kind === 't' ? '👩‍🏫' : a.cls}</span><span><b>${whoOf(a)}</b><small>📍 ${st.src === 'sch' ? 'ตามตาราง' : 'จำลอง'}: ${st.where} ${srcB(st.src || 'unk')}</small><small>${st.what}</small></span></li>`; }).join('')
+    : list.length ? list.map(a => { const st = statusOf(a); return `<li data-i="${AGENTS.indexOf(a)}" class="${a === follow ? 'on' : ''}"><span class="av">${a.kind === 't' ? '👩‍🏫' : a.cls}</span><span><b>${whoOf(a)}</b><small>📍 ${st.src === 'sch' ? 'ตามตาราง' : st.src === 'ver' ? 'ข้อมูลจริง' : 'จำลอง'}: ${st.where} ${srcB(st.src || 'unk')}</small><small>${st.what}</small></span></li>`; }).join('')
     : '<li style="cursor:default;color:var(--mute)">ไม่พบ ลองพิมพ์ชื่อครู หรือ ป.1–ป.6 / อ.2–อ.3</li>';
   const cm = q.trim().match(/^(?:ห้อง\s*)?(อ|ป)\.?\s*(\d)/); if (cm && HOMEROOM[`${cm[1]}.${cm[2]}`]) ul.insertAdjacentHTML('afterbegin', `<li data-c="${cm[1]}.${cm[2]}"><span class="av">🚪</span><span><b>เข้าห้องเรียน ${cm[1]}.${cm[2]}</b><small>ซูมเข้าในห้อง ดูกระดาน โต๊ะครู โต๊ะนักเรียน</small></span></li>`);
   if (/คอม/.test(q)) ul.insertAdjacentHTML('afterbegin', `<li data-c="${COMP}"><span class="av">🚪</span><span><b>เข้าห้องคอมพิวเตอร์</b><small>ชั้น 2 อาคารเทคโนโลยี · ดูโต๊ะคอม กระดาน โต๊ะครู</small></span></li>`);
@@ -4341,7 +4347,7 @@ $('legend').innerHTML = Object.values(BSTAT).map(([t, c]) => `<span style="--s:$
   if (!FEED && DataAdapter.status === 'empty') md.classList.add('sis');
   md.title = (FEED ? `ข้อมูลจริงจาก${SREAL ? ' BANKHUM SIS (สแกนหน้านักเรียน)' : ''}${SREAL && TREAL ? ' และ' : ''}${TREAL ? ' ระบบลงเวลาครูผ่านมือถือ (ไม่แสดงชื่อ)' : ''} (${FEED.date}) · อัปเดต ${FEED.fetched} · ส่วนอื่นเป็นข้อมูลตามตาราง/จำลอง` : 'ทุกอย่างบนแผนที่เป็นข้อมูลจำลองหรือตามตารางเรียน ไม่ใช่ตำแหน่งจริงของบุคคล') + (DataAdapter.message ? '\nสถานะ SIS: ' + DataAdapter.message : ''); }
 // ดึง /sim-feed ใหม่ทุก 1 นาที: ถ้ามีครูลงเวลาหรือนักเรียนสแกนเพิ่ม โหลดหน้าใหม่โดยคงเวลาจำลองและความเร็วเดิม (เปิดหน้าทิ้งไว้ก็อัปเดตเอง)
-{ const wd = new Date().getDay(), sig = d => `${+d?.teachers?.scanned || 0}|${(d?.scans || []).filter(x => x.t).length}`, base = sig(FEED);
+{ const wd = new Date().getDay(), sig = d => `${+d?.teachers?.scanned || 0}|${(d?.scans || []).length}`, base = sig(FEED);
   if (!PAST && wd >= 1 && wd <= 5 && day === wd - 1) setInterval(async () => {
     try { const r = await fetch('/sim-feed', {cache: 'no-store'}), d = await r.json(); if (!r.ok || !d.ok || sig(d) === base) return;
       const q = new URLSearchParams(location.search); if (live) { q.delete('t'); q.delete('s'); q.set('live', 1); } else { q.delete('live'); q.set('t', Math.round(simMin)); q.set('s', speed); } location.replace('?' + q); } catch (e) {}
