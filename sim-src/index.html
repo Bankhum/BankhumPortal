@@ -601,7 +601,9 @@ if (SREAL) {
   const used = {}; for (const x of FEED.scans) if (+x.no > 0) (used[x.cls] ??= new Set()).add(+x.no);
   const nextNo = c => { const u = used[c] ??= new Set(); let n = 1; while (u.has(n)) n++; u.add(n); return n; };
   for (const x of FEED.scans) { const [h, mm] = (x.t || '').split(':').map(Number), no = +x.no > 0 ? +x.no : nextNo(x.cls);
-    SCAN_REAL.set(`${x.cls}#${no}`, {m: x.t ? h*60 + mm : null, status: x.status, girl: x.gender === 'F'}); }
+    // เวลาจากเครื่องสแกนหน้า (FACE_PI/TABLET) = เวลามาถึงจริง · เช็คชื่อผ่านมือถือ/มือ = เวลาที่ครูเช็คในห้อง ไม่ใช่เวลามาถึง → มาก่อนหน้านั้น (ใช้เวลามาจำลอง)
+    const arrive = x.t && ['FACE_PI', 'TABLET'].includes(x.source);
+    SCAN_REAL.set(`${x.cls}#${no}`, {m: arrive ? h*60 + mm : null, chk: x.t && !arrive ? h*60 + mm : null, status: x.status, girl: x.gender === 'F'}); }
 }
 // สร้างผลสแกนหน้าจำลอง (ของจริง: จาก SIS ด้านบน · คนที่ยังไม่สแกนใช้ค่าจำลอง)
 let seed = 7; const rnd = () => (seed = (seed*16807) % 2147483647) / 2147483647;
@@ -612,7 +614,7 @@ for (const [c,n] of CLASSES) for (let i=1;i<=n;i++) {
   const t = r > .95 ? 470 + rnd()*40 : 420 + Math.pow(rnd(),.8)*48;
   const rl = SCAN_REAL.get(`${c}#${i}`), away = rl && !['PRESENT','LATE'].includes(rl.status);
   // มาเรียน (PRESENT/LATE) แต่ไม่มีเวลาสแกน (เช็คชื่อด้วยมือ) → มาแน่นอน ใช้เวลามาโดยประมาณ · ไม่มีในข้อมูลจริง → จำลอง
-  STUDENTS.push({cls:c, no:i, scan: away ? null : rl?.m != null ? rl.m : rl ? Math.round(t) : absent ? null : Math.round(t), real: away || rl?.m == null ? null : rl.m, here: !!rl && !away, st: rl?.status || null});
+  STUDENTS.push({cls:c, no:i, scan: away ? null : rl?.m != null ? rl.m : rl ? Math.round(rl.chk ? Math.min(t, rl.chk - 3) : t) : absent ? null : Math.round(t), real: away || rl?.m == null ? null : rl.m, here: !!rl && !away, st: rl?.status || null, chk: rl?.chk ?? null});
 }
 const NAMED0 = ['ราตรี','กมลวรรณ','สุทิสา','พลกฤต','ดีลาภ','ณัชลักษมณ์','รัตติกาล','อรวรรณ','วิไลวรรณ','นิภา','ทรงวุฒิ','ภัทรวดี','วริทธิ์นันท์','ยุรนันท์','กนกวรรณ'];
 // ครูใหม่จากตารางสอน SIS เข้ามาแทนช่อง "ครู คนที่ …" (รวมอย่างน้อย 21 คนเท่าเดิม)
