@@ -91,7 +91,8 @@ canvas{cursor:pointer}
 #bar .r1{display:flex;gap:10px;align-items:center;flex:1;min-width:0}
 #bar .r2{display:flex;gap:10px;align-items:center}
 #bar #info{width:auto;padding:0 10px;font-family:inherit;font-size:13px}
-#bar #find{width:auto;padding:0 10px;font-family:inherit;font-size:13px;background:var(--blue)}
+#bar #find{width:auto;padding:0 14px;font-family:inherit;font-size:14px;font-weight:700;background:#f59e0b!important;color:#3b2600;box-shadow:0 0 0 3px rgba(245,158,11,.35),0 4px 12px rgba(245,158,11,.45)}
+#findp .att{display:block;font-style:normal;font-size:12px;font-weight:700;margin-top:1px}#findp .att.ok{color:#15803d}#findp .att.wait{color:#b45309}#findp .att.no{color:#b91c1c}
 #findp{position:fixed;z-index:30;left:50%;top:16px;transform:translateX(-50%);width:min(440px,calc(100vw - 32px));max-height:min(70vh,560px);display:flex;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 32px rgba(15,23,42,.18);font-size:13px}
 #findp[hidden]{display:none}
 #findp .fh{display:flex;gap:8px;align-items:center;padding:10px 10px 6px}
@@ -104,7 +105,7 @@ canvas{cursor:pointer}
 #findp li:hover,#findp li.on{background:#e8f0ea}
 #findp li .av{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--chip);font-size:11px;font-weight:700}
 #findp li b{display:block}#findp li small{display:block;color:var(--mute)}
-#findp .src{padding:6px 12px 10px;color:var(--mute);font-size:11px;border-top:1px solid var(--line)}
+#findp > .src{padding:6px 12px 10px;color:var(--mute);font-size:11px;border-top:1px solid var(--line)}
 @media (max-width:700px){#findp{top:8px;max-height:58vh}}
 .mob{display:none!important}
 #c{touch-action:none}
@@ -147,7 +148,7 @@ canvas{cursor:pointer}
 #hint{top:calc(var(--topbar) + 10px)!important}
 #findp{top:calc(var(--topbar) + 10px)!important}
 #title{display:none}
-#bar button{background:var(--navy)}#bar #find{background:var(--blue)}#bar .sp button.on{background:var(--navy)}#bar input{accent-color:var(--navy)}
+#bar button{background:var(--navy)}#bar .sp button.on{background:var(--navy)}#bar input{accent-color:var(--navy)}
 @media (max-width:1180px){#top .brand small{display:none}}
 @media (max-width:980px){#top #tBld,#top .tctl #tSpeed{display:none}}
 @media (max-width:760px),(max-height:520px){
@@ -282,7 +283,7 @@ body.night #hint,body.night #note{color:#cbd5e1}
  #bar .r1{gap:6px}
  #bar button{height:36px;min-width:36px;font-size:14px}
  #bar #find,#bar #info,#bar #more{width:auto;padding:0 9px;font-size:13px}
- #bar #find .tx{display:none}
+ #bar #find{padding:0 12px}
  #more{display:inline-block!important}
  #bar .rr{display:none}
  body.barx #bar .rr{display:flex;flex-direction:column;gap:6px;min-width:0}
@@ -373,10 +374,10 @@ body:not(.sheet) #left,body:not(.sheet) #right{display:none!important}
 <div id="hint">คลิกอาคารเพื่อดูว่าใครอยู่ข้างใน</div>
 <div id="note">ตารางเรียน ป.1–ป.6: ของจริง ภาคเรียนที่ 1/2569 · กิจวัตรอนุบาล: ตามที่ครูแจ้ง · ผลสแกนหน้า: ข้อมูลตัวอย่าง</div>
 <div id="findp" hidden role="dialog" aria-label="ค้นหานักเรียนหรือครู">
-  <div class="fh"><input id="fq" type="search" placeholder="ค้นหาครู ชั้นเรียน อาคาร หรือห้อง เช่น ป.3, ห้องธุรการ" autocomplete="off"><button class="x" id="fx" aria-label="ปิด">×</button></div>
+  <div class="fh"><input id="fq" type="search" placeholder="พิมพ์ชั้น เช่น ป.1 หรือ ป.1 เลขที่ 5, ชื่อครู, อาคาร" autocomplete="off"><button class="x" id="fx" aria-label="ปิด">×</button></div>
   <div class="chips" id="fchips"></div>
   <ul id="fres"></ul>
-  <div class="src">ข้อมูลจากแบบจำลองนี้ (ตารางเรียน/ตารางสอนจริง · ชื่อนักเรียนยังเป็นเลขที่) · ยังไม่ได้เชื่อม SIS และระบบสารบรรณ</div>
+  <div class="src">นักเรียนค้นด้วยชั้นและเลขที่ (ไม่แสดงชื่อนักเรียน) · สถานะมาแล้ว/ยังไม่มาลงเวลา จาก BANKHUM SIS</div>
 </div>
 <div id="dash" hidden role="dialog" aria-label="Dashboard">
   <div class="dh"><b>📊 Dashboard ภาพรวมโรงเรียน <small>ข้อมูลที่เผยแพร่ได้ · ไม่มีข้อมูลรายบุคคล</small></b><button id="dashX" aria-label="ปิด">×</button></div>
@@ -605,7 +606,7 @@ if (SREAL) {
   for (const x of FEED.scans) { const [h, mm] = (x.t || '').split(':').map(Number), no = +x.no > 0 ? +x.no : nextNo(x.cls);
     // เวลาจากเครื่องสแกนหน้า (FACE_PI/TABLET) = เวลามาถึงจริง · เช็คชื่อผ่านมือถือ/มือ = เวลาที่ครูเช็คในห้อง ไม่ใช่เวลามาถึง → มาก่อนหน้านั้น (ใช้เวลามาจำลอง)
     const arrive = x.t && ['FACE_PI', 'TABLET'].includes(x.source);
-    SCAN_REAL.set(`${x.cls}#${no}`, {m: arrive ? h*60 + mm : null, chk: x.t && !arrive ? h*60 + mm : null, status: x.status, girl: x.gender === 'F'}); }
+    SCAN_REAL.set(`${x.cls}#${no}`, {m: arrive ? h*60 + mm : null, chk: x.t && !arrive ? h*60 + mm : null, status: x.status, via: x.source || null, girl: x.gender === 'F'}); }
 }
 // สร้างผลสแกนหน้าจำลอง (ของจริง: จาก SIS ด้านบน · คนที่ยังไม่สแกนใช้ค่าจำลอง)
 let seed = 7; const rnd = () => (seed = (seed*16807) % 2147483647) / 2147483647;
@@ -616,7 +617,7 @@ for (const [c,n] of CLASSES) for (let i=1;i<=n;i++) {
   const t = r > .95 ? 470 + rnd()*40 : 420 + Math.pow(rnd(),.8)*48;
   const rl = SCAN_REAL.get(`${c}#${i}`), away = rl && !['PRESENT','LATE'].includes(rl.status);
   // มาเรียน (PRESENT/LATE) แต่ไม่มีเวลาสแกน (เช็คชื่อด้วยมือ) → มาแน่นอน ใช้เวลามาโดยประมาณ · ไม่มีในข้อมูลจริง → จำลอง
-  STUDENTS.push({cls:c, no:i, scan: away ? null : rl?.m != null ? rl.m : rl ? Math.round(rl.chk ? Math.min(t, rl.chk - 3) : t) : absent ? null : Math.round(t), real: away || rl?.m == null ? null : rl.m, here: !!rl && !away, st: rl?.status || null, chk: rl?.chk ?? null});
+  STUDENTS.push({cls:c, no:i, scan: away ? null : rl?.m != null ? rl.m : rl ? Math.round(rl.chk ? Math.min(t, rl.chk - 3) : t) : absent ? null : Math.round(t), real: away || rl?.m == null ? null : rl.m, here: !!rl && !away, st: rl?.status || null, chk: rl?.chk ?? null, via: rl?.via || null, at: rl ? (rl.m ?? rl.chk) : null});
 }
 const NAMED0 = ['ราตรี','กมลวรรณ','สุทิสา','พลกฤต','ดีลาภ','ณัชลักษมณ์','รัตติกาล','อรวรรณ','วิไลวรรณ','นิภา','ทรงวุฒิ','ภัทรวดี','วริทธิ์นันท์','ยุรนันท์','กนกวรรณ'];
 // ครูใหม่จากตารางสอน SIS เข้ามาแทนช่อง "ครู คนที่ …" (รวมอย่างน้อย 21 คนเท่าเดิม)
@@ -2510,10 +2511,20 @@ function select(name){
 /* ---------- ค้นหานักเรียน / ครู: อยู่ที่ไหน อาคารไหน เรียน/สอนอะไร ทำอะไรอยู่ ---------- */
 let follow = null, findMark = null;
 const whoOf = a => a.kind === 't' ? fullName(a.ref.name) : `${a.cls} เลขที่ ${a.ref.no}`;
+// สถานะเช็คชื่อจริงของนักเรียน (ไม่มีชื่อ มีแค่ชั้น/เลขที่): มาแล้ว/ยังไม่มาลงเวลา + วิธีที่ลง
+const VIA = {FACE_PI: 'เครื่องสแกนหน้า', TABLET: 'แท็บเล็ตหน้าโรงเรียน', MOBILE: 'มือถือครูประจำชั้น', MANUAL: 'ครูเช็คชื่อ', ADMIN: 'ธุรการบันทึก'};
+function attOf(a){
+  if (a.kind !== 's' || !SREAL) return '';
+  const r = a.ref, lv = {LEAVE: 'ลากิจ', SICK: 'ลาป่วย', ABSENT: 'ขาดเรียน'}[r.st];
+  if (lv) return `<i class="att no">📝 ${lv}</i>`;
+  if (!r.here) return '<i class="att wait">⏳ ยังไม่มีบันทึกเช็คชื่อ</i>';
+  const via = VIA[r.via] ? ' · ' + VIA[r.via] : '';
+  return r.at == null || simMin >= r.at ? `<i class="att ok">✅ มาแล้ว${r.at != null ? ' · ลงเวลา ' + fmt(r.at) : ''}${via}${r.st === 'LATE' ? ' (สาย)' : ''}</i>` : `<i class="att wait">⏳ ยังไม่มาลงเวลา</i>`;
+}
 function statusOf(a){
   if (a.kind === 's' && a.ref.scan == null) return {where: 'ไม่ได้มาโรงเรียน', what: ({LEAVE: 'ลากิจ', SICK: 'ลาป่วย', ABSENT: 'ขาดเรียน'})[a.ref.st] ? ({LEAVE: 'ลากิจ', SICK: 'ลาป่วย', ABSENT: 'ขาดเรียน'})[a.ref.st] + 'วันนี้ (จาก SIS)' : 'ขาดเรียนวันนี้', src: a.ref.st ? 'ver' : 'sim'};
   const [z, txt] = placeOfAgent(a, simMin);
-  if (!z) return {where: simMin < (a.ref.scan ?? 0) ? 'ยังไม่ถึงโรงเรียน' : 'กลับบ้านแล้ว', what: simMin < (a.ref.scan ?? 0) ? (a.kind === 't' ? (TREAL ? 'ยอดครูลงเวลาจริงดูที่ช่อง "ครู" ด้านบน' : 'ลงเวลาจำลอง ' + fmt(a.ref.scan)) : 'สแกนหน้าเวลา ' + fmt(a.ref.scan)) : '', src: 'sim'};
+  if (!z) return {where: simMin < (a.ref.scan ?? 0) ? 'ยังไม่ถึงโรงเรียน' : 'กลับบ้านแล้ว', what: simMin < (a.ref.scan ?? 0) ? (a.kind === 't' ? (TREAL ? 'ยอดครูลงเวลาจริงดูที่ช่อง "ครู" ด้านบน' : 'ลงเวลาจำลอง ' + fmt(a.ref.scan)) : (a.ref.here ? '' : 'สแกนหน้าเวลา ' + fmt(a.ref.scan))) : '', src: a.ref.here ? 'ver' : 'sim'};
   const room = a.kind === 's' && typeof phaseAt(simMin)[2] === 'number' ? lesson(a.cls, phaseAt(simMin)[2]).room : null;
   return {where: placeTh(z) + (room && ROOMS[room] ? ' · ' + ROOMS[room].th : ''), what: txt || '', src: typeof phaseAt(simMin)[2] === 'number' ? 'sch' : 'sim'};
 }
@@ -2525,7 +2536,7 @@ function placeMatches(q){   // ค้นหาอาคาร/ห้องเร
   return out.slice(0, 12);
 }
 function findMatches(q){
-  q = q.trim().replace(/\s+/g, ' '); if (!q) return [];
+  q = q.trim().replace(/[๐-๙]/g, d => '๐๑๒๓๔๕๖๗๘๙'.indexOf(d)).replace(/ประถม(?:ศึกษา)?(?:ปีที่)?\s*/g, 'ป.').replace(/อนุบาล\s*/g, 'อ.').replace(/^(?:ห้อง|ชั้น)\s*/, '').replace(/^((?:อ|ป)\.?\s*\d)\s*\/\s*\d+/, '$1').replace(/\s+/g, ' '); if (!q) return [];
   const m = q.match(/^(อ|ป)\.?\s*(\d)(?:\s*(?:เลขที่|no\.?|#)?\s*(\d+))?$/i);
   if (m) { const c = `${m[1]}.${m[2]}`; return AGENTS.filter(a => a.kind === 's' && a.cls === c && (!m[3] || a.ref.no === +m[3])); }
   const k = q.replace(/^ครู\s*/, '').toLowerCase();
@@ -2533,12 +2544,12 @@ function findMatches(q){
 }
 function renderFind(){
   const ul = $('fres'), q = $('fq').value, list = findMatches(q).slice(0, 40), pl = placeMatches(q);
-  ul.innerHTML = !q.trim() ? '<li style="cursor:default;color:var(--mute)">พิมพ์ชื่อครู หรือชั้นเรียน แล้วแตะรายชื่อเพื่อดูตำแหน่งบนแผนที่</li>'
-    : list.length ? list.map(a => { const st = statusOf(a); return `<li data-i="${AGENTS.indexOf(a)}" class="${a === follow ? 'on' : ''}"><span class="av">${a.kind === 't' ? '👩‍🏫' : a.cls}</span><span><b>${whoOf(a)}</b><small>📍 ${st.where} ${srcB(st.src || 'unk')}</small><small>${st.what}</small></span></li>`; }).join('')
-    : '<li style="cursor:default;color:var(--mute)">ไม่พบ ลองพิมพ์ชื่อครู หรือ ป.1–ป.6 / อ.2–อ.3</li>';
+  ul.innerHTML = !q.trim() ? '<li style="cursor:default;color:var(--mute)">พิมพ์ชั้น เช่น ป.1 หรือ ป.1 เลขที่ 5 หรือชื่อครู แล้วแตะรายการเพื่อดูตำแหน่งบนแผนที่</li>'
+    : list.length ? list.map(a => { const st = statusOf(a); return `<li data-i="${AGENTS.indexOf(a)}" class="${a === follow ? 'on' : ''}"><span class="av">${a.kind === 't' ? '👩‍🏫' : a.cls}</span><span><b>${whoOf(a)}</b><small>📍 ${st.where} ${srcB(st.src || 'unk')}</small>${attOf(a)}<small>${st.what}</small></span></li>`; }).join('')
+    : '<li style="cursor:default;color:var(--mute)">ไม่พบ · นักเรียนค้นด้วยชั้นและเลขที่ เช่น <b>ป.1</b> หรือ <b>ป.1 เลขที่ 5</b> (หน้านี้ไม่แสดงชื่อนักเรียน เพื่อคุ้มครองข้อมูลส่วนบุคคล) · ครูค้นด้วยชื่อ</li>';
   const cm = q.trim().match(/^(?:ห้อง\s*)?(อ|ป)\.?\s*(\d)/); if (cm && HOMEROOM[`${cm[1]}.${cm[2]}`]) ul.insertAdjacentHTML('afterbegin', `<li data-c="${cm[1]}.${cm[2]}"><span class="av">🚪</span><span><b>เข้าห้องเรียน ${cm[1]}.${cm[2]}</b><small>ซูมเข้าในห้อง ดูกระดาน โต๊ะครู โต๊ะนักเรียน</small></span></li>`);
   if (/คอม/.test(q)) ul.insertAdjacentHTML('afterbegin', `<li data-c="${COMP}"><span class="av">🚪</span><span><b>เข้าห้องคอมพิวเตอร์</b><small>ชั้น 2 อาคารเทคโนโลยี · ดูโต๊ะคอม กระดาน โต๊ะครู</small></span></li>`);
-  if (pl.length) ul.insertAdjacentHTML('afterbegin', pl.map(x => `<li data-z="${x.place}"><span class="av">🏫</span><span><b>${x.label}</b><small>${x.sub}</small></span></li>`).join(''));
+  if (pl.length) ul.insertAdjacentHTML(list.length ? 'beforeend' : 'afterbegin', pl.map(x => `<li data-z="${x.place}"><span class="av">🏫</span><span><b>${x.label}</b><small>${x.sub}</small></span></li>`).join(''));
   if (pl.length) ul.querySelector('li[style*="cursor:default"]')?.remove();   // เจออาคาร/ห้องแล้ว ไม่ต้องขึ้น "ไม่พบ"
   for (const li of ul.querySelectorAll('li[data-c]')) li.onclick = () => { openFind(false); enterClass(li.dataset.c); };
   if (cm || /คอม/.test(q)) ul.querySelector('li[style*="cursor:default"]')?.remove();
