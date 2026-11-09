@@ -131,7 +131,7 @@ canvas{cursor:pointer}
 #top .brand small{display:block;font-size:11px;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #top .tclock{display:flex;align-items:center;gap:8px;white-space:nowrap}
 #top .tclock b{font-size:15px}#top #tTime{font-size:20px;font-variant-numeric:tabular-nums;letter-spacing:.03em}
-#top .badge{font-size:10.5px;font-weight:700;border-radius:999px;padding:2px 8px;background:var(--amber);color:#3b2600}
+#top .badge{font-size:10.5px;font-weight:700;border-radius:999px;padding:2px 8px;background:var(--amber);color:#3b2600}#top .badge.live{background:#dc2626;color:#fff}
 #top .mode{font-size:11.5px;font-weight:700;border-radius:999px;padding:3px 10px;white-space:nowrap;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25)}
 #top .mode i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;background:#cbd5e1}
 #top .mode.sis i{background:#4ade80}
@@ -574,7 +574,7 @@ const DataAdapter = {
       if (!r.ok || !d.ok) { this.status = 'error'; this.message = 'SIS ไม่พร้อมใช้งาน (' + (d.error || r.status) + ')'; return null; }
       // นักเรียน (SIS) กับครู (ลงเวลาผ่านมือถือ ระบบสารบรรณ) สลับเป็นของจริงแยกกัน: ฝั่งไหนยังไม่มีข้อมูลก็ใช้ค่าจำลองต่อ
       const sOk = !!d.rooms?.length && d.scans?.some(x => x.t), tOk = !!d.teachers?.scanned;
-      if (!sOk && !tOk) { this.status = 'off'; this.message = 'ยังไม่มีผลสแกนนักเรียนหรือการลงเวลาครูวันนี้ ใช้ข้อมูลจำลอง'; return null; }
+      if (!sOk && !tOk) { this.status = 'empty'; this.message = 'ยังไม่มีผลสแกนนักเรียนหรือการลงเวลาครูวันนี้ ใช้ข้อมูลจำลอง'; return null; }
       this.status = 'ok'; this.updated = d.fetched_at ? new Date(d.fetched_at) : new Date(); this.message = 'ได้รับข้อมูลจาก' + [sOk && ' BANKHUM SIS', tOk && ' ระบบลงเวลาครู (สารบรรณ)'].filter(Boolean).join(' และ'); return d;
     } catch (e) { this.status = 'error'; this.message = 'ติดต่อ SIS ไม่ได้'; return null; }
   },
@@ -3360,19 +3360,31 @@ const slider = $('time'); { const q = +new URLSearchParams(location.search).get(
   if (q >= 355 && q <= 1000) slider.value = q; else if (!PAST && n.getDay() === day + 1 && now >= 360 && now <= 1000) slider.value = now; }
 let playing = true, simMin = +slider.value, lastKey = '', speed = [.1, 1, 3, 10].includes(+new URLSearchParams(location.search).get('s')) ? +new URLSearchParams(location.search).get('s') : .1;   // เปิดเว็บมาเริ่มที่ความเร็ว "ช้า" (ครูขอ)
 const setPlaying = p => { playing = p; $('play').textContent = $('tPlay').textContent = p ? '⏸' : '▶'; };
-$('play').onclick = $('tPlay').onclick = () => setPlaying(!playing);
+// โหมดสด: ดูวันนี้ (วันจันทร์–ศุกร์) → นาฬิกาเดินตามเวลาจริง ข้อมูลจริงอัปเดตเองทุก 1 นาที · แตะเลื่อนเวลา/เล่น/ความเร็ว = ออกไปโหมดจำลอง · ⟲ กลับมาสด
+const realMin = () => { const n = new Date(); return n.getHours()*60 + n.getMinutes() + n.getSeconds()/60; };
+const canLive = () => !PAST && new Date().getDay() === day + 1;
+let live = false;
+function setLive(on){
+  live = !!on && canLive(); const tc = document.querySelector('#top .tclock'), bd = tc.querySelector('.badge');
+  bd.textContent = live ? '● สด' : 'เวลาจำลอง'; bd.classList.toggle('live', live);
+  tc.title = live ? 'เวลาจริงตอนนี้ · ข้อมูลจริงอัปเดตทุก 1 นาที (นอกเวลา 05:55–16:40 แสดงช่วงที่ใกล้ที่สุด)' : 'เวลานี้เป็นเวลาจำลอง ไม่ใช่เวลาจริง · กด ⟲ เพื่อกลับไปดูสด';
+  slider.setAttribute('aria-label', live ? 'เวลาจริง (เลื่อนเพื่อดูย้อน)' : 'เวลาจำลอง');
+  if (live) { setPlaying(true); simMin = Math.min(1000, Math.max(355, realMin())); slider.value = simMin; }
+}
+$('play').onclick = $('tPlay').onclick = () => { setLive(false); setPlaying(!playing); };
 // ⟲ ดูวันนี้ในเวลาเรียน → กลับมาที่เวลาปัจจุบันแล้วเล่นต่อ · นอกนั้นกลับเวลาเริ่มต้นของวันจำลอง
 const nowLive = () => { const n = new Date(), m = n.getHours()*60 + n.getMinutes(); return !PAST && n.getDay() === day + 1 && m >= 360 && m <= 1000 ? m : null; };
-$('tReset').onclick = () => { const m = nowLive(); simMin = m ?? +slider.min; slider.value = simMin; setPlaying(m != null); update(true); };
-slider.oninput = () => { simMin = +slider.value; update(); };
+$('tReset').onclick = () => { if (canLive()) { setLive(true); update(true); return; } const m = nowLive(); simMin = m ?? +slider.min; slider.value = simMin; setPlaying(m != null); update(true); };
+slider.oninput = () => { setLive(false); simMin = +slider.value; update(); };
+if (!new URLSearchParams(location.search).get('t') || new URLSearchParams(location.search).get('live')) setLive(true);
 for (const [lab,m] of [['รถมาส่ง',440],['ทำเวร',462],['เข้าแถว',480],['คาบ 1',515],['คาบ 2',575],['คาบ 3',635],['พักเที่ยง',700],['คาบ 4',755],['คาบ 5',815],['คาบ 6',875],['ทำเวรห้อง',921],['รถมารับ',932]]) {
-  const b = document.createElement('button'); b.textContent = lab; b.onclick = () => { simMin = m; slider.value = m; if (lab.startsWith('รถ')) { setSpeed(.1); setPlaying(true); } else { setPlaying(false); } update(); };
+  const b = document.createElement('button'); b.textContent = lab; b.onclick = () => { setLive(false); simMin = m; slider.value = m; if (lab.startsWith('รถ')) { setSpeed(.1); setPlaying(true); } else { setPlaying(false); } update(); };
   $('jumps').appendChild(b);
 }
 
 for (const [i,d] of DAYS.entries()) {
   const b = document.createElement('button'); b.textContent = d.replace('พฤหัสบดี','พฤหัส'); b.className = i===day?'on':'';
-  b.onclick = () => { if (i === day) return; const k = TEACHERS.find(t => t.model === 'atto3'), re = dutyOn(i) !== dutyOn(day) || (k && (dutyOn(i) === k) !== (dutyOn(day) === k)); day = i; if (re || PAST) try { location.search = `?d=${i+1}&t=${Math.round(simMin)}`; } catch (e) {}   // เวลามา-กลับของรถครูเวรต่างกันตามวัน (ครูเวรกลับหลังนักเรียนคนสุดท้าย) ต้องคำนวณการจราจรใหม่
+  b.onclick = () => { if (i === day) return; setLive(false); const k = TEACHERS.find(t => t.model === 'atto3'), re = dutyOn(i) !== dutyOn(day) || (k && (dutyOn(i) === k) !== (dutyOn(day) === k)); day = i; if (re || PAST) try { location.search = `?d=${i+1}&t=${Math.round(simMin)}`; } catch (e) {}   // เวลามา-กลับของรถครูเวรต่างกันตามวัน (ครูเวรกลับหลังนักเรียนคนสุดท้าย) ต้องคำนวณการจราจรใหม่
     [...$('days').children].filter(x => x.tagName === 'BUTTON').forEach((x,j)=>x.className = j===i?'on':''); update(true); };
   $('days').appendChild(b);
 }
@@ -3392,7 +3404,7 @@ for (const [lab,s] of [['ช้า',.1],['×1',1],['×3',3],['×10',10]]) {
   b.onclick = () => setSpeed(s);
   $('speed').appendChild(b);
 }
-function setSpeed(s){ speed = s; [...$('speed').children].forEach(x=>x.className = +x.dataset.s===s?'on':''); $('tSpeed').value = s; }
+function setSpeed(s){ if (live && s !== speed) setLive(false); speed = s; [...$('speed').children].forEach(x=>x.className = +x.dataset.s===s?'on':''); $('tSpeed').value = s; }
 for (const [lab,s] of [['ช้า',.1],['×1',1],['×3',3],['×10',10]]) $('tSpeed').add(new Option('ความเร็ว ' + lab, s, false, s === speed));
 $('tSpeed').onchange = () => setSpeed(+$('tSpeed').value);
 $('tDash').onclick = () => openDash();
@@ -3414,7 +3426,7 @@ function update(force){
   const m = simMin, key = Math.floor(m) + '';
   if (!force && key === lastKey) return; lastKey = key;
   const [, phase, where] = phaseAt(m);
-  $('clock').textContent = $('tTime').textContent = fmt(m); $('tDay').textContent = 'วัน' + DAYS[day]; const st = phaseAt(m)[0], nx = ROUTINE.find(r => r[0] > m); $('phase').textContent = typeof where === 'number' ? `${phase} · เหลือ ${Math.ceil(nx[0]-m)} นาที` : phase;
+  $('clock').textContent = $('tTime').textContent = fmt(live ? realMin() : m); $('tDay').textContent = 'วัน' + DAYS[day]; const st = phaseAt(m)[0], nx = ROUTINE.find(r => r[0] > m); $('phase').textContent = typeof where === 'number' ? `${phase} · เหลือ ${Math.ceil(nx[0]-m)} นาที` : phase;
   const pres = present(m), late = pres.filter(s => s.scan > LATE).length;
   $('kIn').textContent = pres.length; $('kOut').textContent = STUDENTS.length - pres.length; $('kLate').textContent = late;
   $('kT').textContent = `${TREAL ? TREAL.filter(t=>t<=m).length : TEACHERS.filter(t=>t.scan<=m).length}/${T_TOTAL}`;
@@ -4325,13 +4337,14 @@ $('hdrLogo').src = $('topLogo').src = $('splashLogo').src;
   $('ticks').innerHTML = ROUTINE.filter(r => r[0] > lo && r[0] < hi).map(r => `<i style="left:${pc(r[0])}%"></i>` + (LB[r[0]] ? `<b class="${['พัก', 'เลิก'].includes(LB[r[0]]) ? '' : 'o'}" style="left:${pc(r[0])}%">${LB[r[0]]}</b>` : '')).join(''); }
 $('srcl').innerHTML = `ตัวเลขการมาเรียน: ${srcB(SREAL ? 'ver' : 'sim')} · ครู: ${srcB(TREAL ? 'ver' : 'sim')}`;
 $('legend').innerHTML = Object.values(BSTAT).map(([t, c]) => `<span style="--s:${c}">${t}</span>`).join('');
-{ const md = $('tMode'); md.classList.toggle('sis', !!FEED); md.querySelector('span').textContent = (PAST ? 'ย้อนหลัง ' + thDate(PAST) + ' · ' : '') + (FEED ? [SREAL && 'SIS', TREAL && 'ลงเวลาครู'].filter(Boolean).join(' + ') + ' + ข้อมูลจำลอง' : PAST ? 'ไม่มีข้อมูลจริงวันนี้ ใช้ข้อมูลจำลอง' : 'ข้อมูลจำลอง');
+{ const md = $('tMode'); md.classList.toggle('sis', !!FEED); md.querySelector('span').textContent = (PAST ? 'ย้อนหลัง ' + thDate(PAST) + ' · ' : '') + (FEED ? [SREAL && 'SIS', TREAL && 'ลงเวลาครู'].filter(Boolean).join(' + ') + ' + ข้อมูลจำลอง' : DataAdapter.status === 'empty' ? (PAST ? 'เชื่อมข้อมูลจริงแล้ว · วันนั้นไม่มีการสแกน' : 'เชื่อมข้อมูลจริงแล้ว · ยังไม่มีการสแกนวันนี้') : PAST ? 'ไม่มีข้อมูลจริงวันนี้ ใช้ข้อมูลจำลอง' : 'ข้อมูลจำลอง');
+  if (!FEED && DataAdapter.status === 'empty') md.classList.add('sis');
   md.title = (FEED ? `ข้อมูลจริงจาก${SREAL ? ' BANKHUM SIS (สแกนหน้านักเรียน)' : ''}${SREAL && TREAL ? ' และ' : ''}${TREAL ? ' ระบบลงเวลาครูผ่านมือถือ (ไม่แสดงชื่อ)' : ''} (${FEED.date}) · อัปเดต ${FEED.fetched} · ส่วนอื่นเป็นข้อมูลตามตาราง/จำลอง` : 'ทุกอย่างบนแผนที่เป็นข้อมูลจำลองหรือตามตารางเรียน ไม่ใช่ตำแหน่งจริงของบุคคล') + (DataAdapter.message ? '\nสถานะ SIS: ' + DataAdapter.message : ''); }
 // ดึง /sim-feed ใหม่ทุก 1 นาที: ถ้ามีครูลงเวลาหรือนักเรียนสแกนเพิ่ม โหลดหน้าใหม่โดยคงเวลาจำลองและความเร็วเดิม (เปิดหน้าทิ้งไว้ก็อัปเดตเอง)
 { const wd = new Date().getDay(), sig = d => `${+d?.teachers?.scanned || 0}|${(d?.scans || []).filter(x => x.t).length}`, base = sig(FEED);
   if (!PAST && wd >= 1 && wd <= 5 && day === wd - 1) setInterval(async () => {
     try { const r = await fetch('/sim-feed', {cache: 'no-store'}), d = await r.json(); if (!r.ok || !d.ok || sig(d) === base) return;
-      const q = new URLSearchParams(location.search); q.set('t', Math.round(simMin)); q.set('s', speed); location.replace('?' + q); } catch (e) {}
+      const q = new URLSearchParams(location.search); if (live) { q.delete('t'); q.delete('s'); q.set('live', 1); } else { q.delete('live'); q.set('t', Math.round(simMin)); q.set('s', speed); } location.replace('?' + q); } catch (e) {}
   }, 60000);
 }
 /* ---------- Dashboard: ภาพรวมที่เผยแพร่ได้ (ตามตารางเรียน) + ตัวกรอง ---------- */
@@ -4438,7 +4451,8 @@ function frame(){
   requestAnimationFrame(frame);
   if (glLost || document.hidden) return;
   const dt = Math.min(clock.getDelta(), .5), t = (performance.now()-t0)/1000;
-  if (playing) { simMin += dt * speed; if (simMin > 1000) simMin = 355; slider.value = simMin; update(); }
+  if (live) { const m = Math.min(1000, Math.max(355, realMin())); if (Math.abs(m - simMin) > .004) { simMin = m; slider.value = m; update(); } }
+  else if (playing) { simMin += dt * speed; if (simMin > 1000) simMin = 355; slider.value = simMin; update(); }
   const ang = view.touched ? view.yaw : (view.yaw = Math.PI/4 + Math.sin(t*0.08)*0.25);
   cam.position.set(target.x+Math.sin(ang)*150, 120, target.z+Math.cos(ang)*150); cam.lookAt(target);
   moveVehicles(Math.min(dt,.3)); moveAgents(Math.min(dt,.3)); classFeed(dt); animFarm(Math.min(dt,.3), t); animGarden(Math.min(dt,.3), t); if (!p12Fixed && fenceBuilt) fixP12Site(); if (!parkFixed && fenceBuilt) buildParkingSite(); followFind(Math.min(dt,.3));
