@@ -49,6 +49,7 @@ html,body{margin:0;height:100%;overflow:hidden;font-family:Sarabun,sans-serif;co
 #tt td:last-child{color:var(--mute);text-align:right}
 #tt small{display:block;color:var(--mute);font-size:9.5px}
 #days,#jumps{border-right:1px solid var(--line);padding-right:8px}
+.pastd{display:inline-flex;align-items:center;gap:4px;margin-left:6px;white-space:nowrap}.pastd input{font:inherit;font-size:12px;padding:3px 4px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit}
 #right{max-height:calc(100vh - 120px);overflow:auto}
 #sel .enter{margin:6px 6px 0 0;border:1px solid var(--line);background:var(--chip);border-radius:999px;padding:5px 11px;font:inherit;font-size:12px;cursor:pointer}
 #sel{margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid var(--c,var(--navy))}
@@ -483,7 +484,12 @@ const kgAt = m => { if (m < 510 || m >= 930) return null; let k = null; for (con
 const isKG = c => c.startsWith('อ');
 const NAMED_T = Object.keys(FULLNAME);
 const DAYS = ['จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์'];
-let day = (() => { const q = +new URLSearchParams(location.search).get('d'); if (q >= 1 && q <= 5) return q - 1; const d = new Date().getDay(); return d >= 1 && d <= 5 ? d-1 : 0; })();
+// ?date=YYYY-MM-DD = ดูข้อมูลจริงย้อนหลังของวันนั้น (เฉพาะวันจันทร์–ศุกร์ ก่อนวันนี้) · ไม่ใส่ = วันนี้
+const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const PAST = (() => { const q = new URLSearchParams(location.search).get('date') || ''; if (!/^\d{4}-\d\d-\d\d$/.test(q) || q >= ymd(new Date())) return null;
+  const w = new Date(q + 'T12:00:00').getDay(); return w >= 1 && w <= 5 ? q : null; })();
+const thDate = q => new Date(q + 'T12:00:00').toLocaleDateString('th-TH', {weekday: 'short', day: 'numeric', month: 'short', year: '2-digit'});
+let day = (() => { if (PAST) return new Date(PAST + 'T12:00:00').getDay() - 1; const q = +new URLSearchParams(location.search).get('d'); if (q >= 1 && q <= 5) return q - 1; const d = new Date().getDay(); return d >= 1 && d <= 5 ? d-1 : 0; })();
 const lesson = (c, p) => {
   if (!REAL[c]) { const cn = NAMED_T.find(t => tslot(t, p)?.[1] === c); if (cn) return {sub: tslot(cn, p)[0], tea: cn, where: 'Kindergarten'};
     const k = kgAt([510,570,630,750,810,870][p]); return {sub: k[1], tea: 'ครูอนุบาล', where: k[2] === 'Canteen' ? 'Canteen' : 'Kindergarten'}; }
@@ -538,9 +544,9 @@ const LATE = 470; // สแกนหลัง 07:50 = สาย
 const DataAdapter = {
   status: 'off', message: '', updated: null,
   async loadTodayScans(){
-    const wd = new Date().getDay(); if (wd < 1 || wd > 5 || day !== wd - 1) { this.message = 'ดูวันอื่นที่ไม่ใช่วันนี้ ใช้ข้อมูลจำลอง'; return null; }
+    const wd = new Date().getDay(); if (!PAST && (wd < 1 || wd > 5 || day !== wd - 1)) { this.message = 'ดูวันอื่นที่ไม่ใช่วันนี้ ใช้ข้อมูลจำลอง'; return null; }
     try { const c = new AbortController(); setTimeout(() => c.abort(), 7000);   // ฝั่งเซิร์ฟเวอร์รอ SIS/สารบรรณได้ถึง 4 วินาที
-      const r = await fetch('/sim-feed', {signal: c.signal}), d = await r.json().catch(() => ({}));
+      const r = await fetch('/sim-feed' + (PAST ? '?date=' + PAST : ''), {signal: c.signal}), d = await r.json().catch(() => ({}));
       if (r.status === 503) { this.status = 'unconfigured'; this.message = 'ยังไม่ได้เปิดใช้การเชื่อม SIS'; return null; }
       if (!r.ok || !d.ok) { this.status = 'error'; this.message = 'SIS ไม่พร้อมใช้งาน (' + (d.error || r.status) + ')'; return null; }
       // นักเรียน (SIS) กับครู (ลงเวลาผ่านมือถือ ระบบสารบรรณ) สลับเป็นของจริงแยกกัน: ฝั่งไหนยังไม่มีข้อมูลก็ใช้ค่าจำลองต่อ
@@ -3326,12 +3332,12 @@ function applyXrayAll(){ for (const n in zones) setXray(n, xrayAll || n === sele
 const $ = id => document.getElementById(id);
 const slider = $('time'); { const q = +new URLSearchParams(location.search).get('t'), n = new Date(), now = n.getHours()*60 + n.getMinutes();
   // เปิดดูวันนี้ในเวลาเรียน → เริ่มที่เวลาปัจจุบัน จะได้เห็นครูที่ลงเวลาแล้วทันที (นอกเวลาเรียนเริ่ม 07:00 เหมือนเดิม)
-  if (q >= 355 && q <= 1000) slider.value = q; else if (n.getDay() === day + 1 && now >= 360 && now <= 1000) slider.value = now; }
+  if (q >= 355 && q <= 1000) slider.value = q; else if (!PAST && n.getDay() === day + 1 && now >= 360 && now <= 1000) slider.value = now; }
 let playing = true, simMin = +slider.value, lastKey = '', speed = [.1, 1, 3, 10].includes(+new URLSearchParams(location.search).get('s')) ? +new URLSearchParams(location.search).get('s') : .1;   // เปิดเว็บมาเริ่มที่ความเร็ว "ช้า" (ครูขอ)
 const setPlaying = p => { playing = p; $('play').textContent = $('tPlay').textContent = p ? '⏸' : '▶'; };
 $('play').onclick = $('tPlay').onclick = () => setPlaying(!playing);
 // ⟲ ดูวันนี้ในเวลาเรียน → กลับมาที่เวลาปัจจุบันแล้วเล่นต่อ · นอกนั้นกลับเวลาเริ่มต้นของวันจำลอง
-const nowLive = () => { const n = new Date(), m = n.getHours()*60 + n.getMinutes(); return n.getDay() === day + 1 && m >= 360 && m <= 1000 ? m : null; };
+const nowLive = () => { const n = new Date(), m = n.getHours()*60 + n.getMinutes(); return !PAST && n.getDay() === day + 1 && m >= 360 && m <= 1000 ? m : null; };
 $('tReset').onclick = () => { const m = nowLive(); simMin = m ?? +slider.min; slider.value = simMin; setPlaying(m != null); update(true); };
 slider.oninput = () => { simMin = +slider.value; update(); };
 for (const [lab,m] of [['รถมาส่ง',440],['ทำเวร',462],['เข้าแถว',480],['คาบ 1',515],['คาบ 2',575],['คาบ 3',635],['พักเที่ยง',700],['คาบ 4',755],['คาบ 5',815],['คาบ 6',875],['ทำเวรห้อง',921],['รถมารับ',932]]) {
@@ -3341,10 +3347,21 @@ for (const [lab,m] of [['รถมาส่ง',440],['ทำเวร',462],['�
 
 for (const [i,d] of DAYS.entries()) {
   const b = document.createElement('button'); b.textContent = d.replace('พฤหัสบดี','พฤหัส'); b.className = i===day?'on':'';
-  b.onclick = () => { if (i === day) return; const k = TEACHERS.find(t => t.model === 'atto3'), re = dutyOn(i) !== dutyOn(day) || (k && (dutyOn(i) === k) !== (dutyOn(day) === k)); day = i; if (re) try { location.search = `?d=${i+1}&t=${Math.round(simMin)}`; } catch (e) {}   // เวลามา-กลับของรถครูเวรต่างกันตามวัน (ครูเวรกลับหลังนักเรียนคนสุดท้าย) ต้องคำนวณการจราจรใหม่
-    [...$('days').children].forEach((x,j)=>x.className = j===i?'on':''); update(true); };
+  b.onclick = () => { if (i === day) return; const k = TEACHERS.find(t => t.model === 'atto3'), re = dutyOn(i) !== dutyOn(day) || (k && (dutyOn(i) === k) !== (dutyOn(day) === k)); day = i; if (re || PAST) try { location.search = `?d=${i+1}&t=${Math.round(simMin)}`; } catch (e) {}   // เวลามา-กลับของรถครูเวรต่างกันตามวัน (ครูเวรกลับหลังนักเรียนคนสุดท้าย) ต้องคำนวณการจราจรใหม่
+    [...$('days').children].filter(x => x.tagName === 'BUTTON').forEach((x,j)=>x.className = j===i?'on':''); update(true); };
   $('days').appendChild(b);
 }
+// เลือกวันที่ย้อนหลัง: โหลดหน้าใหม่พร้อม ?date= (ข้อมูลจริงของวันนั้นจาก SIS/สารบรรณ) · ปุ่ม "วันนี้" กลับมาดูสด
+{ const w = document.createElement('span'); w.className = 'pastd';
+  const inp = document.createElement('input'); inp.type = 'date'; inp.id = 'pastDate'; inp.title = 'ดูข้อมูลจริงย้อนหลัง (วันจันทร์–ศุกร์)'; inp.setAttribute('aria-label', 'เลือกวันที่ย้อนหลัง');
+  const y = new Date(); y.setDate(y.getDate() - 1); inp.max = ymd(y); if (PAST) inp.value = PAST;
+  inp.onchange = () => { const v = inp.value, wd = v && new Date(v + 'T12:00:00').getDay(); if (!v) return;
+    if (v >= ymd(new Date())) { inp.value = PAST || ''; return; }
+    if (wd < 1 || wd > 5) { alert('วันที่เลือกเป็นวันเสาร์–อาทิตย์ ไม่มีการเรียนการสอน'); inp.value = PAST || ''; return; }
+    location.search = `?date=${v}`; };
+  w.append('📅 ', inp);
+  if (PAST) { const t = document.createElement('button'); t.textContent = 'วันนี้'; t.title = 'กลับไปดูข้อมูลสดของวันนี้'; t.onclick = () => { location.search = ''; }; w.append(t); }
+  $('days').appendChild(w); }
 for (const [lab,s] of [['ช้า',.1],['×1',1],['×3',3],['×10',10]]) {
   const b = document.createElement('button'); b.textContent = lab; b.className = s===speed?'on':''; b.dataset.s = s;
   b.onclick = () => setSpeed(s);
@@ -4283,11 +4300,11 @@ $('hdrLogo').src = $('topLogo').src = $('splashLogo').src;
   $('ticks').innerHTML = ROUTINE.filter(r => r[0] > lo && r[0] < hi).map(r => `<i style="left:${pc(r[0])}%"></i>` + (LB[r[0]] ? `<b class="${['พัก', 'เลิก'].includes(LB[r[0]]) ? '' : 'o'}" style="left:${pc(r[0])}%">${LB[r[0]]}</b>` : '')).join(''); }
 $('srcl').innerHTML = `ตัวเลขการมาเรียน: ${srcB(SREAL ? 'ver' : 'sim')} · ครู: ${srcB(TREAL ? 'ver' : 'sim')}`;
 $('legend').innerHTML = Object.values(BSTAT).map(([t, c]) => `<span style="--s:${c}">${t}</span>`).join('');
-{ const md = $('tMode'); md.classList.toggle('sis', !!FEED); md.querySelector('span').textContent = FEED ? [SREAL && 'SIS', TREAL && 'ลงเวลาครู'].filter(Boolean).join(' + ') + ' + ข้อมูลจำลอง' : 'ข้อมูลจำลอง';
+{ const md = $('tMode'); md.classList.toggle('sis', !!FEED); md.querySelector('span').textContent = (PAST ? 'ย้อนหลัง ' + thDate(PAST) + ' · ' : '') + (FEED ? [SREAL && 'SIS', TREAL && 'ลงเวลาครู'].filter(Boolean).join(' + ') + ' + ข้อมูลจำลอง' : PAST ? 'ไม่มีข้อมูลจริงวันนี้ ใช้ข้อมูลจำลอง' : 'ข้อมูลจำลอง');
   md.title = (FEED ? `ข้อมูลจริงจาก${SREAL ? ' BANKHUM SIS (สแกนหน้านักเรียน)' : ''}${SREAL && TREAL ? ' และ' : ''}${TREAL ? ' ระบบลงเวลาครูผ่านมือถือ (ไม่แสดงชื่อ)' : ''} (${FEED.date}) · อัปเดต ${FEED.fetched} · ส่วนอื่นเป็นข้อมูลตามตาราง/จำลอง` : 'ทุกอย่างบนแผนที่เป็นข้อมูลจำลองหรือตามตารางเรียน ไม่ใช่ตำแหน่งจริงของบุคคล') + (DataAdapter.message ? '\nสถานะ SIS: ' + DataAdapter.message : ''); }
 // ดึง /sim-feed ใหม่ทุก 1 นาที: ถ้ามีครูลงเวลาหรือนักเรียนสแกนเพิ่ม โหลดหน้าใหม่โดยคงเวลาจำลองและความเร็วเดิม (เปิดหน้าทิ้งไว้ก็อัปเดตเอง)
 { const wd = new Date().getDay(), sig = d => `${+d?.teachers?.scanned || 0}|${(d?.scans || []).filter(x => x.t).length}`, base = sig(FEED);
-  if (wd >= 1 && wd <= 5 && day === wd - 1) setInterval(async () => {
+  if (!PAST && wd >= 1 && wd <= 5 && day === wd - 1) setInterval(async () => {
     try { const r = await fetch('/sim-feed', {cache: 'no-store'}), d = await r.json(); if (!r.ok || !d.ok || sig(d) === base) return;
       const q = new URLSearchParams(location.search); q.set('t', Math.round(simMin)); q.set('s', speed); location.replace('?' + q); } catch (e) {}
   }, 60000);
