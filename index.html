@@ -3372,7 +3372,7 @@ const canLive = () => !PAST && new Date().getDay() === day + 1;
 let live = false;
 function setLive(on){
   live = !!on && canLive(); const tc = document.querySelector('#top .tclock'), bd = tc.querySelector('.badge');
-  bd.textContent = live ? '● สด' : 'เวลาจำลอง'; bd.classList.toggle('live', live);
+  bd.textContent = live ? '● RealTime' : 'เวลาจำลอง'; bd.classList.toggle('live', live);
   tc.title = live ? 'เวลาจริงตอนนี้ · ข้อมูลจริงอัปเดตทุก 1 นาที (นอกเวลา 05:55–16:40 แสดงช่วงที่ใกล้ที่สุด)' : 'เวลานี้เป็นเวลาจำลอง ไม่ใช่เวลาจริง · กด ⟲ เพื่อกลับไปดูสด';
   slider.setAttribute('aria-label', live ? 'เวลาจริง (เลื่อนเพื่อดูย้อน)' : 'เวลาจำลอง');
   if (live) { setPlaying(true); simMin = Math.min(1000, Math.max(355, realMin())); slider.value = simMin; }
