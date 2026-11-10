@@ -120,6 +120,12 @@ canvas{cursor:pointer}
 #tt .act b.c{font-size:11px;color:var(--navy)}#tt .act small{display:block;color:var(--mute);font-size:10.5px}
 #tt .actnote{margin-top:6px;font-size:10px;color:var(--mute)}
 #srcl{margin-top:6px;font-size:10.5px;color:var(--mute)}
+#cleanBox{margin-top:8px;font-size:11px}#cleanBox summary{cursor:pointer;font-weight:700;list-style:none}#cleanBox summary::-webkit-details-marker{display:none}
+#cleanBox summary::before{content:"▸ ";color:var(--mute)}#cleanBox details[open] summary::before{content:"▾ "}
+.ctab{width:100%;border-collapse:collapse;margin-top:4px;font-size:10.5px}.ctab th{font-weight:600;color:var(--mute);text-align:left;font-size:9.5px;padding:1px 2px}
+.ctab td{padding:2px;border-top:1px solid rgba(127,127,127,.18);vertical-align:top}.ctab td b{font-size:11.5px}.ctab .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+.ctab tr.lead td{background:rgba(250,204,21,.13)}.cnote{margin-top:3px;font-size:9.5px;color:var(--mute);line-height:1.35}
+#dash .ctab{font-size:13px}#dash .ctab th{font-size:12px}#dash .ctab td b{font-size:14px}#dash .cnote{font-size:12px}
 .lab .bst{display:block;font-size:10px;font-weight:700;color:var(--s,#94a3b8)}.lab .bst::before{content:"● "}
 .lab.pick{border-color:var(--navy);box-shadow:0 0 0 2px var(--navy),0 2px 6px rgba(0,0,0,.1)}
 #legend{display:flex;flex-wrap:wrap;gap:3px 10px;margin-top:6px;font-size:10.5px;color:var(--mute)}#legend span::before{content:"● ";color:var(--s)}
@@ -327,6 +333,7 @@ body:not(.sheet) #left,body:not(.sheet) #right{display:none!important}
     <div>มาสาย<b id="kLate" style="color:var(--late)">0</b></div><div>ครูมาแล้ว<b id="kT">0/21</b><small id="kTm" style="display:block;font-size:10.5px;opacity:.8;line-height:1.3"></small></div>
   </div>
   <div id="srcl"></div>
+  <div id="cleanBox"></div>
   <div class="cls" id="cls"></div>
   <div class="cls" id="travel"></div>
 </div>
@@ -470,6 +477,11 @@ const TSLOT = {"กนกวรรณ|0|2": ["ภาษาอังกฤษ", "
 const FULLNAME = {"กนกวรรณ": "รองฯ กนกวรรณ จัดสวย", "ณัชลักษมณ์": "ณัชลักษมณ์ อ้นบำรุง", "ยุรนันท์": "ยุรนันท์ บุญนิยม", "วริทธิ์นันท์": "วริทธิ์นันท์ ใจใส่", "วิไลวรรณ": "วิไลวรรณ โดยด่วน", "อรวรรณ": "อรวรรณ พรหมอยู่", "ภัทรวดี": "ภัทรวดี สุขสำราญ", "ทรงวุฒิ": "ทรงวุฒิ จิตต์ประจง", "รัตติกาล": "รัตติกาล โลกคำลือ", "พลกฤต": "พลกฤต คำสว่าง", "นิภา": "นิภา เครือวัฒนเวช", "ราตรี": "ราตรี พังพรพรมราช", "สุทิสา": "สุทิสา นันทะกมล", "กมลวรรณ": "กมลวรรณ ธนาสิทธิรัตน์", "ดีลาภ": "ดีลาภ ปราบสงบ"};
 // ตารางสอนจริงจาก BANKHUM SIS (ผ่าน /sim-timetable · ค่าเริ่มต้นภาคเรียนที่ 2) แทนตารางภาคเรียนที่ 1 ที่ฝังไว้ข้างบน
 // ดึงไม่ได้ / ยังไม่มีข้อมูล → ใช้ตารางเดิม · อนุบาลยังใช้กิจวัตรเดิม (ใส่เฉพาะตารางรายครู)
+// เวรทำความสะอาดกลุ่มสีจริงจาก BANKHUM SIS (ผ่าน /sim-cleaning): สี · โซนที่รับผิดชอบสัปดาห์นี้ · สีของนักเรียน (ชั้น+เลขที่) · คะแนนตรวจเวร · ครูเวร
+//   เริ่มดึงพร้อมตารางสอน ไม่ให้หน้าเว็บโหลดช้าลง · ดึงไม่ได้ → ใช้กลุ่มสี/โซนจำลอง
+const CLEAN_P = (async () => { try { const c = new AbortController(), q = new URLSearchParams(location.search).get('date') || ''; setTimeout(() => c.abort(), 7000);
+  const r = await fetch('/sim-cleaning' + (/^\d{4}-\d\d-\d\d$/.test(q) ? '?date=' + q : ''), {signal: c.signal}), d = await r.json().catch(() => ({}));
+  return r.ok && d.ok && d.houses?.length && d.rotation?.length ? d : null; } catch (e) { return null; } })();
 const TT_TEACH = [];   // ครูที่มีในตารางสอน SIS (เรียงตามที่พบ)
 const TT_SRC = await (async () => {
   try { const c = new AbortController(); setTimeout(() => c.abort(), 6000);
@@ -534,12 +546,23 @@ function placeOf(s){
 }
 // กิจวัตรประจำวัน (นาทีนับจากเที่ยงคืน)
 const ROUTINE = [
-  [355,'ก่อนเปิดประตู',null],[360,'มาโรงเรียน สแกนหน้า เก็บกระเป๋า','gate'],[460,'ทำเวรทำความสะอาดตามกลุ่มสี','duty'],
+  [355,'ก่อนเปิดประตู',null],[360,'มาโรงเรียน สแกนหน้า เก็บกระเป๋า','gate'],[450,'ครูเวรประกาศ 07:30 เข้าแถวตามกลุ่มสีก่อนทำเวร','duty'],[455,'ทำเวรทำความสะอาดตามกลุ่มสี (โซนของสีตัวเอง)','duty'],
   [480,'เข้าแถว เคารพธงชาติ สวดมนต์ ครูเวรอบรม','Flagpole'],[500,'โฮมรูม ออมทรัพย์','homeroom'],[510,'คาบ 1',0],[570,'คาบ 2',1],[630,'คาบ 3',2],[680,'พักกลางวัน (ทยอยตามชั้น)','lunch'],
   [750,'คาบ 4',3],[810,'คาบ 5',4],[870,'คาบ 6',5],[920,'ทำเวรทำความสะอาดห้องเรียน','clean'],[930,'เลิกเรียน ขึ้นรถ 6 ล้อ / นั่งรอผู้ปกครองที่อาคารอเนกประสงค์','gate'],[960,'ครูกลับบ้าน 16:00 (ครูเวรอยู่ดูแลนักเรียนที่รอผู้ปกครอง)','gate'],[980,'นักเรียนกลับหมด 16:20 · ครูเวรตรวจความเรียบร้อย','gate'],[990,'ครูเวรกลับ 16:30','gate'],[1000,'',null]];
-// กลุ่มสีทำเวรตอนเช้า (สมมติ 4 สี คละชั้น ป.1–6) และพื้นที่รับผิดชอบ
-const COLOR_GROUPS = [['แดง','#ef4444','Canteen','กวาดโรงอาหาร'],['เหลือง','#eab308','Flagpole','กวาดลานเสาธง'],
-  ['เขียว','#22c55e','Field','เก็บขยะรอบสนาม'],['ฟ้า','#3b82f6','Multipurpose_Hall','ทำความสะอาดอาคารเอนกประสงค์']];
+// กลุ่มสีทำเวรตอนเช้า: 6 สีคละชั้น ป.1–6 (อนุบาลไม่ทำเวร) แต่ละสีรับผิดชอบ 1 โซน เวียนโซนทุกสัปดาห์ (ตามระบบเวรใน BANKHUM SIS)
+//   07:30 ครูเวรประกาศให้เข้าแถวตามกลุ่มสีที่ลานเสาธง เช็กชื่อ แล้ว 07:35 แยกไปทำโซนของสีตัวเอง ส่งงานก่อน 08:00 ครูเวรเดินตรวจให้คะแนน
+//   [ชื่อสี, สี, โซนในแบบจำลอง, งาน, id สีใน SIS]
+const CLEAN = await CLEAN_P;
+const DUTY_LINE = [450, 455];
+const zoneKeyOf = n => /เสาธง/.test(n) ? 'Flagpole' : /โรงอาหาร/.test(n) ? 'Canteen' : /ห้องน้ำ|ส้วม/.test(n) ? 'Restroom' : /สนาม/.test(n) ? 'Field'
+  : /สวน|แปลง|หลังอาคาร|เกษตร/.test(n) ? 'SmartFarm' : /อเนกประสงค์/.test(n) ? 'Multipurpose_Hall' : /อาคาร|ระเบียง|บันได/.test(n) ? 'Chalerm_Building' : null;
+const COLOR_GROUPS = CLEAN ? CLEAN.houses.map(h => { const rz = CLEAN.rotation.find(x => x.house_id === h.id), z = rz && CLEAN.zones.find(x => x.id === rz.zone_id);
+    return [h.name.replace(/^สี/, ''), h.color, z ? zoneKeyOf(z.name) || zoneKeyOf(z.detail) || 'Flagpole' : 'Flagpole', z ? z.name.replace(/^โซน\s*\d+\s*/, '') : 'ช่วยโซนอื่น', h.id]; })
+  : [['แดง','#dc2626','Flagpole','หน้าเสาธง'],['เหลือง','#eab308','Chalerm_Building','อาคารเรียน'],['เขียว','#16a34a','Canteen','โรงอาหาร'],
+     ['ฟ้า','#0ea5e9','Restroom','ห้องน้ำ'],['ชมพู','#ec4899','Field','สนาม'],['แสด','#f97316','SmartFarm','สวน/หลังอาคาร']];
+// สีของนักเรียนแต่ละคนจาก SIS (ชั้น + เลขที่) · ไม่มีข้อมูล → เวียนตามเลขที่
+const HOUSE_OF = new Map((CLEAN?.members || []).map(m => [`${m.cls}#${m.no}`, COLOR_GROUPS.findIndex(g => g[4] === m.h)]));
+const grpOf = (cls, no) => { const k = HOUSE_OF.get(`${cls}#${no}`); return k >= 0 ? k : (no + CLASSES.findIndex(([c]) => c === cls)) % COLOR_GROUPS.length; };
 // ครูประจำชั้น (โฮมรูม): ครูที่สอนห้องนั้นบ่อยที่สุดในตาราง (สมมติ)
 // ครูประจำชั้นตามป้ายหน้าห้องชั้น 2 อาคารเฉลิมพระเกียรติ (รูปจริง) ใช้แทนค่าที่เดาจากตารางสอน
 const SIGN_HR = {'ป.3':'นิภา', 'ป.5':'ภัทรวดี', 'ป.6':'วิไลวรรณ'};
@@ -732,6 +755,10 @@ TEACHERS.forEach((t, i) => { t.mode = i % 7 === 3 || i % 7 === 6 ? 'moto' : 'car
 // ครูเวรประจำวัน (เวียนตามวัน) — ครูดีลาภขับ BYD Atto 3 สีขาว ปกติมา 07:40–08:10 วันเป็นเวรมาก่อน 07:00 กลับราว 16:00
 const DUTY_LIST = TEACHERS.filter(t => !t.name.startsWith('ครูอนุบาล'));
 { const i = DUTY_LIST.findIndex(t => t.name === 'ครูดีลาภ'), j = 3; if (i >= 0 && i !== j) [DUTY_LIST[i], DUTY_LIST[j]] = [DUTY_LIST[j], DUTY_LIST[i]]; }   // ครูดีลาภเป็นเวรวันพฤหัสบดี (ครูแจ้ง)
+// ครูเวรจริงของวันจาก SIS (ตารางเวรครู) เมื่อดูวันเดียวกับข้อมูล · ครูเวรมาก่อน 07:30 เพื่อประกาศเข้าแถว
+const CLEAN_DAY = !!CLEAN && new Date(CLEAN.date + 'T12:00:00').getDay() - 1 === day;
+{ const n = CLEAN_DAY && CLEAN.duty?.[0]?.teacher, k = n && DUTY_LIST.find(t => t.name === 'ครู' + n), j = day % DUTY_LIST.length, i = k ? DUTY_LIST.indexOf(k) : -1;
+  if (i >= 0 && i !== j) [DUTY_LIST[i], DUTY_LIST[j]] = [DUTY_LIST[j], DUTY_LIST[i]]; }
 const dutyOn = d => DUTY_LIST[d % DUTY_LIST.length];
 { const t = TEACHERS.find(t => t.name === 'ครูดีลาภ');
   if (t) { t.mode = 'car'; t.model = 'atto3'; t.arr0 = dutyOn(day) === t ? 402 + rnd()*14 : 460 + rnd()*30; t.dep0 = 960 + rnd()*4; } }
@@ -746,7 +773,7 @@ const TPARK = [...TPARK_Z.map(z => { const spot = [TPARK_E + TPARK_D[0]*2.6, z +
   // ลานหน้าอาคารเทคฯ จอดได้แค่ 2 คัน หันหน้ารถเข้าอาคารเทคโนโลยี (ครูบอก): ฝั่งอาคารไม้ = Suzuki Swift สีดำคันเล็ก, อีกคัน = กระบะ 4 ประตู Isuzu สีบรอนซ์
   ...[[18.0, 'swift', '#15171a'], [15.2, 'dmax', '#7b6550']].map(([x, model, color]) => ({spot: [x, TECHPARK_Z], yaw: Math.PI, sB: sOf(14), model, color, spur: [[19.6, -24.6], [x, -27.2], [x, TECHPARK_Z]]}))];
 // ครูเวรประจำวันอยู่ประกาศเรียกและดูแลนักเรียนที่อาคารอเนกประสงค์จนคนสุดท้ายกลับ (ครูเล่า) จึงกลับหลัง 16:10
-{ const d = dutyOn(day); d.dep0 = Math.max(d.dep0, 990 + (day*1.7) % 3); }   // ครูเวรกลับ 16:30
+{ const d = dutyOn(day); d.dep0 = Math.max(d.dep0, 990 + (day*1.7) % 3); d.arr0 = Math.min(d.arr0, 418 + (day*5) % 12); }   // ครูเวรกลับ 16:30
 // ช่องจอดรถยนต์ครูมี TPARK.length ช่อง (7 ลานหน้าเสาธง + 2 หน้าอาคารเทคฯ): ครูที่ขับรถเกินจำนวนช่อง (คนที่มาช้าสุด) ให้ขี่มอเตอร์ไซค์แทน
 { const cars = TEACHERS.filter(t => t.mode === 'car' && t.model !== 'atto3').sort((a, b) => b.arr0 - a.arr0), extra = TEACHERS.filter(t => t.mode === 'car').length - TPARK.length;
   for (const t of cars.slice(0, Math.max(0, extra))) t.mode = 'moto'; }
@@ -1041,7 +1068,7 @@ const UNI = {white:'#f8fafc', navy:'#1e2a5a', skin:'#e9b48a', hair:'#1f1a17', ap
 // วันใส่ชุด (สมมติ ปรับได้): พฤหัส = ลูกเสือ-ยุวกาชาดทุกชั้น, พุธ = ชุดพละของอนุบาล, วันอื่น = ชุดนักเรียน
 const UNIFORM_DAY = {scout: 3, kPE: 2};
 function uniformOf(a){
-  if (a.kind === 's' && uniDuty && !isKG(a.cls)) { const u = uniformBase(a); return {...u, scarf: COLOR_GROUPS[a.ref.grp ?? ((a.ref.no + CLASSES.findIndex(([c]) => c === a.cls)) % 4)][1]}; }
+  if (a.kind === 's' && uniDuty && !isKG(a.cls)) { const u = uniformBase(a); return {...u, scarf: COLOR_GROUPS[a.ref.grp ??= grpOf(a.cls, a.ref.no)][1]}; }
   return uniformBase(a);
 }
 function uniformBase(a){
@@ -1097,6 +1124,19 @@ function inZone(name, ox, oz){
 // คาบส่องโลก ส่องใจ: ทุกชั้นเข้าแถวตอนลึกในอาคารอเนกประสงค์ ครูเวรประจำวันอบรมวินัย คุณธรรมอยู่หน้าแถว
 const isAssembly = sub => /ส่องโลก/.test(sub);
 const dutyTeacher = () => dutyOn(day);
+// ครูเวรเดินตรวจเวรทีละสี (สีละ 4 นาที ตามลำดับโซน) ตั้งแต่ 07:35
+const dutyInspecting = m => COLOR_GROUPS[Math.max(0, Math.floor((m - DUTY_LINE[1]) / 4)) % COLOR_GROUPS.length];
+// 07:30 เข้าแถวตามกลุ่มสีบนลานหน้าเสาธง: สีละ 2 แถว หันหน้าไปทางครูเวร (ทิศตะวันออก) ครูประจำสียืนหัวแถว
+function dutyLine(a){
+  const H = COLOR_GROUPS.length, w = (ASSEMBLY.z1 - ASSEMBLY.z0) / H, zc = gi => ASSEMBLY.z0 + (gi + .5)*w;
+  if (a.kind === 't') {
+    if (a.ref === dutyTeacher()) return {p: new THREE.Vector3(ASSEMBLY.x1 - .3, 0, (ASSEMBLY.z0 + ASSEMBLY.z1)/2), pose:'stand', teach: true, yaw: -Math.PI/2};
+    return {p: new THREE.Vector3(ASSEMBLY.x1 - 1.4, 0, zc(a.ref.no % H) + w*.38), pose:'stand', yaw: -Math.PI/2};
+  }
+  const gi = a.ref.grp ??= grpOf(a.cls, a.ref.no), mates = dutyLine.m[gi] ??= STUDENTS.filter(s => s.scan != null && !isKG(s.cls) && (s.grp ??= grpOf(s.cls, s.no)) === gi), k = Math.max(0, mates.indexOf(a.ref));
+  return {p: new THREE.Vector3(ASSEMBLY.x1 - 2.4 - Math.floor(k/2)*.62, 0, zc(gi) + (k % 2 ? .32 : -.32)), pose:'stand', yaw: Math.PI/2};
+}
+dutyLine.m = {};
 function teacherPlace(t, p){
   if (t.name.startsWith('ครูอนุบาล')) return ['Kindergarten','สอนอนุบาล'];
   if (CLASSES.some(([c]) => isAssembly(lesson(c, p).sub)) && t === dutyTeacher()) return ['Multipurpose_Hall', 'ครูเวร อบรมวินัย คุณธรรม หน้าแถว'];
@@ -1128,10 +1168,16 @@ function placeOfAgent(a, m){
     if (isKG(a.cls)) return ['PLAY','วิ่งเล่นสนามเด็กเล่น'];
     return (r.no + a.cls.length) % 5 < 2 ? ['Canteen','ซื้อขนมที่โรงอาหาร'] : ['FREE', playOf(a).th];
   }
-  if (where === 'duty') {
-    if (a.kind === 't') { if (r.name.startsWith('ครูอนุบาล')) return ['Kindergarten','ดูแลเด็กอนุบาล']; const g = COLOR_GROUPS[r.no % 4]; return [g[2], `ดูแลเวรกลุ่มสี${g[0]}`]; }
+  if (where === 'duty') {   // 07:30 เข้าแถวตามกลุ่มสี (ครูเวรประกาศ) → 07:35 ทำเวรโซนของสีตัวเอง · ครูเวรเดินตรวจทีละโซน
+    const G = COLOR_GROUPS, line = m < DUTY_LINE[1];
+    if (a.kind === 't') {
+      if (r.name.startsWith('ครูอนุบาล')) return ['Kindergarten','ดูแลเด็กอนุบาล'];
+      if (r === dutyTeacher()) { if (line) return ['Flagpole','ครูเวร ประกาศ 07:30 ให้นักเรียนเข้าแถวตามกลุ่มสี เช็กชื่อก่อนทำเวร']; const g = dutyInspecting(m); return [g[2], `ครูเวร เดินตรวจเวรกลุ่มสี${g[0]} (${g[3]})`]; }
+      const g = G[r.no % G.length]; return line ? ['Flagpole', `ดูแลแถวกลุ่มสี${g[0]}`] : [g[2], `ดูแลเวรกลุ่มสี${g[0]}`];
+    }
     if (isKG(a.cls)) return ['Kindergarten','ครูอนุบาลดูแลในห้อง'];
-    const g = COLOR_GROUPS[r.grp ??= (r.no + CLASSES.findIndex(([c]) => c === a.cls)) % 4]; return [g[2], `กลุ่มสี${g[0]} ${g[3]}`];
+    const g = G[r.grp ??= grpOf(a.cls, r.no)];
+    return line ? ['Flagpole', `เข้าแถวกลุ่มสี${g[0]} ฟังครูเวรประกาศ เช็กชื่อก่อนทำเวร`] : [g[2], `กลุ่มสี${g[0]} ทำเวร${g[3]}`];
   }
   if (where === 'clean') {   // 15:20 ทำเวรในห้องเรียนของตัวเอง (ครูเล่า) ครูประจำชั้นดูแล
     if (a.kind === 't') { const c = r.name.startsWith('ครูอนุบาล') ? 'อ.' + r.name.slice(-1) : HR_TEACHER[r.name]; return c ? [HOMEROOM[c], `ดูแลนักเรียน ${c} ทำเวรห้องเรียน`] : ['Chalerm_Building','ห้องธุรการ']; }
@@ -1486,6 +1532,7 @@ function targetOf(a, m){
       return {p: sp, pose: ph === 'homeroom' ? 'sit' : 'stand', yaw: faceOf(r)};
     }
   }
+  if (ph === 'duty' && z === 'Flagpole' && m < DUTY_LINE[1] && !(a.kind === 's' && isKG(a.cls))) return dutyLine(a);
   if (ph === 'duty' && a.kind === 's' && !isKG(a.cls)) { const w = m*.9 + a.i; return {p: inZone(z, a.ox, a.oz).add(new THREE.Vector3(Math.sin(w)*.8, 0, Math.cos(w)*.8)), pose:'sweep'}; }
   const where = phaseAt(m)[2];
   if (z === 'PARK') return {p: new THREE.Vector3(a.ref.drop[0], 0, a.ref.drop[1]), pose:'stand'};
@@ -3407,7 +3454,7 @@ const nowLive = () => { const n = new Date(), m = n.getHours()*60 + n.getMinutes
 $('tReset').onclick = () => { if (canLive()) { setLive(true); update(true); return; } const m = nowLive(); simMin = m ?? +slider.min; slider.value = simMin; setPlaying(m != null); update(true); };
 slider.oninput = () => { setLive(false); simMin = +slider.value; update(); };
 if (!new URLSearchParams(location.search).get('t') || new URLSearchParams(location.search).get('live')) setLive(true);
-for (const [lab,m] of [['รถมาส่ง',440],['ทำเวร',462],['เข้าแถว',480],['คาบ 1',515],['คาบ 2',575],['คาบ 3',635],['พักเที่ยง',700],['คาบ 4',755],['คาบ 5',815],['คาบ 6',875],['ทำเวรห้อง',921],['รถมารับ',932]]) {
+for (const [lab,m] of [['รถมาส่ง',440],['ทำเวร',450],['เข้าแถว',480],['คาบ 1',515],['คาบ 2',575],['คาบ 3',635],['พักเที่ยง',700],['คาบ 4',755],['คาบ 5',815],['คาบ 6',875],['ทำเวรห้อง',921],['รถมารับ',932]]) {
   const b = document.createElement('button'); b.textContent = lab; b.onclick = () => { setLive(false); simMin = m; slider.value = m; if (lab.startsWith('รถ')) { setSpeed(.1); setPlaying(true); } else { setPlaying(false); } update(); };
   $('jumps').appendChild(b);
 }
@@ -4332,10 +4379,20 @@ function classFeed(dt){
 // ครูเวรประกาศเรียกนักเรียนกลับบ้าน (ป้ายลอยเหนือครูเวรในอาคารอเนกประสงค์) · ไม่แสดงชื่อนักเรียน ใช้ชั้น + เลขที่
 const annEl = (() => { const e = document.createElement('div'); e.className = 'grp ann'; e.style.setProperty('--c', '#b45309'); e.style.opacity = 0; $('labels').appendChild(e); return e; })();
 let dutyAgent = null;
+// เช้า: 07:30 ครูเวรประกาศเข้าแถวตามกลุ่มสี → แยกไปทำเวร → เดินตรวจให้คะแนนทีละสี (คะแนนจริงจาก SIS ถ้าตรวจแล้ว)
+function dutyText(m){
+  const nm = dutyAgent.ref.name, dl = CLEAN?.deadline || '08:00';
+  if (m < DUTY_LINE[1]) return `📢 ${nm} (ครูเวร): 07:30 นักเรียนเข้าแถวตามกลุ่มสี เช็กชื่อก่อนแยกไปทำเวร`;
+  if (m < DUTY_LINE[1] + 2) return `📢 แยกไปทำเวรโซนของสีตัวเอง ส่งงานก่อน ${dl} น.`;
+  const g = dutyInspecting(m), x = CLEAN_DAY && CLEAN.inspections.find(i => i.house_id === g[4]);
+  return `🧹 ${nm} ตรวจเวรกลุ่มสี${g[0]} · ${g[3]}${x ? ` · ได้ ${x.total}/${x.max} คะแนน` : ''}`;
+}
 function announce(m){
   dutyAgent ??= AGENTS.find(b => b.kind === 't' && b.ref === dutyTeacher());
-  const on = m >= 930 && dutyAgent?.shown && placeOfAgent(dutyAgent, m)[0] === 'Multipurpose_Hall';
+  const at = dutyAgent?.shown ? placeOfAgent(dutyAgent, m)[0] : null, morn = m >= DUTY_LINE[0] && m < 480 && !!at && at !== 'GATE';
+  const on = morn || (m >= 930 && at === 'Multipurpose_Hall');
   annEl.dataset.on = on ? 1 : 0; if (!on) return;
+  if (morn) { const t = dutyText(m); if (annEl.textContent !== t) annEl.textContent = t; return; }
   const now = HALL_Q.filter(s => s.callAt <= m && s.callAt > m - 2.5), wait = HALL_Q.filter(s => s.callAt > m).length;
   let txt;
   if (now.length) {
@@ -4425,16 +4482,45 @@ function renderDash(){
     <div>อาคารที่มีกิจกรรมตามตาราง<b>${isP ? bNow.length : '—'}</b><small>${isP ? when : 'ช่วงนี้ไม่ใช่คาบเรียน'} ${srcB('sch')}</small></div>
     <div>สถานะข้อมูลล่าสุด<b style="font-size:15px">${FEED ? [SREAL && 'SIS', TREAL && 'ลงเวลาครู', 'ตาราง'].filter(Boolean).join(' + ') : 'ตาราง + จำลอง'}</b><small>${FEED ? 'Last updated ' + FEED.fetched : DataAdapter.message || 'ไม่ได้รับข้อมูลจาก SIS'}</small></div>
   </div>
+  <div id="cleanDash"></div>
   <div class="two">
     <div><h4>กิจกรรมตามตาราง · ${when}</h4>${isP ? (now.length ? `<div class="scroll"><table><tr><th>ชั้น</th><th>กิจกรรม/วิชา</th><th>อาคาร · ห้อง</th><th>ครูผู้รับผิดชอบ</th></tr>${now.map(([c, l]) => `<tr><td><b>${c}</b></td><td>${l.sub}<br><small>${ACT_TH[actType(l.sub)]}</small></td><td>${ZONES[l.where][0]}${l.room && ROOMS[l.room] ? '<br><small>' + ROOMS[l.room].th + '</small>' : ''}</td><td>${tea(l)}</td></tr>`).join('')}</table></div>` : '<div class="lock">ไม่มีรายการที่ตรงกับตัวกรอง</div>') : `<div class="lock">${phaseAt(simMin)[1] || 'นอกเวลาเรียน'} · ไม่ใช่คาบเรียนตามตาราง</div>`}</div>
     <div><h4>การใช้อาคารทั้งวัน (จำนวนคาบ-ชั้น)</h4><div class="bars" role="table" aria-label="จำนวนคาบเรียนต่ออาคาร">${Object.entries(use).sort((a, b) => b[1] - a[1]).map(([n, v]) => `<div role="row" title="${ZONES[n][0]}: ${v} คาบ-ชั้น จาก ${tot}"><span role="cell">${ZONES[n][0]}</span><span role="cell"><i style="width:${v/mx*100}%"></i></span><span role="cell">${v}</span></div>`).join('') || '<div class="lock">ไม่มีข้อมูล</div>'}</div><small style="color:var(--mute)">นับจากตารางเรียนวัน${DAYS[d]} ${srcB('sch')}</small></div>
   </div>
   <div><h4>สรุปกิจกรรมรายวัน · วัน${DAYS[d]}</h4><div class="scroll"><table><tr><th>ชั้น</th>${PERIODS.map(x => `<th>${x.th}<br><small>${fmt(x.t0)}</small></th>`).join('')}</tr>${CLASSES.filter(([c]) => !fc || c === fc).map(([c]) => `<tr><td><b>${c}</b></td>${PERIODS.map(x => { const l = lessonOn(c, x.p, d); return `<td style="${keep(c, l) ? '' : 'opacity:.3'}">${l.sub}<br><small>${ZONES[l.where][0]}</small></td>`; }).join('')}</tr>`).join('')}</table></div></div>
   <div id="staff"></div>`;
+  renderClean();
   renderStaff();
 }
 /* ---------- Staff section (Phase 8): roles come from the server; the page only shows what /sim-api returns ---------- */
 const esc = x => String(x ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+/* ---------- เวรทำความสะอาดกลุ่มสี: โซนสัปดาห์นี้ · คะแนนตรวจวันนี้ · ร้อยละสัปดาห์ · อันดับ/แต้มเดือนนี้ · แต้มสะสมทั้งปี (BANKHUM SIS) ---------- */
+function cleanHTML(full){
+  const sc = id => CLEAN?.scores?.find(x => x.id === id), ins = id => CLEAN_DAY ? CLEAN.inspections.find(x => x.house_id === id) : null;
+  const rows = COLOR_GROUPS.map((g, i) => ({g, i, x: CLEAN ? ins(g[4]) : null, s: CLEAN ? sc(g[4]) : null}));
+  const lead = CLEAN ? [...rows].sort((a, b) => (b.s?.year_points || 0) - (a.s?.year_points || 0))[0] : null;
+  const pc = v => v == null ? '—' : `${v}%`;
+  const tr = rows.map(({g, x, s}) => `<tr${lead && lead.g === g && lead.s?.year_points ? ' class="lead"' : ''}><td><i class="dot" style="background:${esc(g[1])}"></i>${esc(g[0])}</td><td>${esc(g[3])}</td>`
+    + `<td>${x ? `<b>${x.total}/${x.max}</b>${x.members ? `<br><small>มา ${x.present}/${x.members}${x.done_at ? ' · ' + esc(x.done_at) : ''}</small>` : ''}` : CLEAN_DAY ? '<small>ยังไม่ตรวจ</small>' : '—'}</td>`
+    + `<td>${pc(s?.week)}</td>${full ? `<td>${pc(s?.month)}</td>` : ''}<td>${s?.month_rank ? `#${s.month_rank}` : '—'}${s?.month_points ? ` <small>${s.month_points} แต้ม</small>` : ''}</td>${full ? `<td><b>${s ? s.year_points : '—'}</b></td>` : ''}</tr>`).join('');
+  const duty = CLEAN_DAY && CLEAN.duty?.length ? CLEAN.duty.map(d => 'ครู' + esc(d.teacher) + (d.point ? ` (${esc(d.point)})` : '')).join(', ') : esc(dutyTeacher().name) + (CLEAN_DAY ? '' : ' (จำลอง)');
+  const src = CLEAN ? `คะแนนจาก BANKHUM SIS${CLEAN_DAY ? '' : ` (ผลตรวจรายวันแสดงเฉพาะวันที่ ${thDate(CLEAN.date)})`} · อัปเดต ${new Date(CLEAN.fetched_at || Date.now()).toLocaleTimeString('th-TH', {hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'})}`
+    : 'ข้อมูลจำลอง: ยังไม่ได้รับข้อมูลเวรจาก BANKHUM SIS';
+  return `<div class="scroll"><table class="ctab"><tr><th>สี</th><th>โซน</th><th>วันนี้</th><th>สัปดาห์</th>${full ? '<th>เดือนนี้</th>' : ''}<th>อันดับเดือน</th>${full ? '<th>แต้มทั้งปี</th>' : ''}</tr>${tr}</table></div>`
+    + `<div class="cnote">07:30 ครูเวรประกาศเข้าแถวตามกลุ่มสี → ทำเวร ส่งงานก่อน ${esc(CLEAN?.deadline || '08:00')} น. · ครูเวร: ${duty}<br>${src}</div>`;
+}
+function renderClean(){
+  const b = $('cleanBox'); if (!b) return;
+  const open = b.querySelector('details')?.open ?? (simMin >= 420 && simMin < 510);
+  b.innerHTML = `<details${open ? ' open' : ''}><summary>🧹 เวรกลุ่มสี${CLEAN?.week ? ` · สัปดาห์ที่ ${CLEAN.week}` : ''} <span class="tag">${CLEAN ? 'SIS' : 'จำลอง'}</span></summary>${cleanHTML(false)}</details>`;
+  const d = $('cleanDash'); if (d) d.innerHTML = `<h4>🧹 เวรทำความสะอาดกลุ่มสี${CLEAN?.week ? ` · สัปดาห์ที่ ${CLEAN.week}` : ''}</h4>${cleanHTML(true)}`;
+}
+renderClean();
+// อัปเดตคะแนนเวรทุก 2 นาที (เฉพาะดูวันนี้) โดยไม่ต้องโหลดหน้าใหม่
+if (CLEAN_DAY && !PAST) setInterval(async () => {
+  try { const r = await fetch('/sim-cleaning', {cache: 'no-store'}), d = await r.json(); if (!r.ok || !d.ok || d.date !== CLEAN.date) return;
+    Object.assign(CLEAN, {inspections: d.inspections || [], scores: d.scores || [], fetched_at: d.fetched_at}); renderClean(); } catch (e) {}
+}, 120000);
 const ROLE_TH = {PUBLIC:'ผู้เยี่ยมชม', TEACHER:'ครู', EXECUTIVE:'ผู้บริหาร', ADMIN:'ผู้ดูแลระบบ'};
 let AUTH = {role:'PUBLIC', login_available:false}, staffData = null, auditData = null;
 async function loadAuth(){
