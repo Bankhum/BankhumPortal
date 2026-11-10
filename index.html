@@ -1105,6 +1105,7 @@ function teacherPlace(t, p){
   if (s) { const [sub, c] = s; if (c === '-') return [placeOf(sub) || 'Multipurpose_Hall', `ดูแล${sub}`]; return [lesson(c, p).where, `สอน ${c} ${sub}`]; }
   for (const [c] of CLASSES) { const l = lesson(c,p); if ('ครู'+l.tea === t.name) return [l.where, `สอน ${c} ${l.sub}`]; }
   for (const [c] of CLASSES) { const l = lesson(c,p); if (l.tea === 'ครูทุกคน') return [l.where, `ดูแล ${l.sub}`]; }
+  if (t.name === 'ครูดีลาภ') return ['Technology_Building', 'ห้องคอมพิวเตอร์ ชั้น 2 (ไม่มีคาบสอน)'];   // ครูดีลาภไม่มีคาบสอน → อยู่ห้องคอม
   return ['Chalerm_Building','ห้องธุรการ (ไม่มีคาบสอน)'];
 }
 // ตอนนี้แต่ละคนควรอยู่ที่ไหน → [zone|null, ข้อความ]
@@ -1123,7 +1124,7 @@ function placeOfAgent(a, m){
   if (where === 'gate' && m >= 930) return ['GATE','กลับบ้าน'];
   if (where === 'Flagpole') return ['Flagpole', a.kind === 't' ? 'ร่วมกิจกรรมหน้าเสาธง' : 'เข้าแถว เคารพธงชาติ สวดมนต์'];
   if (where === 'gate') {
-    if (a.kind === 't') return ['Chalerm_Building','ห้องธุรการ เตรียมการสอน'];
+    if (a.kind === 't') return r.name === 'ครูดีลาภ' ? ['Technology_Building','ห้องคอมพิวเตอร์ เตรียมการสอน'] : ['Chalerm_Building','ห้องธุรการ เตรียมการสอน'];
     if (m < r.scan + 4) return [HOMEROOM[a.cls], 'เอากระเป๋าไปเก็บที่ห้อง'];
     if (isKG(a.cls)) return ['PLAY','วิ่งเล่นสนามเด็กเล่น'];
     return (r.no + a.cls.length) % 5 < 2 ? ['Canteen','ซื้อขนมที่โรงอาหาร'] : ['FREE', playOf(a).th];
@@ -2512,6 +2513,7 @@ function select(name){
 let follow = null, findMark = null;
 const whoOf = a => a.kind === 't' ? fullName(a.ref.name) : `${a.cls} เลขที่ ${a.ref.no}`;
 // สถานะเช็คชื่อจริงของนักเรียน (ไม่มีชื่อ มีแค่ชั้น/เลขที่): มาแล้ว/ยังไม่มาลงเวลา + วิธีที่ลง
+
 const VIA = {FACE_PI: 'เครื่องสแกนหน้า', TABLET: 'แท็บเล็ตหน้าโรงเรียน', MOBILE: 'มือถือครูประจำชั้น', MANUAL: 'ครูเช็คชื่อ', ADMIN: 'ธุรการบันทึก'};
 function attOf(a){
   if (a.kind !== 's' || !SREAL) return '';
@@ -2524,6 +2526,8 @@ function attOf(a){
 function statusOf(a){
   if (a.kind === 's' && a.ref.scan == null) return {where: 'ไม่ได้มาโรงเรียน', what: ({LEAVE: 'ลากิจ', SICK: 'ลาป่วย', ABSENT: 'ขาดเรียน'})[a.ref.st] ? ({LEAVE: 'ลากิจ', SICK: 'ลาป่วย', ABSENT: 'ขาดเรียน'})[a.ref.st] + 'วันนี้ (จาก SIS)' : 'ขาดเรียนวันนี้', src: a.ref.st ? 'ver' : 'sim'};
   const [z, txt] = placeOfAgent(a, simMin);
+  const tx = a.kind === 't' && TATT?.get(a.ref.name), ti = tx && hm2m(tx.in), to = tx && hm2m(tx.out);
+  if (tx) { if (ti == null || simMin < ti) return {where: 'ยังไม่ถึงโรงเรียน', what: '', src: 'ver'}; if (to != null && simMin >= to) return {where: 'กลับบ้านแล้ว', what: '', src: 'ver'}; if (!z) return {where: 'ที่โรงเรียน', what: 'ลงเวลาแล้ว', src: 'ver'}; }
   if (!z) return {where: simMin < (a.ref.scan ?? 0) ? 'ยังไม่ถึงโรงเรียน' : 'กลับบ้านแล้ว', what: simMin < (a.ref.scan ?? 0) ? (a.kind === 't' ? (TREAL ? 'ยอดครูลงเวลาจริงดูที่ช่อง "ครู" ด้านบน' : 'ลงเวลาจำลอง ' + fmt(a.ref.scan)) : (a.ref.here ? '' : 'สแกนหน้าเวลา ' + fmt(a.ref.scan))) : '', src: a.ref.here ? 'ver' : 'sim'};
   const room = a.kind === 's' && typeof phaseAt(simMin)[2] === 'number' ? lesson(a.cls, phaseAt(simMin)[2]).room : null;
   return {where: placeTh(z) + (room && ROOMS[room] ? ' · ' + ROOMS[room].th : ''), what: txt || '', src: typeof phaseAt(simMin)[2] === 'number' ? 'sch' : 'sim'};
@@ -2545,7 +2549,7 @@ function findMatches(q){
 function renderFind(){
   const ul = $('fres'), q = $('fq').value, list = findMatches(q).slice(0, 40), pl = placeMatches(q);
   ul.innerHTML = !q.trim() ? '<li style="cursor:default;color:var(--mute)">พิมพ์ชั้น เช่น ป.1 หรือ ป.1 เลขที่ 5 หรือชื่อครู แล้วแตะรายการเพื่อดูตำแหน่งบนแผนที่</li>'
-    : list.length ? list.map(a => { const st = statusOf(a); return `<li data-i="${AGENTS.indexOf(a)}" class="${a === follow ? 'on' : ''}"><span class="av">${a.kind === 't' ? '👩‍🏫' : a.cls}</span><span><b>${whoOf(a)}</b><small>📍 ${st.where} ${srcB(st.src || 'unk')}</small>${attOf(a)}<small>${st.what}</small></span></li>`; }).join('')
+    : list.length ? list.map(a => { const st = statusOf(a); return `<li data-i="${AGENTS.indexOf(a)}" class="${a === follow ? 'on' : ''}"><span class="av">${a.kind === 't' ? '👩‍🏫' : a.cls}</span><span><b>${whoOf(a)}</b><small>📍 ${st.where} ${srcB(st.src || 'unk')}</small>${attOf(a)}${tAttOf(a)}<small>${st.what}</small></span></li>`; }).join('')
     : '<li style="cursor:default;color:var(--mute)">ไม่พบ · นักเรียนค้นด้วยชั้นและเลขที่ เช่น <b>ป.1</b> หรือ <b>ป.1 เลขที่ 5</b> (หน้านี้ไม่แสดงชื่อนักเรียน เพื่อคุ้มครองข้อมูลส่วนบุคคล) · ครูค้นด้วยชื่อ</li>';
   const cm = q.trim().match(/^(?:ห้อง\s*)?(อ|ป)\.?\s*(\d)/); if (cm && HOMEROOM[`${cm[1]}.${cm[2]}`]) ul.insertAdjacentHTML('afterbegin', `<li data-c="${cm[1]}.${cm[2]}"><span class="av">🚪</span><span><b>เข้าห้องเรียน ${cm[1]}.${cm[2]}</b><small>ซูมเข้าในห้อง ดูกระดาน โต๊ะครู โต๊ะนักเรียน</small></span></li>`);
   if (/คอม/.test(q)) ul.insertAdjacentHTML('afterbegin', `<li data-c="${COMP}"><span class="av">🚪</span><span><b>เข้าห้องคอมพิวเตอร์</b><small>ชั้น 2 อาคารเทคโนโลยี · ดูโต๊ะคอม กระดาน โต๊ะครู</small></span></li>`);
@@ -4446,6 +4450,28 @@ AUTH_P.then(a => {
   const msg = {ok:'เข้าสู่ระบบแล้ว', denied:'เข้าได้เฉพาะบัญชี @bankhum.ac.th', failed:'เข้าสู่ระบบไม่สำเร็จ ลองอีกครั้ง', unconfigured:'ยังไม่ได้ตั้งค่าการเข้าสู่ระบบ'}[lg];
   if (msg) { openDash(); const el = $('staff'); if (el) el.insertAdjacentHTML('afterbegin', `<div class="lock" role="status">${msg}</div>`); }
 });
+// เวลาลงเวลาครูรายคน (ชื่อ เวลา วิธีลง) จากสารบรรณ: ดึงเฉพาะเมื่อครูล็อกอินด้วยบัญชี @bankhum.ac.th · คนทั่วไปเห็นแค่ยอดรวม
+let TATT = null, TATT_ERR = '';
+const ATT_M = {finger: 'สแกนนิ้ว', photo: 'ถ่ายรูปหน้า', sig: 'เซ็นชื่อ', manual: 'ธุรการบันทึกแทน'};
+const nmKey = x => String(x || '').replace(/^(?:รองฯ|รอง ผอ\.|ผอ\.|ว่าที่\s*ร\.?\s*[ตทอ]\.?(?:หญิง)?|นางสาว|นาง|นาย|น\.ส\.|ครู|ดร\.)\s*/g, '').trim().split(/\s+/)[0];
+async function loadTAtt(){
+  if (!['TEACHER', 'EXECUTIVE', 'ADMIN'].includes(AUTH.role)) return;
+  const r = await getJ('/sim-api/teachers' + (PAST ? '?date=' + PAST : ''));
+  if (!r.ok) { TATT_ERR = r.status === 'old-worker' ? 'ระบบสารบรรณยังไม่ได้อัปเดต worker.js' : 'ดึงเวลาลงเวลาครูไม่สำเร็จ'; return; }
+  const by = new Map(r.people.map(x => [nmKey(x.name), x])); TATT = new Map(); TATT_ERR = '';
+  for (const t of TEACHERS) { const x = by.get(nmKey(fullName(t.name))) || by.get(nmKey(t.name)); if (x) TATT.set(t.name, x); }
+  if ($('findp') && !$('findp').hidden) renderFind();
+}
+AUTH_P.then(() => { loadTAtt(); setInterval(() => { if (!document.hidden && !PAST) loadTAtt(); }, 60000); });
+const hm2m = x => x ? +x.slice(0, 2)*60 + +x.slice(3) : null;
+function tAttOf(a){
+  if (a.kind !== 't') return '';
+  if (!TATT) return TATT_ERR ? `<i class="att no">${TATT_ERR}</i>` : '';
+  const x = TATT.get(a.ref.name); if (!x) return '<i class="att wait">ไม่พบชื่อในระบบลงเวลา</i>';
+  const i = hm2m(x.in), o = hm2m(x.out);
+  if (i == null || simMin < i) return '<i class="att wait">⏳ ยังไม่มาลงเวลา</i>';
+  return `<i class="att ok">✅ มาแล้ว · ลงเวลา ${x.in}${ATT_M[x.m_in] ? ' · ' + ATT_M[x.m_in] : ''}${o != null && simMin >= o ? ` · กลับ ${x.out}${ATT_M[x.m_out] ? ' (' + ATT_M[x.m_out] + ')' : ''}` : ''}</i>`;
+}
 async function getJ(u){ try { const r = await fetch(u, {cache:'no-store'}); return {code:r.status, ...(await r.json().catch(() => ({})))}; } catch { return {code:0}; } }
 async function renderStaff(refresh){
   const el = $('staff'); if (!el) return;
