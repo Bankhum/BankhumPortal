@@ -62,8 +62,8 @@ window.BANKHUM_MENU = [
     th: 'ฝ่ายบริหารงบประมาณ', en: 'Budget & Finance', code: 'แผนงาน · การเงิน · พัสดุ · อาหาร', short: 'งบประมาณ', shortEn: 'Budget',
     items: [
       { th: 'ระบบบริหารการเงินและพัสดุ (ปีงบ 2569)', en: 'Finance & inventory system (FY2569)', icon: 'warehouse', url: 'https://school-finance-inventory.kamonwan.workers.dev/', statId: 'finance-inventory', statName: 'ระบบบริหารการเงินและพัสดุ (ปีงบ 2569)', keywords: 'การเงิน พัสดุ คลัง ครุภัณฑ์ งบประมาณ finance inventory 2569' },
-      { th: 'การเงินและพัสดุ', en: 'Finance & supplies', icon: 'banknote', url: 'https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbwUz9mm1SC5LS2wpQPMDblnGBcJ2s4Y4-A073e42ZGrT_bIGuBLIc1nBylaj56LS_HiRw/exec', statId: 'finance', statName: 'ระบบบริหารการเงินและพัสดุโรงเรียน', keywords: 'การเงิน พัสดุ finance' },
-      { th: 'ร่วมบริจาคสนับสนุนโรงเรียน', en: 'Donate to the school', icon: 'hand-heart', url: 'https://school-finance-inventory.kamonwan.workers.dev/donate?campaign=f68fb276-7d8e-4fde-a23b-001ecdd6dc26', statId: 'donate', statName: 'ร่วมบริจาคสนับสนุนโรงเรียน', keywords: 'บริจาค ระดมทุน สนับสนุน ทำบุญ donate donation campaign' },
+      // ซ่อนไว้ (11 พ.ย. 2569): { th: 'การเงินและพัสดุ', en: 'Finance & supplies', icon: 'banknote', url: 'https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbwUz9mm1SC5LS2wpQPMDblnGBcJ2s4Y4-A073e42ZGrT_bIGuBLIc1nBylaj56LS_HiRw/exec', statId: 'finance', statName: 'ระบบบริหารการเงินและพัสดุโรงเรียน', keywords: 'การเงิน พัสดุ finance' }
+      // ซ่อนไว้ (11 พ.ย. 2569): { th: 'ร่วมบริจาคสนับสนุนโรงเรียน', en: 'Donate to the school', icon: 'hand-heart', url: 'https://school-finance-inventory.kamonwan.workers.dev/donate?campaign=f68fb276-7d8e-4fde-a23b-001ecdd6dc26', statId: 'donate', statName: 'ร่วมบริจาคสนับสนุนโรงเรียน', keywords: 'บริจาค ระดมทุน สนับสนุน ทำบุญ donate donation campaign' }
       { th: 'แผนพัฒนาการศึกษา', en: 'Education development plan', icon: 'map' },
       { th: 'แผนปฏิบัติการประจำปี', en: 'Annual action plan', icon: 'calendar-check' },
       { th: 'โครงการและกิจกรรม', en: 'Projects & activities', icon: 'folder-kanban', keywords: 'project' },
