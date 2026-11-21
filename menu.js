@@ -47,7 +47,6 @@ window.BANKHUM_MENU = [
       { th: 'นวัตกรรมและวิจัยในชั้นเรียน', en: 'Teaching innovations & research', icon: 'lightbulb', url: 'https://inno.bankhum.ac.th/', statId: 'inno', statName: 'INNO BANKHUM นวัตกรรมการเรียนการสอน', keywords: 'inno นวัตกรรม วิจัยในชั้นเรียน สื่อการสอน ผลงานวิชาการ research innovation' },
       { th: 'โรงเรียนคุณภาพ', en: 'Quality School', icon: 'school', url: 'https://sites.google.com/bankhum.ac.th/onesqa5/ONESQA', statId: 'quality-school', statName: 'โรงเรียนคุณภาพ', keywords: 'quality school' },
       { th: 'ประเมิน สมศ. รอบ 5', en: 'ONESQA Round 5', icon: 'badge-check', url: 'https://sites.google.com/bankhum.ac.th/oneqa2568/ONESQA', statId: 'onesqa5', statName: 'ประเมิน สมศ. รอบ 5', keywords: 'สมศ onesqa ประกันคุณภาพภายนอก' },
-      { th: 'เว็บไซต์ครู: ครูกั้มสอนคอม', en: 'Teacher site: Krugum Teaches Computers', icon: 'laptop', url: 'https://krugum.bankhum.ac.th/', statId: 'krugum', statName: 'ครูกั้มสอนคอม', keywords: 'เว็บไซต์ครู สื่อและเทคโนโลยี ครูกั้ม คอมพิวเตอร์ วิทยาการคำนวณ coding scratch microbit python arduino หุ่นยนต์ ใบงาน krugum' },
       { th: 'พัฒนาหลักสูตรสถานศึกษา', en: 'School curriculum development', icon: 'book-open', keywords: 'หลักสูตร curriculum ปฐมวัย' },
       { th: 'เช็กชื่อนักเรียน', en: 'Student attendance check', icon: 'user-check', keywords: 'เช็คชื่อ มาเรียน attendance' },
       { th: 'ตารางเรียน / ตารางสอน', en: 'Class & teaching timetable', icon: 'calendar-days', keywords: 'timetable schedule' },
@@ -135,6 +134,7 @@ window.BANKHUM_MENU = [
       { th: 'อีเมล์ นักเรียน / ครู', en: 'Student / teacher email', icon: 'mail', url: 'https://email.bankhum.ac.th', statId: 'school-email', statName: 'อีเมล์ นักเรียน/ครู', keywords: 'อีเมล email mail' },
       { th: 'จดหมายข่าวโรงเรียน', en: 'School newsletters', icon: 'newspaper', url: 'https://new.bankhum.ac.th/', statId: 'newsletter', statName: 'คลังจดหมายข่าวโรงเรียน', keywords: 'จดหมายข่าว ข่าวสาร ข่าว กิจกรรม newsletter news ประชาสัมพันธ์' },
       { th: 'เว็บไซต์โรงเรียน', en: 'School website', icon: 'globe', url: 'https://www.bankhum.ac.th', statId: 'website', statName: 'เว็บไซต์โรงเรียน', keywords: 'website เว็บไซต์ official' },
+      { th: 'เว็บไซต์ครู: ครูกั้มสอนคอม', en: 'Teacher site: Krugum Teaches Computers', icon: 'laptop', url: 'https://krugum.bankhum.ac.th/', statId: 'krugum', statName: 'ครูกั้มสอนคอม', keywords: 'เว็บไซต์ครู สื่อและเทคโนโลยี ครูกั้ม คอมพิวเตอร์ วิทยาการคำนวณ coding scratch microbit python arduino หุ่นยนต์ ใบงาน krugum' },
       { th: 'ข้อมูลของฉัน', en: 'My profile', icon: 'circle-user' },
       { th: 'ประวัติการมาเรียน', en: 'Attendance history', icon: 'calendar-check' },
       { th: 'E-Portfolio (แฟ้มสะสมผลงาน)', en: 'E-Portfolio', icon: 'briefcase', keywords: 'portfolio แฟ้มสะสมผลงาน' }
