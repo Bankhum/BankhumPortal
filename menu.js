@@ -42,6 +42,7 @@ window.BANKHUM_MENU = [
     items: [
       { th: 'ข้อมูลนักเรียน', en: 'Student information', icon: 'id-card', url: 'https://sis.bankhum.ac.th/', statId: 'sis', statName: 'สารสนเทศนักเรียน (ใหม่)', keywords: 'sis สารสนเทศนักเรียน student' },
       { th: 'วัดผลและประเมินผล', en: 'Measurement & evaluation', icon: 'clipboard-list', url: 'https://bankhum.krusarawut.com/login.php', statId: 'assessment-system', statName: 'ระบบวัดผลและประเมินผลโรงเรียน', keywords: 'คะแนน เกรด ผลการเรียน grade assessment' },
+      { th: 'ระบบสอบออนไลน์ BANKHUM EXAM', en: 'BANKHUM EXAM online tests', icon: 'file-pen-line', url: 'https://bankhum-exam.web.app/', statId: 'exam', statName: 'ระบบสอบออนไลน์ BANKHUM EXAM', keywords: 'สอบ ข้อสอบ แบบทดสอบ สอบออนไลน์ exam test quiz' },
       { th: 'แผนการจัดการเรียนรู้ออนไลน์', en: 'Online lesson plans', icon: 'notebook-pen', url: 'https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbyUZPqvNrehG-h_xLrX1_pNpSMbyxu-ZWPfb46n5l370yDaEzWINLqbGOAk7r38Xrv-/exec', statId: 'lessonplan', statName: 'สร้างแผนการสอนออนไลน์', keywords: 'แผนการสอน lesson plan' },
       { th: 'นิเทศภายใน', en: 'Internal supervision', icon: 'presentation', url: 'https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbxSqnz3gYAjEPAiVe9YZ_ubhgA8Dqqyr1YE5Uf4kpYi0C-VVEL3ZaJC8ESFSoJltkkm/exec', statId: 'supervision', statName: 'ระบบนิเทศการจัดกิจกรรมการเรียนการสอน', keywords: 'นิเทศ supervision การเรียนการสอน' },
       { th: 'นวัตกรรมและวิจัยในชั้นเรียน', en: 'Teaching innovations & research', icon: 'lightbulb', url: 'https://inno.bankhum.ac.th/', statId: 'inno', statName: 'INNO BANKHUM นวัตกรรมการเรียนการสอน', keywords: 'inno นวัตกรรม วิจัยในชั้นเรียน สื่อการสอน ผลงานวิชาการ research innovation' },
@@ -135,6 +136,7 @@ window.BANKHUM_MENU = [
       { th: 'จดหมายข่าวโรงเรียน', en: 'School newsletters', icon: 'newspaper', url: 'https://new.bankhum.ac.th/', statId: 'newsletter', statName: 'คลังจดหมายข่าวโรงเรียน', keywords: 'จดหมายข่าว ข่าวสาร ข่าว กิจกรรม newsletter news ประชาสัมพันธ์' },
       { th: 'เว็บไซต์โรงเรียน', en: 'School website', icon: 'globe', url: 'https://www.bankhum.ac.th', statId: 'website', statName: 'เว็บไซต์โรงเรียน', keywords: 'website เว็บไซต์ official' },
       { th: 'เว็บไซต์ครู: ครูกั้มสอนคอม', en: 'Teacher site: Krugum Teaches Computers', icon: 'laptop', url: 'https://krugum.bankhum.ac.th/', statId: 'krugum', statName: 'ครูกั้มสอนคอม', keywords: 'เว็บไซต์ครู สื่อและเทคโนโลยี ครูกั้ม คอมพิวเตอร์ วิทยาการคำนวณ coding scratch microbit python arduino หุ่นยนต์ ใบงาน krugum' },
+      { th: 'ระบบสอบออนไลน์ BANKHUM EXAM', en: 'BANKHUM EXAM online tests', icon: 'file-pen-line', url: 'https://bankhum-exam.web.app/', statId: 'exam', statName: 'ระบบสอบออนไลน์ BANKHUM EXAM', keywords: 'สอบ ข้อสอบ แบบทดสอบ สอบออนไลน์ exam test quiz' },
       { th: 'ข้อมูลของฉัน', en: 'My profile', icon: 'circle-user' },
       { th: 'ประวัติการมาเรียน', en: 'Attendance history', icon: 'calendar-check' },
       { th: 'E-Portfolio (แฟ้มสะสมผลงาน)', en: 'E-Portfolio', icon: 'briefcase', keywords: 'portfolio แฟ้มสะสมผลงาน' }
