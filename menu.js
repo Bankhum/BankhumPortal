@@ -127,6 +127,13 @@ window.BANKHUM_MENU = [
     ]
   },
   {
+    id: 'mod-teachers', no: 'ครู', color: 'indigo', icon: 'book-user',
+    th: 'เว็บไซต์ครู', en: 'Teacher Websites', code: 'สื่อการสอนและบทเรียนของครู', short: 'เว็บครู', shortEn: 'Teachers',
+    items: [
+      { th: 'ครูกั้มสอนคอม', en: 'Krugum Teaches Computers', icon: 'laptop', url: 'https://krugum.bankhum.ac.th/', statId: 'krugum', statName: 'ครูกั้มสอนคอม', keywords: 'เว็บไซต์ครู สื่อและเทคโนโลยี ครูกั้ม คอมพิวเตอร์ วิทยาการคำนวณ coding scratch microbit python arduino หุ่นยนต์ ใบงาน krugum' }
+    ]
+  },
+  {
     id: 'mod-student', no: 'นร.', color: 'yellow', icon: 'backpack', audience: 'student',
     th: 'สำหรับนักเรียนและผู้ปกครอง', en: 'For Students & Parents', code: 'BANKHUM STUDENT', short: 'นักเรียน', shortEn: 'Students',
     items: [
