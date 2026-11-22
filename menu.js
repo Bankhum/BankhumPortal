@@ -83,8 +83,8 @@ window.BANKHUM_MENU = [
     id: 'mod-hr', no: '03', color: 'orange', icon: 'users',
     th: 'ฝ่ายบริหารงานบุคคล', en: 'Human Resources', code: 'อัตรากำลัง · พัฒนาครู · เงินเดือน · PA', short: 'บุคคล', shortEn: 'HR',
     items: [
-      { th: 'การลา (ยื่นใบลาผ่านระบบสารบรรณ)', en: 'Leave requests (via E-Sarabun)', icon: 'calendar-x', url: 'https://sarabun.bankhum.ac.th/', statId: 'document', statName: 'ระบบงานสารบรรณ', keywords: 'ลา ใบลา ลาป่วย ลากิจ ลาพักผ่อน leave สารบรรณ' },
-      { th: 'ลงเวลาปฏิบัติงาน', en: 'Time attendance', icon: 'clock-3', url: 'https://zlink.minervaiot.com/login', statId: 'attendance', statName: 'ระบบลงเวลาครู', keywords: 'ลงเวลา เข้างาน ออกงาน zlink attendance' },
+      { th: 'ลงเวลา · ลา · มาสาย · ไปราชการ', en: 'Attendance, leave, late & official duty', icon: 'calendar-clock', url: 'https://sarabun.bankhum.ac.th/', statId: 'document', statName: 'ระบบงานสารบรรณ', keywords: 'ลงเวลา เข้างาน ออกงาน ลา ใบลา ลาป่วย ลากิจ ลาพักผ่อน มาสาย สาย ไปราชการ ขออนุญาตไปราชการ attendance leave late official duty sarabun' },
+      // ซ่อนไว้ (22 พ.ย. 2569) ใช้ลงเวลาในระบบสารบรรณแทน: { th: 'ลงเวลาปฏิบัติงาน', en: 'Time attendance', icon: 'clock-3', url: 'https://zlink.minervaiot.com/login', statId: 'attendance', statName: 'ระบบลงเวลาครู', keywords: 'ลงเวลา เข้างาน ออกงาน zlink attendance' }
       { th: 'แจ้งผลการเลื่อนขั้นเงินเดือน', en: 'Salary increment results', icon: 'badge-dollar-sign', url: 'https://money.bankhum.ac.th/', statId: 'salary', statName: 'ระบบแจ้งผลการเลื่อนขั้นเงินเดือน', keywords: 'เงินเดือน เลื่อนขั้น salary money bkmoney' },
       { th: 'PA (ข้อตกลงในการพัฒนางาน)', en: 'PA (Performance agreement)', icon: 'handshake', url: 'https://pa.bankhum.ac.th/', statId: 'pa', statName: 'BANKHUM PA FLOW ระบบบริหารจัดการ PA', keywords: 'pa วpa ข้อตกลง ข้อตกลงในการพัฒนางาน ส่งเอกสาร ติดตามสถานะ ผลการประเมิน performance agreement' },
       { th: 'ข้อมูลบุคลากร', en: 'Staff information', icon: 'contact' },
