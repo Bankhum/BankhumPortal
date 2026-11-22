@@ -40,7 +40,7 @@ window.BANKHUM_MENU = [
       { url: 'https://inno.bankhum.ac.th/', statId: 'inno', icon: 'lightbulb', th: 'INNO BANKHUM ศูนย์เผยแพร่นวัตกรรม', en: 'INNO Bankhum innovations' }
     ],
     items: [
-      { th: 'ข้อมูลนักเรียน', en: 'Student information', icon: 'id-card', url: 'https://sis.bankhum.ac.th/', statId: 'sis', statName: 'สารสนเทศนักเรียน (ใหม่)', keywords: 'sis สารสนเทศนักเรียน student' },
+      { th: 'ระบบสารสนเทศนักเรียน (BANKHUM SIS)', en: 'Student Information System (BANKHUM SIS)', icon: 'id-card', url: 'https://sis.bankhum.ac.th/', statId: 'sis', statName: 'สารสนเทศนักเรียน (ใหม่)', keywords: 'ข้อมูลนักเรียน สารสนเทศนักเรียน sis สารสนเทศนักเรียน student' },
       { th: 'วัดผลและประเมินผล', en: 'Measurement & evaluation', icon: 'clipboard-list', url: 'https://bankhum.krusarawut.com/login.php', statId: 'assessment-system', statName: 'ระบบวัดผลและประเมินผลโรงเรียน', keywords: 'คะแนน เกรด ผลการเรียน grade assessment' },
       { th: 'ระบบสอบออนไลน์ BANKHUM EXAM', en: 'BANKHUM EXAM online tests', icon: 'file-pen-line', url: 'https://bankhum-exam.web.app/', statId: 'exam', statName: 'ระบบสอบออนไลน์ BANKHUM EXAM', keywords: 'สอบ ข้อสอบ แบบทดสอบ สอบออนไลน์ exam test quiz' },
       { th: 'แผนการจัดการเรียนรู้ออนไลน์', en: 'Online lesson plans', icon: 'notebook-pen', url: 'https://script.google.com/a/macros/bankhum.ac.th/s/AKfycbyUZPqvNrehG-h_xLrX1_pNpSMbyxu-ZWPfb46n5l370yDaEzWINLqbGOAk7r38Xrv-/exec', statId: 'lessonplan', statName: 'สร้างแผนการสอนออนไลน์', keywords: 'แผนการสอน lesson plan' },
